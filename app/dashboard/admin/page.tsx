@@ -432,6 +432,9 @@ export default function AdminDashboard() {
   };
 
   const approvedCandidates = candidates.filter(c => c.status === 'approved');
+  const top40Candidates = candidates.filter(c => c.is_top_40);
+  const semiFinalists = candidates.filter(c => c.is_semifinalist);
+  const finalists = candidates.filter(c => c.is_finalist);
   const pendingCandidates = candidates.filter(c => c.status === 'pending_review');
   const rejectedCandidates = candidates.filter(c => c.status === 'rejected');
 
@@ -1159,16 +1162,30 @@ export default function AdminDashboard() {
                   <span className="text-lg font-bold text-white">{approvedCandidates.length}</span>
                 </div>
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-3">
+                  <span className="text-[9px] font-mono uppercase text-zinc-500 block mb-1">
+                    {phase === 'PRESELECTION' ? 'Top 40' : 
+                     phase === 'VOTES_TOP_40' ? 'Top 20' : 
+                     phase === 'SEMIFINAL' ? 'Top 8' : 'Sélection'}
+                  </span>
+                  <span className={`text-lg font-bold ${
+                    (phase === 'PRESELECTION' && top40Candidates.length === 40) ||
+                    (phase === 'VOTES_TOP_40' && semiFinalists.length === 20) ||
+                    (phase === 'SEMIFINAL' && finalists.length === 8)
+                    ? 'text-emerald-400' : 'text-[#e5c47f]'
+                  }`}>
+                    {phase === 'PRESELECTION' ? `${top40Candidates.length} / 40` :
+                     phase === 'VOTES_TOP_40' ? `${semiFinalists.length} / 20` :
+                     phase === 'SEMIFINAL' ? `${finalists.length} / 8` : 
+                     top40Candidates.length}
+                  </span>
+                </div>
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-3">
                   <span className="text-[9px] font-mono uppercase text-zinc-500 block mb-1">En Attente</span>
                   <span className="text-lg font-bold text-white">{pendingCandidates.length}</span>
                 </div>
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-3">
                   <span className="text-[9px] font-mono uppercase text-zinc-500 block mb-1">Jurys</span>
                   <span className="text-lg font-bold text-white">{juryProfiles.length}</span>
-                </div>
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-3">
-                  <span className="text-[9px] font-mono uppercase text-zinc-500 block mb-1">Votes</span>
-                  <span className="text-lg font-bold text-white">0</span>
                 </div>
               </div>
             </div>
