@@ -51,17 +51,7 @@ export default function JuryDashboard() {
   };
 
   const handleLogout = async () => {
-    // Clear localStorage
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('user_role');
-    // Clear cookies
-    document.cookie = 'user_id=; path=/; max-age=0; SameSite=Lax; Secure';
-    document.cookie = 'user_role=; path=/; max-age=0; SameSite=Lax; Secure';
-    // Sign out from Supabase
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
-    // Redirect to login
+    await auth.signOut();
     window.location.href = '/login';
   };
 

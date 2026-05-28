@@ -505,14 +505,7 @@ export default function AdminDashboard() {
             <button 
               onClick={async () => {
                 await auth.signOut();
-                // Clear localStorage
-                localStorage.removeItem('user_id');
-                localStorage.removeItem('user_role');
-                // Clear cookies
-                document.cookie = 'user_id=; path=/; max-age=0; SameSite=Lax; Secure';
-                document.cookie = 'user_role=; path=/; max-age=0; SameSite=Lax; Secure';
-                // Redirect to home
-                router.push('/');
+                window.location.href = '/';
               }}
               className="flex items-center gap-2 text-[10px] font-mono text-zinc-400 hover:text-red-400 transition-colors"
             >

@@ -22,9 +22,11 @@ export default function Navbar({ currentPhase = 'PRESELECTION' }: NavbarProps) {
   const handleSignOut = async () => {
     try {
       await auth.signOut();
-      router.push('/candidature');
+      window.location.href = '/'; // Hard redirect to clear any residual state
     } catch (error) {
       console.error('Erreur de déconnexion:', error);
+      // Fallback redirect
+      window.location.href = '/';
     }
   };
 

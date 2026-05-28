@@ -80,13 +80,7 @@ export default function CandidateDashboard() {
   };
 
   const handleLogout = async () => {
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('user_role');
-    document.cookie = 'user_id=; path=/; max-age=0; SameSite=Lax; Secure';
-    document.cookie = 'user_role=; path=/; max-age=0; SameSite=Lax; Secure';
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
+    await auth.signOut();
     window.location.href = '/';
   };
 

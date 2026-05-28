@@ -59,9 +59,29 @@ export const auth = {
   },
 
   signOut: async () => {
-    if (!supabase) return;
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    
+    // Always clear local data even if supabase call fails
+    if (typeof window !== 'undefined') {
+      // Clear localStorage
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('sb-access-token');
+      localStorage.removeItem('sb-refresh-token');
+      
+      // Clear cookies with all possible variations to ensure removal
+      const cookiesToClear = ['user_id', 'user_role', 'sb-access-token', 'sb-refresh-token'];
+      cookiesToClear.forEach(name => {
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure`;
+        document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax; Secure`;
+        // Also try without Secure just in case it was set that way in dev
+        document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+      });
+      
+      console.log('[Auth] Session cleared successfully');
+    }
   },
 
   signUpCandidate: async ({ email, password, stageName, discipline, region, videoFile, coverImageFile, fullName, phone, candidatureType = 'solo', memberCount = 1 }: SignUpCandidateInput) => {
