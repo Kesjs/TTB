@@ -48,45 +48,29 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
     SEMIFINAL: {
       badgeClass: "text-[#e5c47f]",
       badgeIcon: <Flame className="w-3.5 h-3.5 text-[#e5c47f] animate-pulse" />,
-      badgeText: " DEMI-FINALES",
+      badgeText: "DEMI-FINALES",
       showInscriptionsCloses: true,
-      title: "EN ROUTE POUR LA FINALE.",
-      description: "20 demi-finalistes sur la ligne de départ. Seulement 8 places pour l'ultime étape. Ne laissez pas votre favori se faire éliminer, votez !",
-      ctaText: "Voter",
+      title: <>LE <span className="text-[#e5c47f] font-black">TOP 20</span> EST LÀ. <br /> LA COURSE S'ACCÉLÈRE !</>,
+      description: "Ils ne sont plus que 20 en demi-finale, mais seulement 8 iront en finale. Les compteurs sont ouverts, votez pour votre artiste préféré !",
+      ctaText: "Voter pour le Top 20",
     },
     FINAL: {
       badgeClass: "text-red-700",
       badgeIcon: <Radio className="w-3.5 h-3.5 text-red-600 animate-pulse" />,
       badgeText: "Grande Finale en Direct",
       showInscriptionsCloses: true,
-      title: (
-        <span className="block relative">
-          <span className="block text-[0.4em] font-mono tracking-[0.3em] text-zinc-400 mb-2">L'ultime face-à-face</span>
-          QUI SERA <br/>
-          <span className="bg-gradient-to-r from-red-600 via-[#e5c47f] to-red-600 bg-clip-text text-transparent drop-shadow-[0_10px_20px_rgba(220,38,38,0.2)] font-black">
-            L'ICÔNE ?
-          </span>
-          <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-red-600 to-transparent opacity-50"></span>
-        </span>
-      ),
-      description: "L'ultime face-à-face ! Les 8 grands finalistes s'affrontent pour le titre national. Suivez les scores en direct et votez dès maintenant pour élire l'Icône 2026.",
-      ctaText: "Voter",
+      title: <>QUI SERA <span className="text-[#e5c47f] font-black">L'ICÔNE</span> ?</>,
+      description: "L'ultime face-à-face ! Les 8 grands finalistes s'affrontent pour le titre national. Suivez les scores en direct et votez dès maintenant.",
+      ctaText: "Voter pour l'Icône",
     },
     ARCHIVED: {
       badgeClass: "text-zinc-500",
       badgeIcon: <Award className="w-3.5 h-3.5 text-zinc-400" />,
-      badgeText: "ÉDITION 2026 TERMINÉE",
+      badgeText: "Clôturé",
       showInscriptionsCloses: false,
-      title: (
-        <span className="block">
-          <span className="bg-gradient-to-b from-[#e5c47f] via-[#b08a3c] to-[#e5c47f] bg-clip-text text-transparent font-black drop-shadow-md">
-            PALMARÈS OFFICIEL <br/> 
-            <span className="text-[0.6em] tracking-[0.2em]">ÉDITION 2026</span>
-          </span>
-        </span>
-      ),
-      description: "Félicitations aux 3 grands lauréats qui ont marqué cette édition par leur talent exceptionnel. Découvrez le podium final.",
-      ctaText: "Voir les résultats",
+      title: <>CÉLÉBRONS NOS <span className="text-[#e5c47f] font-black">LAURÉATS</span></>,
+      description: "L'Édition 2026 s'achève en beauté. Merci au Bénin d'avoir vibré au rythme de ses artistes et félicitations aux vainqueurs.",
+      ctaText: "Découvrir le Podium",
     }
   };
 
@@ -247,13 +231,15 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
         )}
 
         {/* 6. LIENS TECHNIQUES SANS CHICHI */}
-        <div className="pt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 font-mono text-[9px] text-zinc-400 tracking-widest uppercase border-t border-zinc-100 w-full max-w-xs justify-center">
-          <span>12 Départements</span>
-          <span>•</span>
-          <span>Toutes Disciplines</span>
-          <span>•</span>
-          <span>Édition 2026</span>
-        </div>
+        {!isArchived && (
+          <div className="pt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 font-mono text-[9px] text-zinc-400 tracking-widest uppercase border-t border-zinc-100 w-full max-w-xs justify-center">
+            <span>12 Départements</span>
+            <span>•</span>
+            <span>Toutes Disciplines</span>
+            <span>•</span>
+            <span>Édition 2026</span>
+          </div>
+        )}
 
       </div>
     </header>

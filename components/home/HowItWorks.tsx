@@ -25,7 +25,7 @@ const steps = [
     description: 'Les compteurs sont remis à zéro. Sous la pression du vote public et de l\'expertise du jury, la sélection se resserre : seuls 8 artistes décrocheront leur ticket pour l\'ultime étape.',
     reward: 'Campagne de visibilité sur nos réseaux nationaux.',
   },
- {
+  {
     number: '04',
     title: 'Grande Finale',
     pool: 'Le Top 8',

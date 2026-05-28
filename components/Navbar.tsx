@@ -95,9 +95,12 @@ export default function Navbar({ currentPhase = 'PRESELECTION' }: NavbarProps) {
               Postuler
             </Link>
           ) : isArchived ? (
-            <span className="hidden lg:block px-4 sm:px-5 py-2 bg-zinc-100 text-zinc-400 border border-zinc-200 font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none cursor-default">
-              Édition Clôturée
-            </span>
+            <button
+              onClick={() => document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="hidden lg:block px-4 sm:px-5 py-2 bg-[#e5c47f] text-zinc-950 font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-zinc-900 hover:text-white transition-all duration-300 transform active:scale-95 shadow-lg shadow-[#e5c47f]/20"
+            >
+              Le Palmarès
+            </button>
           ) : (
             <a
               href="#talents-section"
@@ -161,9 +164,15 @@ export default function Navbar({ currentPhase = 'PRESELECTION' }: NavbarProps) {
                   Postuler
                 </Link>
               ) : isArchived ? (
-                <span className="block w-full px-5 py-2 bg-zinc-100 text-zinc-400 border border-zinc-200 font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none text-center">
-                  Édition Clôturée
-                </span>
+                <button
+                  onClick={() => {
+                    document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' });
+                    setMobileMenuOpen(false);
+                  }}
+                  className="block w-full px-5 py-2 bg-[#e5c47f] text-zinc-950 font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none text-center shadow-lg shadow-[#e5c47f]/10"
+                >
+                  Le Palmarès
+                </button>
               ) : (
                 <a
                   href="#talents-section"
