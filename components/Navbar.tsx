@@ -69,21 +69,23 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
       {/* Conteneur interne max-w-7xl pour centrer le contenu comme avant */}
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
 
-        {/* ZONE LOGO + TEXTE SUR UNE SEULE LIGNE (OPTIMISÉE MOBILE) */}
-        <Link href="/" className="flex items-center gap-2 sm:gap-3 transition-opacity hover:opacity-80 active:scale-95">
-          <img 
-            src="/logo_ttb.jfif" 
-            alt="Top Talent du Bénin" 
-            className="h-8 sm:h-10 lg:h-12 w-auto object-contain" 
-          />
+        {/* ZONE LOGO (CLIQUABLE) + TEXTE (STATIQUE) */}
+        <div className="flex items-center gap-2 sm:gap-3 select-none">
+          <Link href="/" className="transition-opacity hover:opacity-80 active:scale-95 flex-shrink-0">
+            <img 
+              src="/logo_ttb.jfif" 
+              alt="Top Talent du Bénin" 
+              className="h-8 sm:h-10 lg:h-12 w-auto object-contain" 
+            />
+          </Link>
           
           {/* Titre aligné sur une ligne avec gestion de taille responsive pour éviter les collisions avec le burger */}
-          <div className="font-mono text-[10px] xs:text-xs sm:text-sm font-bold tracking-wider text-[#050509] uppercase whitespace-nowrap">
+          <div className="font-mono text-[10px] xs:text-xs sm:text-sm font-bold tracking-wider text-[#050509] uppercase whitespace-nowrap cursor-default">
             <span>TOP </span>
             <span className="text-[#e5c47f] font-normal">TALENT</span>
             <span> DU BÉNIN</span>
           </div>
-        </Link>
+        </div>
 
         {/* MENUS DESKTOP */}
         <div className="hidden lg:flex items-center gap-4 sm:gap-6">
