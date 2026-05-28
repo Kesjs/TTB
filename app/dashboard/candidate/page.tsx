@@ -49,75 +49,108 @@ export default function CandidateDashboard() {
   }, [candidate]);
 
   const loadCandidateData = async () => {
+    console.log('[CandidateDashboard] Starting to load candidate data...');
     try {
+      setLoading(true);
+      setError('');
+
       if (!supabase) {
+        console.error('[CandidateDashboard] Supabase client not available');
         window.location.href = '/candidature?view=login';
         return;
       }
 
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('[CandidateDashboard] Session error:', sessionError);
+        setError('Session expirée. Veuillez vous reconnecter.');
+        setLoading(false);
+        return;
+      }
+
       const sessionUserId = sessionData.session?.user.id;
+      console.log('[CandidateDashboard] Session User ID:', sessionUserId);
 
       if (!sessionUserId) {
+        console.warn('[CandidateDashboard] No active session found, redirecting...');
         localStorage.removeItem('user_id');
         localStorage.removeItem('user_role');
         window.location.href = '/candidature?view=login';
         return;
       }
 
-      const { data: profile } = await supabase
+      // Check profile
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, full_name')
         .eq('id', sessionUserId)
         .single();
 
-      if (profile?.role !== 'candidate') {
+      if (profileError || !profile) {
+        console.error('[CandidateDashboard] Profile not found or error:', profileError);
+        setError('Impossible de charger votre profil. Veuillez contacter le support.');
+        setLoading(false);
+        return;
+      }
+
+      if (profile.role !== 'candidate') {
+        console.warn('[CandidateDashboard] User is not a candidate, role:', profile.role);
         localStorage.removeItem('user_id');
         localStorage.removeItem('user_role');
         window.location.href = '/candidature?view=login';
         return;
       }
 
+      // Sync local session info
       localStorage.setItem('user_id', sessionUserId);
       localStorage.setItem('user_role', profile.role);
       const cookieOptions = 'path=/; max-age=604800; SameSite=Lax; Secure';
       document.cookie = `user_id=${sessionUserId}; ${cookieOptions}`;
       document.cookie = `user_role=${profile.role}; ${cookieOptions}`;
 
-      // Récupérer les contrôles système
+      // Get system control
       const sc = await db.getSystemControl();
       setSystemControl(sc);
+      console.log('[CandidateDashboard] Current phase:', sc?.current_phase);
 
-      // Récupération optimisée et sécurisée via le filtrage serveur (profileId)
+      // Get candidate data
+      console.log('[CandidateDashboard] Fetching candidate record for profile:', sessionUserId);
       const candidates = await db.getCandidates({ profileId: sessionUserId });
       const userCandidate = candidates[0];
+      console.log('[CandidateDashboard] Candidate record found:', userCandidate?.stage_name || 'NONE');
 
       if (!userCandidate) {
-        setError('Aucune candidature trouvée pour votre compte.');
+        console.warn('[CandidateDashboard] No candidate record found for this profile');
+        setError('Aucune candidature active trouvée pour ce compte. Veuillez compléter votre inscription.');
       } else {
         setCandidate(userCandidate);
         
-        // Calculer le rang si le candidat est approuvé
+        // Calculate rank and jury scores if approved
         if (userCandidate.status === 'approved') {
-          const allCandidates = await db.getCandidates();
-          const approved = allCandidates
-            .filter(c => c.status === 'approved')
-            .sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0));
-          
-          setTotalParticipants(approved.length);
-          const currentRank = approved.findIndex(c => c.id === userCandidate.id) + 1;
-          setRank(currentRank > 0 ? currentRank : null);
+          console.log('[CandidateDashboard] Candidate is approved, loading competition stats...');
+          try {
+            const allCandidates = await db.getCandidates();
+            const approved = allCandidates
+              .filter(c => c.status === 'approved')
+              .sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0));
+            
+            setTotalParticipants(approved.length);
+            const currentRank = approved.findIndex(c => c.id === userCandidate.id) + 1;
+            setRank(currentRank > 0 ? currentRank : null);
 
-          // Récupérer la moyenne du jury (basée sur la phase actuelle)
-          const juryData = await db.getJuryAverages(sc.current_phase);
-          if (juryData[userCandidate.id]) {
-            setJuryAverage(juryData[userCandidate.id].total_jury_average);
+            const juryData = await db.getJuryAverages(sc.current_phase);
+            if (juryData[userCandidate.id]) {
+              setJuryAverage(juryData[userCandidate.id].total_jury_average);
+            }
+          } catch (statsErr) {
+            console.error('[CandidateDashboard] Error loading stats (non-critical):', statsErr);
           }
         }
       }
     } catch (err) {
-      console.error('Erreur chargement candidat:', err);
-      setError('Erreur lors du traitement de vos données de scène.');
+      console.error('[CandidateDashboard] Unexpected error:', err);
+      setError('Erreur lors du traitement de vos données. Veuillez rafraîchir la page.');
     } finally {
       setLoading(false);
     }
