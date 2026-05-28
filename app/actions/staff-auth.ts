@@ -89,15 +89,11 @@ export async function signInStaff(state: { error: string } | null, formData: For
 
   // Block candidates from staff login
   if (profile.role === 'candidate') {
-    // Force sign out
-    await supabase.auth.signOut();
     return { error: 'Cet espace est exclusivement réservé au personnel académique.' };
   }
 
   // Only allow admin and jury
   if (profile.role !== 'admin' && profile.role !== 'jury') {
-    // Force sign out
-    await supabase.auth.signOut();
     return { error: 'Accès non autorisé. Réservé au personnel administratif et jury.' };
   }
 

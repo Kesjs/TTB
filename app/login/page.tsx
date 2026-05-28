@@ -15,6 +15,44 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [signInStaffState, signInStaffFormAction] = useFormState(signInStaff, null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Nettoyer la session fantôme avant l'authentification
+  const handleCleanLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      // 1. Nettoyer la session côté client
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+      
+      // 2. Effacer manuellement les cookies de rôle
+      document.cookie = "user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie = "user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      
+      // 3. Nettoyer localStorage
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('user_role');
+      
+      console.log('🧹 Session fantôme nettoyée, tentative d\'authentification...');
+      
+      // 4. Créer et soumettre le formulaire manuellement
+      const form = e.target as HTMLFormElement;
+      const formData = new FormData(form);
+      
+      // 5. Exécuter l'action serveur
+      await signInStaffFormAction(formData);
+      
+    } catch (error) {
+      console.error('Erreur lors du nettoyage de session:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Handle initial hydration and session check
   useEffect(() => {
@@ -72,7 +110,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <form action={signInStaffFormAction} className="space-y-4">
+            <form onSubmit={handleCleanLogin} className="space-y-4">
               {signInStaffState?.error && (
                 <div className="bg-red-900/20 border border-red-900/50 rounded-none p-3 text-sm text-red-400">
                   {signInStaffState.error}
@@ -114,12 +152,20 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#e5c47f] text-black font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent transition-all hover:bg-[#d4b36f] active:scale-[0.98]"
+                disabled={isSubmitting}
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#e5c47f] text-black font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent transition-all hover:bg-[#d4b36f] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <>
-                  Se connecter
-                  <ArrowRight className="w-3 h-3" />
-                </>
+                {isSubmitting ? (
+                  <>
+                    Connexion en cours...
+                    <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                  </>
+                ) : (
+                  <>
+                    Se connecter
+                    <ArrowRight className="w-3 h-3" />
+                  </>
+                )}
               </button>
             </form>
 
