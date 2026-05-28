@@ -27,9 +27,10 @@ export default function LoginPage() {
     try {
       console.log('🔑 Soumission du formulaire avec email:', email);
       
-      // Créer et soumettre le formulaire avec les valeurs actuelles
-      const form = e.target as HTMLFormElement;
-      const formData = new FormData(form);
+      // Créer FormData manuellement avec les valeurs de l'état
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('password', password);
       
       // Exécuter l'action serveur
       await signInStaffFormAction(formData);
@@ -131,6 +132,7 @@ export default function LoginPage() {
                 <label className="block text-xs uppercase tracking-widest text-zinc-500 font-bold mb-2">Email</label>
                 <input
                   type="email"
+                  name="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -144,6 +146,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    name="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
