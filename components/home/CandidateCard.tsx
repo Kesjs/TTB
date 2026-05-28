@@ -81,6 +81,14 @@ export default function CandidateCard({
         </div>
       )}
 
+      {/* Qualified Badge */}
+      {candidate.is_top_40 && (
+        <div className="absolute top-14 left-3 z-30 flex items-center gap-1.5 px-2.5 py-1.5 bg-[#e5c47f] text-zinc-950 rounded-lg shadow-xl animate-in fade-in zoom-in duration-500">
+          <Trophy className="w-3 h-3 fill-zinc-950" />
+          <span className="font-heading font-black text-[9px] uppercase tracking-wider">QUALIFIÉ TOP 40</span>
+        </div>
+      )}
+
       {/* Live Badge */}
       {isLive && (
         <div className="absolute top-3 right-14 z-30 flex items-center gap-1.5 px-2.5 py-1.5 bg-red-600/90 backdrop-blur-md text-white rounded-lg animate-pulse">
