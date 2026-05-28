@@ -1,24 +1,50 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, LogOut } from 'lucide-react';
 import { auth } from '@/lib/supabase/auth';
+import { db } from '@/lib/supabase';
 
 interface NavbarProps {
   currentPhase?: string;
   isLoading?: boolean;
 }
 
-export default function Navbar({ currentPhase = 'PRESELECTION', isLoading = false }: NavbarProps) {
+export default function Navbar({ currentPhase: propPhase, isLoading: propLoading = false }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [systemPhase, setSystemPhase] = useState<string>(propPhase || 'PRESELECTION');
+  const [loading, setLoading] = useState<boolean>(!propPhase || propLoading);
+
+  useEffect(() => {
+    // Si la phase est déjà fournie via les props (ex: sur la home), on l'utilise
+    if (propPhase) {
+      setSystemPhase(propPhase);
+      setLoading(propLoading);
+      return;
+    }
+
+    // Sinon, on la récupère nous-mêmes (ex: sur les pages Alliances, Sélections...)
+    const fetchPhase = async () => {
+      try {
+        const sc = await db.getSystemControl();
+        if (sc) setSystemPhase(sc.current_phase);
+      } catch (err) {
+        console.error('Navbar: Error fetching phase:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPhase();
+  }, [propPhase, propLoading]);
 
   const isDashboard = pathname?.startsWith('/dashboard');
-  const isPreselectionOpen = currentPhase === 'PRESELECTION';
-  const isArchived = currentPhase === 'ARCHIVED';
+  const isPreselectionOpen = systemPhase === 'PRESELECTION';
+  const isArchived = systemPhase === 'ARCHIVED';
 
   const handleSignOut = async () => {
     try {
@@ -81,7 +107,7 @@ export default function Navbar({ currentPhase = 'PRESELECTION', isLoading = fals
 
         {/* BOUTONS D'ACTIONS */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {isLoading ? (
+          {loading ? (
             <div className="animate-pulse bg-zinc-100 border border-zinc-200 w-24 sm:w-32 h-9 rounded-none" />
           ) : isDashboard ? (
             <button
@@ -99,14 +125,26 @@ export default function Navbar({ currentPhase = 'PRESELECTION', isLoading = fals
             </Link>
           ) : isArchived ? (
             <button
-              onClick={() => document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => {
+                if (pathname === '/') {
+                  document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  router.push('/?scroll=talents');
+                }
+              }}
               className="hidden lg:block px-4 sm:px-5 py-2 bg-[#e5c47f] text-zinc-950 font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-zinc-900 hover:text-white transition-all duration-300 transform active:scale-95 shadow-lg shadow-[#e5c47f]/20"
             >
               Le Palmarès
             </button>
           ) : (
             <button
-              onClick={() => document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => {
+                if (pathname === '/') {
+                  document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  router.push('/?scroll=talents');
+                }
+              }}
               className="hidden lg:block px-4 sm:px-5 py-2 bg-white border-2 border-[#050509] text-[#050509] font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#050509] hover:text-white transition-all duration-300 transform active:scale-95"
             >
               Voir les Candidats
@@ -148,7 +186,7 @@ export default function Navbar({ currentPhase = 'PRESELECTION', isLoading = fals
             })}
             
             <div className="pt-2 mt-2 border-t border-slate-200">
-              {isLoading ? (
+              {loading ? (
                 <div className="animate-pulse bg-zinc-100 border border-zinc-200 w-full h-10 rounded-none" />
               ) : isDashboard ? (
                 <button
@@ -171,7 +209,11 @@ export default function Navbar({ currentPhase = 'PRESELECTION', isLoading = fals
               ) : isArchived ? (
                 <button
                   onClick={() => {
-                    document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' });
+                    if (pathname === '/') {
+                      document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                      router.push('/?scroll=talents');
+                    }
                     setMobileMenuOpen(false);
                   }}
                   className="block w-full px-5 py-2 bg-[#e5c47f] text-zinc-950 font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none text-center shadow-lg shadow-[#e5c47f]/10"
@@ -181,7 +223,11 @@ export default function Navbar({ currentPhase = 'PRESELECTION', isLoading = fals
               ) : (
                 <button
                   onClick={() => {
-                    document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' });
+                    if (pathname === '/') {
+                      document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                      router.push('/?scroll=talents');
+                    }
                     setMobileMenuOpen(false);
                   }}
                   className="block w-full px-5 py-2 bg-white border-2 border-[#050509] text-[#050509] font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#050509] hover:text-white transition-all duration-300 text-center"

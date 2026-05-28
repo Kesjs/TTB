@@ -244,6 +244,18 @@ function HomeContent() {
 
   // Dynamic phase logic: competition starts when phase moves beyond PRESELECTION
 
+  useEffect(() => {
+    // Gérer le scroll automatique si demandé dans l'URL (ex: depuis la Navbar sur une autre page)
+    if (!loading && searchParams.get('scroll') === 'talents') {
+      const element = document.getElementById('talents-section');
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  }, [loading, searchParams]);
+
   const isPreselectionOpen = useMemo(() => {
 
     return systemControl.current_phase === 'PRESELECTION';
