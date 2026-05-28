@@ -25,6 +25,7 @@ export interface Candidate {
   is_top_40?: boolean;
   is_semifinalist?: boolean;
   is_finalist?: boolean;
+  bio?: string;
   created_at: string;
 }
 

@@ -52,7 +52,6 @@ export default function CandidaturePage() {
     password: '',
     confirmPassword: '',
     memberCount: 1,
-    specialite: '',
   });
 
   // Validation states
@@ -286,7 +285,7 @@ export default function CandidaturePage() {
     const errors: Record<string, string> = {};
     errors.stageName = validateField('stageName', formData.stageName);
     errors.discipline = validateField('discipline', formData.discipline);
-    errors.specialite = validateField('specialite', formData.specialite);
+    errors.bio = formData.bio ? '' : 'Veuillez préciser ce que vous faites';
     errors.region = validateField('region', formData.region);
     errors.email = validateField('email', formData.email);
     errors.password = validateField('password', formData.password);
@@ -297,7 +296,7 @@ export default function CandidaturePage() {
     setTouchedFields({
       stageName: true,
       discipline: true,
-      specialite: true,
+      bio: true,
       region: true,
       email: true,
       password: true,
@@ -345,6 +344,7 @@ export default function CandidaturePage() {
         fullName: formData.stageName,
         candidatureType,
         memberCount: formData.memberCount,
+        bio: formData.bio,
       });
 
       localStorage.removeItem('ttb_candidature_draft');
@@ -832,19 +832,19 @@ export default function CandidaturePage() {
                                 <input
                                   type="text"
                                   required
-                                  value={formData.specialite}
-                                  onChange={(event) => setFormData({ ...formData, specialite: event.target.value })}
-                                  onBlur={() => handleFieldBlur('specialite', formData.specialite)}
+                                  value={formData.bio}
+                                  onChange={(event) => setFormData({ ...formData, bio: event.target.value })}
+                                  onBlur={() => handleFieldBlur('bio', formData.bio)}
                                   placeholder={categories.find(c => c.id === formData.discipline)?.placeholder || "Ex: Je fais des sketchs sur TikTok, je danse le Zinli, je fais du beatbox, je crée des vêtements..."}
                                   className={`w-full bg-zinc-50 border p-3 sm:p-4 text-sm font-body tracking-wide focus:outline-none transition-colors ${
-                                    touchedFields.specialite && fieldErrors.specialite
+                                    touchedFields.bio && fieldErrors.bio
                                       ? 'border-red-500'
                                       : 'border-zinc-200 focus:border-black'
                                   }`}
                                   disabled={isUploading}
                                 />
-                                {touchedFields.specialite && fieldErrors.specialite && (
-                                  <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.specialite}</p>
+                                {touchedFields.bio && fieldErrors.bio && (
+                                  <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.bio}</p>
                                 )}
                               </div>
                             </motion.div>
@@ -900,7 +900,7 @@ export default function CandidaturePage() {
                         <button
                           type="button"
                           onClick={() => setCurrentStep(2)}
-                          disabled={!formData.stageName || !formData.discipline || !formData.specialite}
+                          disabled={!formData.stageName || !formData.discipline || !formData.bio}
                           className="w-full py-3 sm:py-4 bg-[#050505] text-white text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] hover:text-black transition-all flex items-center justify-center gap-2 sm:gap-3 rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           SUIVANT <ArrowRight className="w-3.5 h-3.5" />
@@ -1206,20 +1206,6 @@ export default function CandidaturePage() {
                           {fieldErrors.coverImage && (
                             <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.coverImage}</p>
                           )}
-                        </div>
-
-                        <div className="border-t border-zinc-100 pt-4 sm:pt-5">
-                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">Courte biographie artistique (Optionnel)</label>
-                          <textarea
-                            value={formData.bio}
-                            onChange={(event) => setFormData({ ...formData, bio: event.target.value.slice(0, 150) })}
-                            placeholder="Décrivez votre parcours artistique en quelques mots..."
-                            maxLength={150}
-                            rows={3}
-                            className="w-full bg-zinc-50 border border-zinc-200 p-3 sm:p-4 text-sm font-body tracking-wide focus:outline-none focus:border-black resize-none rounded-none"
-                            disabled={isUploading}
-                          />
-                          <p className="text-[9px] text-zinc-400 mt-1 text-right">{formData.bio.length}/150 caractères</p>
                         </div>
 
                         <div className="flex gap-3">

@@ -13,6 +13,7 @@ export interface SignUpCandidateInput {
   phone?: string;
   candidatureType?: 'solo' | 'group';
   memberCount?: number;
+  bio?: string;
 }
 
 export interface SignInInput {
@@ -84,7 +85,7 @@ export const auth = {
     }
   },
 
-  signUpCandidate: async ({ email, password, stageName, discipline, region, videoFile, coverImageFile, fullName, phone, candidatureType = 'solo', memberCount = 1 }: SignUpCandidateInput) => {
+  signUpCandidate: async ({ email, password, stageName, discipline, region, videoFile, coverImageFile, fullName, phone, candidatureType = 'solo', memberCount = 1, bio }: SignUpCandidateInput) => {
     if (!supabase) throw new Error('Le système n\'est pas configuré correctement.');
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -174,6 +175,7 @@ export const auth = {
         cover_image_url: coverImageUrl,
         candidature_type: candidatureType,
         member_count: memberCount,
+        bio: bio,
         status: 'pending_review',
       })
       .select()
