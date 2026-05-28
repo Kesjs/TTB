@@ -786,9 +786,11 @@ export default function CandidaturePage() {
                               onChange={(event) => setFormData({ ...formData, password: event.target.value })}
                               onBlur={() => handleFieldBlur('password', formData.password)}
                               placeholder="••••••••"
-                              className={`w-full bg-zinc-50 border p-3 sm:p-4 pr-10 text-sm font-sans focus:outline-none transition-colors ${
+                              className={`w-full bg-zinc-50 border p-3 sm:p-4 pr-10 text-sm font-sans focus:outline-none transition-all duration-300 ${
                                 touchedFields.password && fieldErrors.password
-                                  ? 'border-red-500'
+                                  ? 'border-red-500 bg-red-50/30'
+                                  : formData.password.length >= 8 && !fieldErrors.password
+                                  ? 'border-emerald-500 bg-emerald-50/30'
                                   : 'border-zinc-200 focus:border-black'
                               }`}
                               disabled={isUploading}
@@ -796,60 +798,63 @@ export default function CandidaturePage() {
                             <button
                               type="button"
                               onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-1"
                               disabled={isUploading}
                             >
                               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                           </div>
                           
-                          {/* Password Criteria - Fixed height to prevent layout shift */}
-                          <div className="mt-3 space-y-2">
-                            <div className="flex items-center gap-2 text-[10px]">
+                          {/* Modern Dynamic Password Criteria Grid */}
+                          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 bg-zinc-50/50 p-3 rounded-lg border border-zinc-100">
+                            <div className="flex items-center gap-2 transition-all duration-300">
                               {passwordCriteria.minLength ? (
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                <div className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 scale-110">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                </div>
                               ) : (
                                 <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-300" />
                               )}
-                              <span className={passwordCriteria.minLength ? 'text-emerald-600' : 'text-zinc-400'}>8+ caractères</span>
+                              <span className={`text-[10px] font-medium tracking-tight ${passwordCriteria.minLength ? 'text-emerald-700' : 'text-zinc-400'}`}>8+ caractères</span>
                             </div>
-                            <div className="flex items-center gap-2 text-[10px]">
+                            
+                            <div className="flex items-center gap-2 transition-all duration-300">
                               {passwordCriteria.hasUpperCase ? (
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                <div className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 scale-110">
+                                  <CheckCircle2 className="w-3" />
+                                </div>
                               ) : (
                                 <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-300" />
                               )}
-                              <span className={passwordCriteria.hasUpperCase ? 'text-emerald-600' : 'text-zinc-400'}>1 majuscule</span>
+                              <span className={`text-[10px] font-medium tracking-tight ${passwordCriteria.hasUpperCase ? 'text-emerald-700' : 'text-zinc-400'}`}>1 Majuscule</span>
                             </div>
-                            <div className="flex items-center gap-2 text-[10px]">
-                              {passwordCriteria.hasNumber ? (
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                              ) : (
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-300" />
-                              )}
-                              <span className={passwordCriteria.hasNumber ? 'text-emerald-600' : 'text-zinc-400'}>1 chiffre</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-[10px]">
-                              {passwordCriteria.hasSpecialChar ? (
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                              ) : (
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-300" />
-                              )}
-                              <span className={passwordCriteria.hasSpecialChar ? 'text-emerald-600' : 'text-zinc-400'}>1 caractère spécial (!@#$...)</span>
-                            </div>
-                          </div>
 
-                          <div className="min-h-[20px] mt-2 transition-all duration-200">
-                            <p className={`font-mono text-[9px] uppercase text-red-500 transition-opacity duration-200 ${
-                              touchedFields.password && fieldErrors.password ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                            }`}>
-                              {fieldErrors.password || 'Espace réservé'}
-                            </p>
+                            <div className="flex items-center gap-2 transition-all duration-300">
+                              {passwordCriteria.hasNumber ? (
+                                <div className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 scale-110">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                </div>
+                              ) : (
+                                <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-300" />
+                              )}
+                              <span className={`text-[10px] font-medium tracking-tight ${passwordCriteria.hasNumber ? 'text-emerald-700' : 'text-zinc-400'}`}>1 Chiffre</span>
+                            </div>
+
+                            <div className="flex items-center gap-2 transition-all duration-300">
+                              {passwordCriteria.hasSpecialChar ? (
+                                <div className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 scale-110">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                </div>
+                              ) : (
+                                <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-300" />
+                              )}
+                              <span className={`text-[10px] font-medium tracking-tight ${passwordCriteria.hasSpecialChar ? 'text-emerald-700' : 'text-zinc-400'}`}>1 Spécial (!@#)</span>
+                            </div>
                           </div>
                         </div>
 
                         <div className="border-t border-zinc-100 pt-4 sm:pt-5">
-                          <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold mb-2">Confirmez votre mot de passe</label>
+                          <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold mb-2">Répétez le mot de passe</label>
                           <div className="relative">
                             <input
                               type={showConfirmPassword ? "text" : "password"}
@@ -858,9 +863,11 @@ export default function CandidaturePage() {
                               onChange={(event) => setFormData({ ...formData, confirmPassword: event.target.value })}
                               onBlur={() => handleFieldBlur('confirmPassword', formData.confirmPassword)}
                               placeholder="••••••••"
-                              className={`w-full bg-zinc-50 border p-3 sm:p-4 pr-10 text-sm font-sans focus:outline-none transition-colors ${
-                                touchedFields.confirmPassword && fieldErrors.confirmPassword
-                                  ? 'border-red-500'
+                              className={`w-full bg-zinc-50 border p-3 sm:p-4 pr-10 text-sm font-sans focus:outline-none transition-all duration-300 ${
+                                touchedFields.confirmPassword && formData.confirmPassword !== formData.password
+                                  ? 'border-red-500 bg-red-50/30'
+                                  : formData.confirmPassword && formData.confirmPassword === formData.password && !fieldErrors.password
+                                  ? 'border-emerald-500 bg-emerald-50/30'
                                   : 'border-zinc-200 focus:border-black'
                               }`}
                               disabled={isUploading}
@@ -868,19 +875,22 @@ export default function CandidaturePage() {
                             <button
                               type="button"
                               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-1"
                               disabled={isUploading}
                             >
                               {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                           </div>
-                          <div className="min-h-[20px] mt-1 transition-all duration-200">
-                            <p className={`font-mono text-[9px] uppercase text-red-500 transition-opacity duration-200 ${
-                              touchedFields.confirmPassword && fieldErrors.confirmPassword ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                            }`}>
-                              {fieldErrors.confirmPassword || 'Espace réservé'}
+                          {touchedFields.confirmPassword && formData.confirmPassword !== formData.password && (
+                            <p className="font-mono text-[9px] uppercase text-red-500 mt-2 ml-1 animate-in fade-in slide-in-from-top-1">
+                              Les mots de passe ne correspondent pas
                             </p>
-                          </div>
+                          )}
+                          {formData.confirmPassword && formData.confirmPassword === formData.password && !fieldErrors.password && (
+                            <p className="font-mono text-[9px] uppercase text-emerald-600 mt-2 ml-1 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                              <CheckCircle2 className="w-3 h-3" /> Correspondance parfaite
+                            </p>
+                          )}
                         </div>
 
                         <div className="flex gap-3">
