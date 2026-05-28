@@ -1,12 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Clock, Share2, User, Award, MapPin, LogOut, TrendingUp, Sparkles, XCircle } from 'lucide-react';
+import { 
+  CheckCircle2, Clock, Share2, User, Award, MapPin, 
+  LogOut, TrendingUp, Sparkles, XCircle, Eye, 
+  BarChart3, Layout, Megaphone, Flag, ChevronRight,
+  Trophy, Star
+} from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import { db } from '@/lib/supabase';
+import { db } from '@/lib/supabase/db';
 import { auth } from '@/lib/supabase/auth';
-import type { Candidate } from '@/lib/supabase';
+import type { Candidate, SystemControl } from '@/lib/supabase/types';
 
 export default function CandidateDashboard() {
   const router = useRouter();
@@ -15,6 +20,22 @@ export default function CandidateDashboard() {
   const [error, setError] = useState('');
   const [shareUrl, setShareUrl] = useState('');
   const [copied, setCopied] = useState(false);
+  const [systemControl, setSystemControl] = useState<SystemControl | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
+  const [juryAverage, setJuryAverage] = useState<number | null>(null);
+  const [totalParticipants, setTotalParticipants] = useState(0);
+
+  const roadmapSteps = [
+    { id: 'PRESELECTION', label: 'Inscription', icon: Flag },
+    { id: 'VOTES_TOP_40', label: 'Top 40', icon: Award },
+    { id: 'SEMIFINAL', label: 'Top 20', icon: Star },
+    { id: 'FINAL', label: 'Finale', icon: Trophy },
+  ];
+
+  const currentPhaseIndex = useMemo(() => {
+    if (!systemControl) return 0;
+    return roadmapSteps.findIndex(step => step.id === systemControl.current_phase);
+  }, [systemControl]);
 
   useEffect(() => {
     loadCandidateData();
@@ -63,6 +84,10 @@ export default function CandidateDashboard() {
       document.cookie = `user_id=${sessionUserId}; ${cookieOptions}`;
       document.cookie = `user_role=${profile.role}; ${cookieOptions}`;
 
+      // Récupérer les contrôles système
+      const sc = await db.getSystemControl();
+      setSystemControl(sc);
+
       // Récupération optimisée et sécurisée via le filtrage serveur (profileId)
       const candidates = await db.getCandidates({ profileId: sessionUserId });
       const userCandidate = candidates[0];
@@ -71,6 +96,24 @@ export default function CandidateDashboard() {
         setError('Aucune candidature trouvée pour votre compte.');
       } else {
         setCandidate(userCandidate);
+        
+        // Calculer le rang si le candidat est approuvé
+        if (userCandidate.status === 'approved') {
+          const allCandidates = await db.getCandidates();
+          const approved = allCandidates
+            .filter(c => c.status === 'approved')
+            .sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0));
+          
+          setTotalParticipants(approved.length);
+          const currentRank = approved.findIndex(c => c.id === userCandidate.id) + 1;
+          setRank(currentRank > 0 ? currentRank : null);
+
+          // Récupérer la moyenne du jury (basée sur la phase actuelle)
+          const juryData = await db.getJuryAverages(sc.current_phase);
+          if (juryData[userCandidate.id]) {
+            setJuryAverage(juryData[userCandidate.id].total_jury_average);
+          }
+        }
       }
     } catch (err) {
       console.error('Erreur chargement candidat:', err);
@@ -148,6 +191,42 @@ export default function CandidateDashboard() {
       {/* ZONE CENTRALE DU DASHBOARD */}
       <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
         
+        {/* ROADMAP DE LA COMPÉTITION */}
+        <div className="mb-10 bg-slate-50 border border-slate-100 p-4 sm:p-6 rounded-2xl">
+          <div className="flex items-center gap-3 mb-6">
+            <Layout className="w-4 h-4 text-[#e5c47f]" />
+            <h2 className="font-heading font-black text-xs uppercase tracking-[0.2em] text-slate-900">Parcours de l'Icône</h2>
+          </div>
+          
+          <div className="relative flex justify-between items-start max-w-4xl mx-auto">
+            {/* Ligne de fond */}
+            <div className="absolute top-5 left-0 w-full h-0.5 bg-slate-200 -z-0"></div>
+            
+            {roadmapSteps.map((step, index) => {
+              const Icon = step.icon;
+              const isCompleted = index < currentPhaseIndex;
+              const isCurrent = index === currentPhaseIndex;
+              
+              return (
+                <div key={step.id} className="relative z-10 flex flex-col items-center group w-1/4">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 border-4 ${
+                    isCompleted ? 'bg-emerald-500 border-emerald-100 text-white' :
+                    isCurrent ? 'bg-[#e5c47f] border-white text-white shadow-lg shadow-[#e5c47f]/40 scale-110' :
+                    'bg-white border-slate-100 text-slate-300'
+                  }`}>
+                    {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+                  </div>
+                  <span className={`mt-3 text-[9px] sm:text-[10px] font-bold uppercase tracking-tight sm:tracking-wider text-center px-0.5 ${
+                    isCurrent ? 'text-slate-900' : 'text-slate-400'
+                  }`}>
+                    {step.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* TITRE DE BIENVENUE */}
         <div className="mb-8 border-l-2 border-[#e5c47f] pl-4 sm:pl-5">
           <h1 className="font-heading font-black text-2xl sm:text-3xl uppercase tracking-tight text-[#050505] mb-1.5">
@@ -159,7 +238,7 @@ export default function CandidateDashboard() {
         </div>
 
         {/* GRILLE DE KPI MINI */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
           
           {/* STATUT CARD */}
           <div className={`p-5 rounded-xl border ${
@@ -182,19 +261,32 @@ export default function CandidateDashboard() {
 
           {/* VOTES CARD */}
           <div className="bg-slate-50/60 border border-slate-200/60 p-5 rounded-xl">
-            <span className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-2.5 block">Soutiens de l&apos;Audience</span>
+            <span className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-2.5 block">Soutiens Certifiés</span>
             <div className="flex items-center gap-2.5">
               <TrendingUp className="w-5 h-5 text-[#e5c47f]" />
               <span className="text-xl font-black font-mono text-[#050505]">{candidate.votes_count || 0} <span className="text-xs font-sans text-slate-400 font-normal">votes</span></span>
             </div>
           </div>
 
-          {/* DISCIPLINE CARD */}
+          {/* RANG CARD */}
           <div className="bg-slate-50/60 border border-slate-200/60 p-5 rounded-xl">
-            <span className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-2.5 block">Discipline Artistique</span>
+            <span className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-2.5 block">Rang National</span>
             <div className="flex items-center gap-2.5">
-              <Award className="w-5 h-5 text-slate-400" />
-              <span className="text-sm sm:text-base font-bold uppercase tracking-wider text-slate-700">{candidate.discipline}</span>
+              <BarChart3 className="w-5 h-5 text-zinc-400" />
+              <span className="text-xl font-black font-mono text-[#050505]">
+                {rank ? `#${rank}` : '--'} <span className="text-[10px] font-sans text-slate-400 font-normal uppercase">/ {totalParticipants || '...'}</span>
+              </span>
+            </div>
+          </div>
+
+          {/* JURY CARD */}
+          <div className="bg-slate-50/60 border border-slate-200/60 p-5 rounded-xl">
+            <span className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-2.5 block">Moyenne Jury</span>
+            <div className="flex items-center gap-2.5">
+              <Star className="w-5 h-5 text-[#e5c47f]" />
+              <span className="text-xl font-black font-mono text-[#050505]">
+                {juryAverage ? juryAverage.toFixed(1) : '--'} <span className="text-xs font-sans text-slate-400 font-normal">/ 20</span>
+              </span>
             </div>
           </div>
         </div>
@@ -235,21 +327,31 @@ export default function CandidateDashboard() {
                 </h3>
                 <p className="text-xs text-slate-500">Votre profil est officiellement visible. Utilisez ce lien unique pour propager votre univers et accumuler les votes de l&apos;audience.</p>
               </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <input
-                  type="text"
-                  readOnly
-                  value={shareUrl}
-                  className="flex-1 bg-slate-50 border border-slate-200 px-4 py-3 rounded-lg text-xs font-mono text-slate-700 focus:outline-none"
-                />
-                <button
-                  onClick={handleCopy}
-                  className="px-6 py-3 bg-[#050505] text-white font-semibold rounded-lg hover:bg-[#e5c47f] hover:text-black transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider shrink-0"
-                >
-                  <Share2 className="w-3.5 h-3.5" /> 
-                  <span>{copied ? 'Lien copié !' : 'Copier le lien'}</span>
-                </button>
-              </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <input
+              type="text"
+              readOnly
+              value={shareUrl}
+              className="flex-1 bg-slate-50 border border-slate-200 px-4 py-3 rounded-lg text-xs font-mono text-slate-700 focus:outline-none"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleCopy}
+                className="flex-1 sm:flex-none px-6 py-3 bg-[#050505] text-white font-semibold rounded-lg hover:bg-[#e5c47f] hover:text-black transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider"
+              >
+                <Share2 className="w-3.5 h-3.5" /> 
+                <span>{copied ? 'Lien copié !' : 'Partager'}</span>
+              </button>
+              <button
+                onClick={() => window.open(shareUrl, '_blank')}
+                className="px-4 py-3 bg-white border border-zinc-200 text-zinc-600 rounded-lg hover:bg-zinc-50 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider"
+                title="Voir mon profil public"
+              >
+                <Eye className="w-4 h-4" />
+                <span className="sm:hidden">Profil</span>
+              </button>
+            </div>
+          </div>
             </div>
           )}
 
@@ -289,6 +391,47 @@ export default function CandidateDashboard() {
             </div>
           )}
 
+        </div>
+
+        {/* SECTION ANNONCES & INFOS PRODUCTION */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white border border-slate-100 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <Megaphone className="w-4 h-4 text-[#e5c47f]" />
+              <h2 className="font-heading font-bold text-sm uppercase tracking-wider text-[#050505]">Annonces de la Production</h2>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex gap-4 p-4 bg-slate-50 rounded-lg border-l-4 border-[#e5c47f]">
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shrink-0 border border-slate-100">
+                  <Clock className="w-5 h-5 text-slate-400" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-tight text-slate-900 mb-1">Rappel : Phase de Présélection</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">Le comité artistique analyse actuellement les candidatures. Restez attentifs à votre boîte mail pour les résultats du TOP 40.</p>
+                  <span className="text-[9px] text-slate-400 mt-2 block font-mono">Posté le 20 Mai 2026</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-[#050505] to-zinc-900 rounded-xl p-6 text-white relative overflow-hidden shadow-xl">
+            <div className="relative z-10">
+              <div className="w-10 h-10 bg-[#e5c47f] rounded-lg flex items-center justify-center mb-4">
+                <Trophy className="w-6 h-6 text-black" />
+              </div>
+              <h3 className="font-heading font-black text-lg uppercase tracking-tight mb-2">Objectif : Finale</h3>
+              <p className="text-zinc-400 text-xs leading-relaxed mb-6">Préparez-vous à briller. Les 8 finalistes s'affronteront en direct devant la nation pour le titre d'Icône 2026.</p>
+              <button 
+                onClick={() => window.open('/reglement', '_blank')}
+                className="w-full py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+              >
+                <Layout className="w-3.5 h-3.5" /> Voir le règlement
+              </button>
+            </div>
+            {/* Décoration fond */}
+            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-[#e5c47f]/10 rounded-full blur-2xl"></div>
+          </div>
         </div>
       </main>
     </div>
