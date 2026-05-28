@@ -417,9 +417,19 @@ export default function AdminDashboard() {
 
   const handleConfirmCandidate = async (id: string, isConfirmed: boolean) => {
     try {
-      await db.confirmCandidateByAdmin(id, isConfirmed);
-      setCandidates(prev => prev.map(c => c.id === id ? { ...c, is_confirmed_by_admin: isConfirmed } : c));
-      addToast('success', isConfirmed ? 'Candidat confirmé par admin' : 'Confirmation annulée');
+      if (isConfirmed) {
+        // When confirming, also approve the candidate status
+        await Promise.all([
+          db.confirmCandidateByAdmin(id, true),
+          db.updateCandidateStatus(id, 'approved')
+        ]);
+        setCandidates(prev => prev.map(c => c.id === id ? { ...c, is_confirmed_by_admin: true, status: 'approved' } : c));
+        addToast('success', 'Candidat confirmé et approuvé');
+      } else {
+        await db.confirmCandidateByAdmin(id, false);
+        setCandidates(prev => prev.map(c => c.id === id ? { ...c, is_confirmed_by_admin: false } : c));
+        addToast('success', 'Confirmation annulée');
+      }
     } catch (err) {
       addToast('error', 'Erreur lors de la confirmation');
     }
@@ -1306,7 +1316,7 @@ export default function AdminDashboard() {
                     className="flex-1 py-3 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-600/50 text-emerald-400 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    Confirmer
+                    Confirmer & Approuver
                   </button>
                   <button
                     onClick={() => {
