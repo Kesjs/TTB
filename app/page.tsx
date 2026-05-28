@@ -250,16 +250,6 @@ function HomeContent() {
 
   }, [systemControl.current_phase]);
 
-
-
-  const showCandidateGrid = useMemo(() => {
-
-    return true; // Toujours afficher la grille si des candidats sont approuvés
-
-  }, []);
-
-
-
   // Calculate hybrid score
 
   const voteCountMap = useMemo(() => {
@@ -272,11 +262,7 @@ function HomeContent() {
 
   }, [voteCounts]);
 
-
-
   const maxVotes = Math.max(...Object.values(voteCountMap), 1);
-
-
 
   const calculateHybridScore = useCallback((candidateId: string): number => {
 
@@ -297,28 +283,19 @@ function HomeContent() {
     return juryData ? juryData.total_jury_average : 0;
   }, [juryAverages]);
 
-
-
-  const handleSelectVideo = useCallback((candidateId: string | null) => {
-
-    setSelectedVideo(candidateId);
-
-  }, []);
-
-
-
   const rankedCandidates = useMemo(() => {
 
     return [...candidates].sort((a, b) => calculateHybridScore(b.id) - calculateHybridScore(a.id));
 
   }, [candidates, calculateHybridScore]);
 
-
-
   // Filter candidates based on phase
 
   const filteredCandidates = useMemo(() => {
-    if (systemControl.current_phase === 'PRESELECTION') return [];
+    // En présélection, on ne montre que ceux déjà qualifiés pour le Top 40 par le jury
+    if (systemControl.current_phase === 'PRESELECTION') {
+      return rankedCandidates.filter(c => c.is_top_40);
+    }
 
     if (systemControl.current_phase === 'VOTES_TOP_40')
       return rankedCandidates.filter(c => c.is_top_40);
@@ -331,6 +308,17 @@ function HomeContent() {
 
     return rankedCandidates;
   }, [rankedCandidates, systemControl.current_phase]);
+
+  const showCandidateGrid = useMemo(() => {
+    // Ne montrer la grille en phase de présélection que s'il y a déjà des qualifiés Top 40
+    return systemControl.current_phase !== 'PRESELECTION' || filteredCandidates.length > 0;
+  }, [systemControl.current_phase, filteredCandidates.length]);
+
+  const handleSelectVideo = useCallback((candidateId: string | null) => {
+
+    setSelectedVideo(candidateId);
+
+  }, []);
 
 
 
