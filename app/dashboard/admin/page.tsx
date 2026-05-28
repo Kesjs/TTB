@@ -217,7 +217,9 @@ export default function AdminDashboard() {
         channels.push(ratingsChannel);
 
         return () => {
-          channels.forEach(channel => supabase.removeChannel(channel));
+          if (supabase) {
+            channels.forEach(channel => supabase.removeChannel(channel));
+          }
         };
       }
   }, []);
