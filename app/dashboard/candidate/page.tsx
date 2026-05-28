@@ -180,17 +180,37 @@ export default function CandidateDashboard() {
     );
   }
 
-  if (error || !candidate) {
+  if (error || (!loading && !candidate)) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center px-6">
         <div className="max-w-md w-full text-center border border-slate-100 p-8 bg-slate-50/50 rounded-xl shadow-sm">
-          <p className="text-slate-600 mb-6 text-sm font-medium">{error || 'Données momentanément indisponibles.'}</p>
-          <button
-            onClick={() => router.push('/candidature')}
-            className="w-full px-6 py-3 bg-[#050505] text-white font-semibold rounded-lg hover:bg-[#e5c47f] hover:text-black transition-all text-xs uppercase tracking-wider"
-          >
-            Retour à l'accueil
-          </button>
+          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <XCircle className="w-8 h-8" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900 mb-2 uppercase tracking-tight">Accès restreint</h2>
+          <p className="text-slate-600 mb-8 text-sm font-medium leading-relaxed">
+            {error || "Nous n'avons pas pu trouver de candidature associée à votre compte. Assurez-vous d'avoir complété votre inscription."}
+          </p>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full px-6 py-3 bg-[#050505] text-white font-semibold rounded-lg hover:bg-zinc-800 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-2"
+            >
+              Réessayer la connexion
+            </button>
+            <button
+              onClick={() => router.push('/candidature')}
+              className="w-full px-6 py-3 bg-white border border-slate-200 text-slate-600 font-semibold rounded-lg hover:bg-slate-50 transition-all text-xs uppercase tracking-wider"
+            >
+              Retour à l'accueil
+            </button>
+          </div>
+          
+          <div className="mt-8 pt-6 border-t border-slate-100">
+            <p className="text-[10px] text-slate-400 uppercase tracking-widest">Support technique</p>
+            <p className="text-[10px] font-mono text-slate-300 mt-1">ERR_CANDIDATE_NOT_FOUND_OR_RESTRICTED</p>
+          </div>
         </div>
       </div>
     );
