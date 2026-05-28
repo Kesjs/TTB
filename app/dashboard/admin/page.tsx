@@ -924,7 +924,14 @@ export default function AdminDashboard() {
                   <tbody className="divide-y divide-zinc-800 text-sm">
                     {filteredCandidates.map((candidate) => (
                       <tr key={candidate.id} className="hover:bg-zinc-900/20">
-                        <td className="p-4 font-medium text-white">{candidate.stage_name}</td>
+                        <td className="p-4">
+                          <div className="font-medium text-white uppercase">{candidate.stage_name}</div>
+                          {candidate.bio && (
+                            <div className="text-[9px] text-zinc-500 mt-1 italic line-clamp-1 max-w-[200px]" title={candidate.bio}>
+                              {candidate.bio}
+                            </div>
+                          )}
+                        </td>
                         <td className="p-4 text-zinc-400">{candidate.discipline}</td>
                         <td className="p-4 text-zinc-400">{candidate.region}</td>
                         <td className="p-4">

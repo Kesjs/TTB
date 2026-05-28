@@ -318,6 +318,20 @@ export default function CandidateDashboard() {
             </div>
           </div>
 
+          {/* Bio display for candidate */}
+          {candidate.bio && (
+            <div className="mt-6 p-5 bg-slate-50/50 border border-slate-100 rounded-xl relative overflow-hidden">
+              <div className="flex items-center gap-2 mb-3 relative z-10">
+                <Sparkles className="w-3.5 h-3.5 text-[#e5c47f]" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Votre description officielle</span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 italic font-body leading-relaxed relative z-10">
+                "{candidate.bio}"
+              </p>
+              <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-[#e5c47f]/5 rounded-full blur-xl"></div>
+            </div>
+          )}
+
           {/* DYNAMIQUE STATUT 1 : CANDIDATURE VALIDÉE (APPROVED) */}
           {candidate.status === 'approved' && shareUrl && (
             <div className="mt-8 pt-6 border-t border-slate-100">

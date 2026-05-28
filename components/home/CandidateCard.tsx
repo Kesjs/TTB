@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Play, Star, Trophy, Radio, Eye, Heart, Flame, X } from 'lucide-react';
+import { Play, Star, Trophy, Radio, Eye, Heart, Flame, X, Info, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import type { Candidate } from '@/lib/supabase';
 
@@ -37,6 +37,7 @@ export default function CandidateCard({
   const isLive = liveCandidateId === candidate.id;
   const viewsCount = candidate.views_count || 0;
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showBio, setShowBio] = useState(false);
 
   // Debug logs for video and image URLs
   console.log('CandidateCard - Candidate:', candidate.stage_name);
@@ -159,18 +160,51 @@ export default function CandidateCard({
 
             {/* Vote Button - Top Right */}
             {currentRole !== 'Administrateur' && (
-              <button
-                onClick={handleVoteClick}
-                disabled={!isVotingOpen}
-                className={`absolute top-3 right-3 z-20 p-2.5 rounded-full backdrop-blur-md border ${
-                  isVotingOpen
-                    ? 'bg-zinc-950/60 border-white/20'
-                    : 'bg-zinc-950/40 border-white/10 opacity-50 cursor-not-allowed'
-                }`}
-              >
-                <Trophy className={`w-4 h-4 ${isVotingOpen ? 'text-white' : 'text-white/50'}`} />
-              </button>
+              <div className="absolute top-3 right-3 z-20 flex flex-col gap-2">
+                <button
+                  onClick={handleVoteClick}
+                  disabled={!isVotingOpen}
+                  className={`p-2.5 rounded-full backdrop-blur-md border ${
+                    isVotingOpen
+                      ? 'bg-zinc-950/60 border-white/20 hover:bg-zinc-950 transition-colors'
+                      : 'bg-zinc-950/40 border-white/10 opacity-50 cursor-not-allowed'
+                  }`}
+                  title="Voter pour ce talent"
+                >
+                  <Trophy className={`w-4 h-4 ${isVotingOpen ? 'text-white' : 'text-white/50'}`} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowBio(!showBio); }}
+                  className={`p-2.5 rounded-full backdrop-blur-md border transition-all ${
+                    showBio 
+                      ? 'bg-[#e5c47f] border-[#e5c47f] text-zinc-950' 
+                      : 'bg-zinc-950/60 border-white/20 text-white hover:bg-zinc-950'
+                  }`}
+                  title="Voir la biographie"
+                >
+                  <Info className="w-4 h-4" />
+                </button>
+              </div>
             )}
+
+            {/* Bio Banner Overlay */}
+            <div className={`absolute inset-x-0 top-0 z-10 p-5 pt-16 bg-gradient-to-b from-zinc-950 via-zinc-950/95 to-transparent transition-all duration-500 ease-in-out transform ${
+              showBio ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+            }`}>
+              <div className="flex items-start gap-2 mb-2">
+                <Sparkles className="w-3.5 h-3.5 text-[#e5c47f]" />
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#e5c47f]">Parcours & Vision</span>
+              </div>
+              <p className="text-xs text-white/90 leading-relaxed font-body italic line-clamp-6">
+                {candidate.bio || "Ce talent n'a pas encore partagé son parcours, mais sa prestation parle pour lui !"}
+              </p>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowBio(false); }}
+                className="mt-4 text-[8px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
+              >
+                Fermer la bio ↑
+              </button>
+            </div>
 
             {/* Play Button Overlay */}
             <button

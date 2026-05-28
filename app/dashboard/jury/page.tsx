@@ -817,6 +817,19 @@ export default function JuryDashboard() {
                             </span>
                           </div>
                         </div>
+
+                        {/* Bio display for jury */}
+                        {activeCandidate.bio && (
+                          <div className="p-4 bg-zinc-900/30 border-t border-zinc-900">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Sparkles className="w-3.5 h-3.5 text-[#e5c47f]" />
+                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#e5c47f]">Note d'intention artistique</span>
+                            </div>
+                            <p className="text-xs text-zinc-400 italic font-body leading-relaxed">
+                              "{activeCandidate.bio}"
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Panneau de Notation */}
