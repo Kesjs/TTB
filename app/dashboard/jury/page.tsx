@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import {
+import { 
   Star, Award, UserCheck, Flame, Loader2, Sparkles, Check, Plus, Minus,
-  LogOut, AlertCircle, ExternalLink, History, ClipboardList, BarChart3
+  LogOut, AlertCircle, ExternalLink, History, ClipboardList, BarChart3,
+  User, Layout, ChevronRight, CheckCircle2, TrendingUp, Flag
 } from 'lucide-react';
 import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile } from '@/lib/supabase/types';
@@ -28,6 +29,35 @@ export default function JuryDashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabType>('evaluation');
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [juryProfile, setJuryProfile] = useState<Profile | null>(null);
+
+  const roadmapSteps = [
+    { id: 'PRESELECTION', label: 'Sélection', icon: Flag },
+    { id: 'VOTES_TOP_40', label: 'Top 40', icon: Award },
+    { id: 'SEMIFINAL', label: 'Top 20', icon: Star },
+    { id: 'FINAL', label: 'Finale', icon: Trophy },
+  ];
+
+  const currentPhaseIndex = useMemo(() => {
+    if (!systemControl) return 0;
+    return roadmapSteps.findIndex(step => step.id === systemControl.current_phase);
+  }, [systemControl]);
+
+  const stats = useMemo(() => {
+    const phase = systemControl?.current_phase;
+    if (!phase) return { evaluated: 0, total: 0 };
+    
+    let filtered = candidates;
+    if (phase === 'VOTES_TOP_40') filtered = candidates.filter(c => c.is_top_40);
+    else if (phase === 'SEMIFINAL') filtered = candidates.filter(c => c.is_semifinalist);
+    else if (phase === 'FINAL') filtered = candidates.filter(c => c.is_finalist);
+    
+    const evaluatedCount = filtered.filter(c => 
+      existingRatings.some(r => r.candidate_id === c.id && r.phase === phase)
+    ).length;
+    
+    return { evaluated: evaluatedCount, total: filtered.length };
+  }, [candidates, existingRatings, systemControl]);
 
   // Selection state for PRESELECTION phase
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
@@ -135,6 +165,10 @@ export default function JuryDashboard() {
         });
       }
       setProfiles(profilesMap);
+
+      if (userId && profilesMap[userId]) {
+        setJuryProfile(profilesMap[userId]);
+      }
 
       // Si l'admin a défini un candidat actif sur scène, le sélectionner par défaut
       if (sc?.live_voting_candidate_id) {
@@ -335,6 +369,61 @@ export default function JuryDashboard() {
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
         {/* Left Column - Workspace (70% on desktop, 100% on mobile) */}
         <div className="w-full lg:w-[70%] p-4 sm:p-6 overflow-y-auto">
+          
+          {/* ROADMAP & JURY PROFILE SUMMARY */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6 sm:mb-8">
+            <div className="md:col-span-8 bg-zinc-950 border border-zinc-900 p-4 sm:p-5 rounded-2xl">
+              <div className="flex items-center gap-3 mb-5">
+                <Layout className="w-3.5 h-3.5 text-[#e5c47f]" />
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Progression de l'Édition</h2>
+              </div>
+              <div className="relative flex justify-between items-start max-w-2xl mx-auto px-2">
+                <div className="absolute top-4 left-0 w-full h-0.5 bg-zinc-900 -z-0"></div>
+                {roadmapSteps.map((step, index) => {
+                  const Icon = step.icon;
+                  const isCompleted = index < currentPhaseIndex;
+                  const isCurrent = index === currentPhaseIndex;
+                  return (
+                    <div key={step.id} className="relative z-10 flex flex-col items-center w-1/4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center border-4 transition-all duration-500 ${
+                        isCompleted ? 'bg-emerald-500 border-emerald-950 text-white' :
+                        isCurrent ? 'bg-[#e5c47f] border-zinc-950 text-black shadow-lg shadow-[#e5c47f]/20 scale-110' :
+                        'bg-zinc-900 border-zinc-950 text-zinc-600'
+                      }`}>
+                        {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                      </div>
+                      <span className={`mt-2 text-[8px] font-bold uppercase tracking-tight text-center ${
+                        isCurrent ? 'text-white' : 'text-zinc-500'
+                      }`}>
+                        {step.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="md:col-span-4 bg-zinc-950 border border-zinc-900 p-4 sm:p-5 rounded-2xl flex flex-col justify-between">
+              <div className="flex items-center gap-3 mb-3">
+                <User className="w-3.5 h-3.5 text-[#e5c47f]" />
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Expert Jury</h2>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#e5c47f]/10 border border-[#e5c47f]/30 flex items-center justify-center text-[#e5c47f] font-heading font-black text-sm">
+                  {juryProfile?.full_name?.charAt(0) || 'J'}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white uppercase truncate">{juryProfile?.full_name || 'Chargement...'}</p>
+                  <p className="text-[9px] text-zinc-500 uppercase tracking-widest">{juryProfile?.phone || 'Expert Technique'}</p>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-zinc-900 flex justify-between items-center">
+                <span className="text-[9px] text-zinc-500 uppercase font-mono">Sessions validées</span>
+                <span className="text-[10px] font-black text-emerald-400 font-mono">{stats.evaluated} / {stats.total}</span>
+              </div>
+            </div>
+          </div>
+
           {/* Tab Navigation */}
           <nav className="flex gap-2 mb-6 sm:mb-8 bg-zinc-950 p-1 border border-zinc-800 rounded-xl overflow-x-auto">
             {[
@@ -716,6 +805,89 @@ export default function JuryDashboard() {
               <span className="text-zinc-500">Statistiques - À venir</span>
             </div>
           )}
+        </div>
+
+        {/* Right Column - Activity & Feed (30% on desktop, hidden on mobile) */}
+        <div className="hidden lg:block lg:w-[30%] bg-[#050505] border-l border-zinc-800 p-6 overflow-y-auto">
+          <div className="space-y-8">
+            {/* Live Feed Header */}
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+                <h3 className="text-xs font-bold text-white uppercase tracking-widest">Activité Live</h3>
+              </div>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Dernières notes attribuées</p>
+            </div>
+
+            {/* Evaluation Stats Mini */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-zinc-950 border border-zinc-900 p-4 rounded-xl">
+                <span className="text-[9px] text-zinc-500 uppercase block mb-1">Total Archivés</span>
+                <span className="text-lg font-black text-white font-mono">{existingRatings.length}</span>
+              </div>
+              <div className="bg-zinc-950 border border-zinc-900 p-4 rounded-xl">
+                <span className="text-[9px] text-zinc-500 uppercase block mb-1">Moy. Phase</span>
+                <span className="text-lg font-black text-[#e5c47f] font-mono">
+                  {existingRatings.length > 0 
+                    ? (existingRatings.reduce((acc, r) => acc + (Number(r.score_technique) + Number(r.score_originalite) + Number(r.score_presence)) / 3, 0) / existingRatings.length).toFixed(1)
+                    : '--'}
+                </span>
+              </div>
+            </div>
+
+            {/* History Feed */}
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] border-b border-zinc-900 pb-2">Journal de bord</h4>
+              <div className="space-y-3">
+                {existingRatings.slice(0, 5).map((rating, i) => {
+                  const candidate = candidates.find(c => c.id === rating.candidate_id);
+                  const avg = (Number(rating.score_technique) + Number(rating.score_originalite) + Number(rating.score_presence)) / 3;
+                  return (
+                    <div key={i} className="group p-3 bg-zinc-950 border border-zinc-900 rounded-xl hover:border-zinc-800 transition-all">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-[10px] font-bold text-white uppercase truncate max-w-[120px]">
+                          {candidate?.stage_name || 'Artiste'}
+                        </span>
+                        <span className="text-[10px] font-black text-[#e5c47f] font-mono">{avg.toFixed(1)}</span>
+                      </div>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <div key={s} className={`h-1 flex-1 rounded-full ${s <= Math.round(avg/4) ? 'bg-[#e5c47f]' : 'bg-zinc-800'}`} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                {existingRatings.length === 0 && (
+                  <div className="text-center py-10">
+                    <span className="text-[10px] text-zinc-600 uppercase font-mono tracking-widest italic">Aucune donnée</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* System Info */}
+            <div className="pt-8 border-t border-zinc-900">
+              <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-xl space-y-3">
+                <div className="flex items-center gap-2 text-zinc-500">
+                  <Flag className="w-3.5 h-3.5" />
+                  <span className="text-[9px] uppercase font-bold tracking-wider">Infos Système</span>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-zinc-500">Statut Votes</span>
+                    <span className={systemControl?.is_voting_open ? 'text-emerald-500' : 'text-red-500'}>
+                      {systemControl?.is_voting_open ? 'OUVERTS' : 'FERMÉS'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-zinc-500">Server Time</span>
+                    <span className="text-zinc-300 font-mono">{new Date().toLocaleTimeString('fr-FR', { hour12: false })}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
