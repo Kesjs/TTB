@@ -18,6 +18,21 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [systemPhase, setSystemPhase] = useState<string>(propPhase || 'PRESELECTION');
   const [loading, setLoading] = useState<boolean>(!propPhase || propLoading);
+  const [showCta, setShowCta] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      if (scrollY > 400) {
+        setShowCta(true);
+      } else {
+        setShowCta(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     // Si la phase est déjà fournie via les props (ex: sur la home), on l'utilise
@@ -121,7 +136,11 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
           ) : isPreselectionOpen ? (
             <Link
               href="/candidature"
-              className="hidden lg:block px-4 sm:px-5 py-2 bg-[#050509] text-white font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] transition-all duration-300 transform active:scale-95"
+              className={`hidden lg:block px-4 sm:px-5 py-2 bg-[#050509] text-white font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] transform active:scale-95 ${
+                showCta 
+                  ? 'opacity-100 translate-y-0 pointer-events-auto duration-300 ease-out transition-all' 
+                  : 'opacity-0 translate-y-[-10px] pointer-events-none'
+              }`}
             >
               Postuler
             </Link>
