@@ -102,22 +102,25 @@ export const db = {
   },
 
   createCandidate: async (candidate: Omit<Candidate, 'id' | 'created_at'>): Promise<Candidate> => {
-    const newCandidate: Candidate = {
+    const tempId = 'cand-' + Math.random().toString(36).substr(2, 9);
+    const newCandidate: any = {
       ...candidate,
-      id: 'cand-' + Math.random().toString(36).substr(2, 9),
       created_at: new Date().toISOString(),
     };
 
     if (supabase) {
+      // Don't provide ID to let Supabase generate a proper UUID
       const { data, error } = await supabase.from('candidates').insert(newCandidate).select().single();
       if (!error && data) return data;
+      if (error) console.error('[DB] Supabase error creating candidate:', error);
     }
 
     initLocalStorage();
     const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
-    candidates.push(newCandidate);
+    const finalCandidate = { ...newCandidate, id: tempId };
+    candidates.push(finalCandidate);
     localStorage.setItem('ttb_candidates', JSON.stringify(candidates));
-    return newCandidate;
+    return finalCandidate;
   },
 
   updateCandidateStatus: async (id: string, status: Candidate['status']): Promise<Candidate | null> => {
@@ -236,25 +239,28 @@ export const db = {
   },
 
   addVote: async (vote: Omit<Vote, 'id' | 'created_at'>): Promise<Vote> => {
-    const newVote: Vote = {
+    const tempId = 'v-' + Math.random().toString(36).substr(2, 9);
+    const newVote: any = {
       ...vote,
-      id: 'v-' + Math.random().toString(36).substr(2, 9),
       created_at: new Date().toISOString(),
     };
 
     if (supabase) {
+      // Don't provide ID to let Supabase generate a proper UUID
       const { data, error } = await supabase.from('votes').insert(newVote).select().single();
       if (!error && data) return data;
+      if (error) console.error('[DB] Supabase error adding vote:', error);
     }
 
     initLocalStorage();
     const votes: Vote[] = JSON.parse(localStorage.getItem('ttb_votes') || '[]');
-    votes.push(newVote);
+    const finalVote = { ...newVote, id: tempId };
+    votes.push(finalVote);
     localStorage.setItem('ttb_votes', JSON.stringify(votes));
 
-    if (isClient) window.dispatchEvent(new CustomEvent('ttb_vote_added', { detail: newVote }));
+    if (isClient) window.dispatchEvent(new CustomEvent('ttb_vote_added', { detail: finalVote }));
 
-    return newVote;
+    return finalVote;
   },
 
   getJuryRatings: async (): Promise<JuryRating[]> => {
@@ -268,9 +274,9 @@ export const db = {
   },
 
   saveJuryRating: async (rating: Omit<JuryRating, 'id' | 'created_at'>): Promise<JuryRating> => {
-    const newRating: JuryRating = {
+    const tempId = 'r-' + Math.random().toString(36).substr(2, 9);
+    const ratingToSave: any = {
       ...rating,
-      id: 'r-' + Math.random().toString(36).substr(2, 9),
       created_at: new Date().toISOString(),
     };
 
@@ -278,7 +284,8 @@ export const db = {
 
     if (supabase) {
       console.log('[DB] Attempting Supabase upsert...');
-      const { data, error } = await supabase.from('jury_ratings').upsert(newRating, { onConflict: 'jury_id,candidate_id,phase' }).select().single();
+      // Don't provide ID to let Supabase handle UUID or match existing by conflict columns
+      const { data, error } = await supabase.from('jury_ratings').upsert(ratingToSave, { onConflict: 'jury_id,candidate_id,phase' }).select().single();
       
       if (error) {
         console.error('[DB] Supabase error during saveJuryRating:', error);
@@ -302,10 +309,11 @@ export const db = {
       return ratings[index];
     }
 
-    ratings.push(newRating);
+    const finalRating = { ...ratingToSave, id: tempId };
+    ratings.push(finalRating);
     localStorage.setItem('ttb_jury_ratings', JSON.stringify(ratings));
     console.log('[DB] LocalStorage insert successful');
-    return newRating;
+    return finalRating;
   },
 
   getProfiles: async (): Promise<Profile[]> => {
