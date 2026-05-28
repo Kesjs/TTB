@@ -37,7 +37,7 @@ export interface Vote {
   network: 'MTN' | 'MOOV';
   transaction_ref: string;
   payment_status: 'pending' | 'success' | 'failed';
-  phase: 'preselection' | 'semifinal' | 'final';
+  phase: 'PRESELECTION' | 'VOTES_TOP_40' | 'SEMIFINAL' | 'FINAL';
   created_at: string;
 }
 
@@ -49,7 +49,7 @@ export interface JuryRating {
   score_originalite: number;
   score_presence: number;
   is_approved_preselection: boolean;
-  phase: 'preselection' | 'audition' | 'semifinal' | 'final';
+  phase: 'PRESELECTION' | 'VOTES_TOP_40' | 'SEMIFINAL' | 'FINAL';
   created_at: string;
 }
 

@@ -925,15 +925,8 @@ export default function AdminDashboard() {
                         </td>
                         <td className="p-4">
                           {(() => {
-                            // Map system phase to rating phase
-                            const phaseMapping: Record<string, string> = {
-                              'PRESELECTION': 'preselection',
-                              'VOTES_TOP_40': 'preselection', // Use preselection ratings for Top 40 selection
-                              'SEMIFINAL': 'semifinal',
-                              'FINAL': 'final'
-                            };
-                            const ratingPhase = phaseMapping[phase] || 'preselection';
-
+                            const ratingPhase = phase; // Already uppercase from systemControl
+                            
                             // Get ratings for this candidate in the current phase
                             const ratingsForCandidate = (existingRatings || []).filter(
                               (r: any) => r.candidate_id === candidate.id && r.phase === ratingPhase

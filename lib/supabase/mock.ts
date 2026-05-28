@@ -33,14 +33,14 @@ export const DEFAULT_CANDIDATES: Candidate[] = [
 ];
 
 export const DEFAULT_VOTES: Vote[] = [
-  { id: 'v-1', candidate_id: 'cand-1', vote_count: 320, amount_fcfa: 32000, phone_payer: '97000001', network: 'MTN', transaction_ref: 'TXN-101', payment_status: 'success', phase: 'preselection', created_at: new Date().toISOString() },
-  { id: 'v-2', candidate_id: 'cand-2', vote_count: 245, amount_fcfa: 24500, phone_payer: '90000002', network: 'MOOV', transaction_ref: 'TXN-102', payment_status: 'success', phase: 'preselection', created_at: new Date().toISOString() },
-  { id: 'v-3', candidate_id: 'cand-4', vote_count: 512, amount_fcfa: 51200, phone_payer: '97000003', network: 'MTN', transaction_ref: 'TXN-103', payment_status: 'success', phase: 'preselection', created_at: new Date().toISOString() },
-  { id: 'v-4', candidate_id: 'cand-6', vote_count: 180, amount_fcfa: 18000, phone_payer: '90000004', network: 'MOOV', transaction_ref: 'TXN-104', payment_status: 'success', phase: 'preselection', created_at: new Date().toISOString() },
+  { id: 'v-1', candidate_id: 'cand-1', vote_count: 320, amount_fcfa: 32000, phone_payer: '97000001', network: 'MTN', transaction_ref: 'TXN-101', payment_status: 'success', phase: 'PRESELECTION', created_at: new Date().toISOString() },
+  { id: 'v-2', candidate_id: 'cand-2', vote_count: 245, amount_fcfa: 24500, phone_payer: '90000002', network: 'MOOV', transaction_ref: 'TXN-102', payment_status: 'success', phase: 'PRESELECTION', created_at: new Date().toISOString() },
+  { id: 'v-3', candidate_id: 'cand-4', vote_count: 512, amount_fcfa: 51200, phone_payer: '97000003', network: 'MTN', transaction_ref: 'TXN-103', payment_status: 'success', phase: 'PRESELECTION', created_at: new Date().toISOString() },
+  { id: 'v-4', candidate_id: 'cand-6', vote_count: 180, amount_fcfa: 18000, phone_payer: '90000004', network: 'MOOV', transaction_ref: 'TXN-104', payment_status: 'success', phase: 'PRESELECTION', created_at: new Date().toISOString() },
 ];
 
 export const DEFAULT_JURY_RATINGS: JuryRating[] = [
-  { id: 'r-1', jury_id: 'usr-jury1', candidate_id: 'cand-1', score_technique: 16, score_originalite: 15, score_presence: 17, is_approved_preselection: true, phase: 'preselection', created_at: new Date().toISOString() },
-  { id: 'r-2', jury_id: 'usr-jury2', candidate_id: 'cand-1', score_technique: 15, score_originalite: 14, score_presence: 18, is_approved_preselection: true, phase: 'preselection', created_at: new Date().toISOString() },
-  { id: 'r-3', jury_id: 'usr-jury1', candidate_id: 'cand-2', score_technique: 14, score_originalite: 17, score_presence: 15, is_approved_preselection: true, phase: 'preselection', created_at: new Date().toISOString() },
+  { id: 'r-1', jury_id: 'usr-jury1', candidate_id: 'cand-1', score_technique: 16, score_originalite: 15, score_presence: 17, is_approved_preselection: true, phase: 'PRESELECTION', created_at: new Date().toISOString() },
+  { id: 'r-2', jury_id: 'usr-jury2', candidate_id: 'cand-1', score_technique: 15, score_originalite: 14, score_presence: 18, is_approved_preselection: true, phase: 'PRESELECTION', created_at: new Date().toISOString() },
+  { id: 'r-3', jury_id: 'usr-jury1', candidate_id: 'cand-2', score_technique: 14, score_originalite: 17, score_presence: 15, is_approved_preselection: true, phase: 'PRESELECTION', created_at: new Date().toISOString() },
 ];
