@@ -75,14 +75,16 @@ export default function LoginPage() {
       console.log('Login verification - storedUserId:', data.session.user.id, 'storedUserRole:', profile.role);
       console.log('Cookies set for middleware authentication');
 
-      // Redirect based on role - only admin and jury (candidates use candidature page)
+      // Redirect based on role
       let redirectUrl = '';
       if (profile.role === 'admin') {
         redirectUrl = '/dashboard/admin';
       } else if (profile.role === 'jury') {
         redirectUrl = '/dashboard/jury';
+      } else if (profile.role === 'candidate') {
+        redirectUrl = '/dashboard/candidate';
       } else {
-        setError('Accès non autorisé. Cette page est réservée aux membres du jury et au staff administratif. Les candidats doivent utiliser la page de candidature.');
+        setError('Accès non autorisé.');
         setLoading(false);
         setIsSubmitting(false);
         return;

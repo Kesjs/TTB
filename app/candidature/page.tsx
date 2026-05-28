@@ -62,7 +62,8 @@ export default function CandidaturePage() {
     setIsHydrated(true);
     const params = new URLSearchParams(window.location.search);
     if (params.get('view') === 'login') {
-      setViewState('login');
+      router.replace('/login');
+      return;
     }
 
     // Check if user is already logged in as candidate
@@ -654,10 +655,8 @@ export default function CandidaturePage() {
                 )}
                 <button
                   type="button"
-                  onClick={() => setViewState('login')}
-                  className={`font-heading text-[10px] sm:text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.2em] pb-2 border-b-2 transition-all whitespace-nowrap flex-shrink-0 ${
-                    viewState === 'login' ? 'border-black text-black font-bold' : 'border-transparent text-zinc-400 hover:text-black'
-                  }`}
+                  onClick={() => router.push('/login')}
+                  className={`font-heading text-[10px] sm:text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.2em] pb-2 border-b-2 transition-all whitespace-nowrap flex-shrink-0 border-transparent text-zinc-400 hover:text-black`}
                 >
                   <span className="hidden sm:inline">Se connecter</span>
                   <span className="sm:hidden">Connexion</span>
@@ -1272,63 +1271,7 @@ export default function CandidaturePage() {
                 </form>
               )}
 
-              {viewState === 'login' && (
-                <form action={signInFormAction} className="space-y-4 sm:space-y-5 animate-fadeIn py-4">
-                  {signInState?.error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-                      {signInState.error}
-                    </div>
-                  )}
-                  <div>
-                    <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">Adresse E-mail</label>
-                    <input
-                      type="email"
-                      name="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="VOTRE@EMAIL.COM"
-                      className="w-full bg-zinc-50 border border-zinc-200 p-3 sm:p-4 text-sm font-sans focus:outline-none focus:border-black"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold">Mot de passe</label>
-                      <button 
-                        type="button"
-                        onClick={() => window.open('mailto:kenkenbabatounde@gmail.com?subject=Identifiants oubliés - Top Talent Bénin', '_blank')}
-                        className="text-[10px] text-[#e5c47f] hover:underline uppercase tracking-wider font-bold"
-                      >
-                        Identifiants oubliés ?
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        required
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        placeholder="••••••••"
-                        className="w-full bg-zinc-50 border border-zinc-200 p-3 sm:p-4 pr-10 text-sm font-sans focus:outline-none focus:border-black"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full py-3 sm:py-4 bg-[#050505] text-white text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] hover:text-black transition-all flex items-center justify-center gap-2 rounded shadow-sm"
-                  >
-                    <Lock className="w-3 h-3" /> ACCÉDER À MON ESPACE
-                  </button>
-                </form>
-              )}
+              {/* Login form removed - handled by /login page */}
             </div>
           </div>
         )}
