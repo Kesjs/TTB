@@ -9,7 +9,7 @@ import {
   ExternalLink, LogOut, Database, Monitor, Eye, User, Trophy
 } from 'lucide-react';
 import { Candidate, SystemControl, db } from '@/lib/supabase';
-import { Profile } from '@/lib/supabase/types';
+import { Profile, CandidateVoteCount } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
 import { auth } from '@/lib/supabase/auth';
 import CustomSelectDark from '@/components/ui/CustomSelectDark';
@@ -41,6 +41,7 @@ export default function AdminDashboard() {
   const [candidateStatusFilter, setCandidateStatusFilter] = useState<CandidateStatusFilter>('pending');
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [existingRatings, setExistingRatings] = useState<any[]>([]);
+  const [voteCounts, setVoteCounts] = useState<CandidateVoteCount[]>([]);
 
   // Admin Profile State
   const [adminProfile, setAdminProfile] = useState({
@@ -146,7 +147,7 @@ export default function AdminDashboard() {
         console.log('[Admin Dashboard] Loading data (middleware handles auth)');
 
         // Load data with individual error handling
-        const [allCandidates, sc, juryData, userProfile, ratings] = await Promise.all([
+        const [allCandidates, sc, juryData, userProfile, ratings, votes] = await Promise.all([
           db.getCandidates().catch(err => {
             console.error('[Admin Dashboard] Error loading candidates:', err);
             return [];
@@ -167,12 +168,17 @@ export default function AdminDashboard() {
             console.error('[Admin Dashboard] Error loading jury ratings:', err);
             return [];
           }),
+          db.getCandidateVoteCounts().catch(err => {
+            console.error('[Admin Dashboard] Error loading vote counts:', err);
+            return [];
+          }),
         ]);
 
         setCandidates(allCandidates || []);
         setSystemControl(sc || null);
         setJuryProfiles(juryData || []);
         setExistingRatings(ratings || []);
+        setVoteCounts(votes || []);
 
         if (userProfile) {
           setAdminProfile({
@@ -911,7 +917,12 @@ export default function AdminDashboard() {
                             </button>
                           )}
                         </td>
-                        <td className="p-4 text-zinc-400">0</td>
+                        <td className="p-4 text-zinc-400">
+                          {(() => {
+                            const vc = voteCounts.find(v => v.candidate_id === candidate.id);
+                            return vc ? vc.total_votes : 0;
+                          })()}
+                        </td>
                         <td className="p-4">
                           {(() => {
                             // Map system phase to rating phase
@@ -929,19 +940,49 @@ export default function AdminDashboard() {
                             );
                             const juryCount = juryProfiles.length;
                             const ratedCount = ratingsForCandidate.length;
+
+                            const averageScore = ratedCount > 0 
+                              ? ratingsForCandidate.reduce((acc: number, curr: any) => acc + (Number(curr.score_technique) + Number(curr.score_originalite) + Number(curr.score_presence)) / 3, 0) / ratedCount
+                              : 0;
                             
                             return (
-                              <div className="flex flex-col gap-1">
-                                <span className={`text-[10px] font-bold font-mono ${
-                                  ratedCount === juryCount ? 'text-emerald-400' : 'text-zinc-500'
-                                }`}>
-                                  {ratedCount} / {juryCount} jurés
-                                </span>
+                              <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className={`text-[10px] font-bold font-mono ${
+                                    ratedCount === juryCount ? 'text-emerald-400' : 'text-zinc-500'
+                                  }`}>
+                                    {ratedCount} / {juryCount} jurés
+                                  </span>
+                                  {ratedCount > 0 && (
+                                    <span className="text-xs font-black font-mono text-[#e5c47f]">
+                                      {averageScore.toFixed(1)}
+                                    </span>
+                                  )}
+                                </div>
                                 {ratedCount > 0 && (
-                                  <div className="flex gap-0.5">
-                                    {Array.from({ length: juryCount }).map((_, i) => (
-                                      <div key={i} className={`h-1 w-2 rounded-full ${i < ratedCount ? 'bg-emerald-500' : 'bg-zinc-800'}`} />
-                                    ))}
+                                  <div className="flex flex-col gap-1.5 mt-2">
+                                    <div className="flex gap-0.5">
+                                      {Array.from({ length: juryCount }).map((_, i) => (
+                                        <div key={i} className={`h-1 flex-1 rounded-full ${i < ratedCount ? 'bg-emerald-500' : 'bg-zinc-800'}`} />
+                                      ))}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1">
+                                      {ratingsForCandidate.map((r: any) => {
+                                        const jurist = juryProfiles.find(p => p.id === r.jury_id);
+                                        const initials = jurist?.full_name ? jurist.full_name.split(' ').map((n: string) => n[0]).join('') : 'J';
+                                        const avg = (Number(r.score_technique) + Number(r.score_originalite) + Number(r.score_presence)) / 3;
+                                        return (
+                                          <div 
+                                            key={r.id} 
+                                            className="text-[7px] px-1.5 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-400 font-mono flex items-center gap-1 hover:border-zinc-600 transition-colors"
+                                            title={`${jurist?.full_name || 'Jury'}: ${avg.toFixed(1)}/20`}
+                                          >
+                                            <span className="text-zinc-600">{initials}</span>
+                                            <span className="text-[#e5c47f] font-bold">{avg.toFixed(1)}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
                                   </div>
                                 )}
                               </div>

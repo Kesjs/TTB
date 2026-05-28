@@ -274,11 +274,23 @@ export const db = {
       created_at: new Date().toISOString(),
     };
 
+    console.log('[DB] saveJuryRating called with:', rating);
+
     if (supabase) {
+      console.log('[DB] Attempting Supabase upsert...');
       const { data, error } = await supabase.from('jury_ratings').upsert(newRating, { onConflict: 'jury_id,candidate_id,phase' }).select().single();
-      if (!error && data) return data;
+      
+      if (error) {
+        console.error('[DB] Supabase error during saveJuryRating:', error);
+      }
+
+      if (!error && data) {
+        console.log('[DB] Supabase save successful:', data);
+        return data;
+      }
     }
 
+    console.log('[DB] Falling back to LocalStorage save...');
     initLocalStorage();
     const ratings: JuryRating[] = JSON.parse(localStorage.getItem('ttb_jury_ratings') || '[]');
     const index = ratings.findIndex((existingRating) => existingRating.jury_id === rating.jury_id && existingRating.candidate_id === rating.candidate_id && existingRating.phase === rating.phase);
@@ -286,11 +298,13 @@ export const db = {
     if (index !== -1) {
       ratings[index] = { ...ratings[index], ...rating };
       localStorage.setItem('ttb_jury_ratings', JSON.stringify(ratings));
+      console.log('[DB] LocalStorage update successful');
       return ratings[index];
     }
 
     ratings.push(newRating);
     localStorage.setItem('ttb_jury_ratings', JSON.stringify(ratings));
+    console.log('[DB] LocalStorage insert successful');
     return newRating;
   },
 

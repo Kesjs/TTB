@@ -308,14 +308,21 @@ export default function JuryDashboard() {
 
   const handleSaveScore = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeCandidate || !systemControl || !juryId) return;
+    if (!activeCandidate || !systemControl || !juryId) {
+      console.warn('[Jury Dashboard] Missing data for save:', { activeCandidate: !!activeCandidate, systemControl: !!systemControl, juryId: !!juryId });
+      return;
+    }
+
+    console.log('[Jury Dashboard] Attempting to save score for:', activeCandidate.stage_name);
+    console.log('[Jury Dashboard] Scores:', { tech: scoreTechnique, orig: scoreOriginalite, pres: scorePresence });
+    console.log('[Jury Dashboard] Metadata:', { juryId, candidateId: activeCandidate.id, phase: systemControl.current_phase });
 
     setLoading(true);
     setSuccess(false);
     setError('');
 
     try {
-      await db.saveJuryRating({
+      const result = await db.saveJuryRating({
         jury_id: juryId,
         candidate_id: activeCandidate.id,
         score_technique: scoreTechnique,
@@ -325,6 +332,8 @@ export default function JuryDashboard() {
         phase: systemControl.current_phase as any,
       });
 
+      console.log('[Jury Dashboard] Save successful! Result:', result);
+
       setSuccess(true);
       setConfirmRatingMode(false);
       setShowCandidateModal(false);
@@ -332,7 +341,7 @@ export default function JuryDashboard() {
       setTimeout(() => setSuccess(false), 3000);
       await loadData();
     } catch (err) {
-      console.error(err);
+      console.error('[Jury Dashboard] Error saving score:', err);
       setError('Erreur lors de la sauvegarde de la note.');
     } finally {
       setLoading(false);
@@ -742,6 +751,11 @@ export default function JuryDashboard() {
                                   {activeCandidate.region}
                                 </span>
                                 {renderCandidatureBadge(activeCandidate)}
+                                {getCandidateRatingDetails(activeCandidate.id) && (
+                                  <span className="text-[9px] px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded font-black uppercase animate-pulse">
+                                    Déjà Noté
+                                  </span>
+                                )}
                               </div>
                               <h3 className="font-heading font-black text-xl sm:text-2xl text-white uppercase tracking-tight">
                                 {activeCandidate.stage_name}
@@ -760,6 +774,29 @@ export default function JuryDashboard() {
                               </div>
                             </div>
                           </div>
+
+                          {/* Info de notation existante */}
+                          {(() => {
+                            const info = getCandidateRatingDetails(activeCandidate.id);
+                            if (!info) return null;
+                            return (
+                              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                                    <Check className="w-4 h-4 text-emerald-500" />
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Évaluation Enregistrée</p>
+                                    <p className="text-[9px] text-zinc-500 uppercase">Vous pouvez modifier les scores et sauvegarder à nouveau.</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-xs font-mono text-zinc-400">Précédemment: </span>
+                                  <span className="text-sm font-black font-mono text-emerald-400">{info.average.toFixed(1)}/20</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {/* Sliders */}
                           <div className="space-y-6 sm:space-y-8 py-4">
