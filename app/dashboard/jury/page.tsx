@@ -88,12 +88,19 @@ export default function JuryDashboard() {
     });
   }, [candidates, systemControl]);
 
-  const getCandidateRating = (candidateId: string) => {
+  const getCandidateRatingDetails = (candidateId: string) => {
     const rating = existingRatings.find(
       r => r.candidate_id === candidateId && r.phase === systemControl?.current_phase
     );
     if (!rating) return null;
-    return (Number(rating.score_technique) + Number(rating.score_originalite) + Number(rating.score_presence)) / 3;
+    return {
+      average: (Number(rating.score_technique) + Number(rating.score_originalite) + Number(rating.score_presence)) / 3,
+      details: {
+        t: rating.score_technique,
+        o: rating.score_originalite,
+        p: rating.score_presence
+      }
+    };
   };
 
   // Selection state for PRESELECTION phase
@@ -576,7 +583,7 @@ export default function JuryDashboard() {
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
                   {filteredCandidates.map((c) => {
                     const isLive = systemControl?.live_voting_candidate_id === c.id;
-                    const rating = getCandidateRating(c.id);
+                    const ratingInfo = getCandidateRatingDetails(c.id);
                     const isActive = activeCandidateId === c.id;
 
                     return (
@@ -603,10 +610,18 @@ export default function JuryDashboard() {
                             </span>}
                           </div>
                           <span className="text-[8px] text-zinc-500 uppercase tracking-tighter truncate">{c.discipline}</span>
+                          
+                          {ratingInfo && (
+                            <div className="mt-1 flex gap-1 font-mono text-[7px] text-zinc-500">
+                              <span>T:{ratingInfo.details.t}</span>
+                              <span>O:{ratingInfo.details.o}</span>
+                              <span>P:{ratingInfo.details.p}</span>
+                            </div>
+                          )}
                         </div>
-                        {rating !== null && (
+                        {ratingInfo && (
                           <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white rounded-full px-1.5 py-0.5 shadow-lg border border-emerald-400 text-[8px] font-black font-mono">
-                            {rating.toFixed(1)}
+                            {ratingInfo.average.toFixed(1)}
                           </div>
                         )}
                       </button>
@@ -659,10 +674,18 @@ export default function JuryDashboard() {
                               )}
                             </div>
                             <span className="text-[10px] text-zinc-500 block">{c.discipline} • {c.region}</span>
+                            
+                            {ratingInfo && (
+                              <div className="mt-1.5 flex gap-2 font-mono text-[9px] text-zinc-500 bg-zinc-900/50 px-2 py-0.5 rounded-md border border-zinc-800 w-fit">
+                                <span className="flex gap-1"><span className="text-zinc-600">T:</span>{ratingInfo.details.t}</span>
+                                <span className="flex gap-1"><span className="text-zinc-600">O:</span>{ratingInfo.details.o}</span>
+                                <span className="flex gap-1"><span className="text-zinc-600">P:</span>{ratingInfo.details.p}</span>
+                              </div>
+                            )}
                           </div>
-                          {rating !== null ? (
+                          {ratingInfo ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-black font-mono text-emerald-400">{rating.toFixed(1)}</span>
+                              <span className="text-xs font-black font-mono text-emerald-400">{ratingInfo.average.toFixed(1)}</span>
                               <Check className="w-3.5 h-3.5 text-emerald-500" />
                             </div>
                           ) : (
