@@ -155,19 +155,13 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
 
         {/* 4. MAIN CTA BUTTON */}
         <div className="pt-2 flex justify-center w-full sm:w-auto px-4 sm:px-0">
-          {isArchived ? (
-            <div className="px-8 py-4 bg-zinc-100 text-zinc-400 font-heading font-bold text-[10px] uppercase tracking-widest border border-zinc-200 cursor-default">
-              {currentContent.ctaText}
-            </div>
-          ) : (
-            <button
-              onClick={handleMainCTA}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#050505] text-white font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent transition-all hover:ring-2 hover:ring-[#e5c47f] hover:ring-offset-4 active:scale-[0.98]"
-            >
-              <span>{currentContent.ctaText}</span>
-              <ArrowRight className="w-3 h-3" />
-            </button>
-          )}
+          <button
+            onClick={handleMainCTA}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#050505] text-white font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent transition-all hover:ring-2 hover:ring-[#e5c47f] hover:ring-offset-4 active:scale-[0.98]"
+          >
+            <span>{currentContent.ctaText}</span>
+            <ArrowRight className="w-3 h-3" />
+          </button>
         </div>
 
         {/* 4.5 LIVE STATISTICS PANEL (Uniquement en phase PRESELECTION) */}
