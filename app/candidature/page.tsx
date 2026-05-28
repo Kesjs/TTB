@@ -11,6 +11,7 @@ import { auth } from '@/lib/supabase/auth';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase';
 import { signIn } from '@/app/actions/auth';
+import { signInStaff } from '@/app/actions/staff-auth';
 import CustomSelect from '@/components/ui/CustomSelect';
 
 export default function CandidaturePage() {
@@ -32,6 +33,7 @@ export default function CandidaturePage() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [profile, setProfile] = useState<{ role: string } | null>(null);
 
   // Password criteria validation state
   const [passwordCriteria, setPasswordCriteria] = useState({
@@ -41,6 +43,7 @@ export default function CandidaturePage() {
     hasSpecialChar: false
   });
   const [signInState, signInFormAction] = useFormState(signIn, null);
+  const [signInStaffState, signInStaffFormAction] = useFormState(signInStaff, null);
   const [currentPhase, setCurrentPhase] = useState<string>('PRESELECTION');
   const [formData, setFormData] = useState({
     stageName: '',
@@ -76,11 +79,14 @@ export default function CandidaturePage() {
           .eq('id', data.session.user.id)
           .single();
         
+        // Store profile in state for UI context
+        setProfile(profile);
+        
         if (profile?.role === 'candidate') {
           router.push('/dashboard/candidate');
         } else if (profile?.role === 'admin' || profile?.role === 'jury') {
-          // Non-candidates go to central login
-          router.push('/login');
+          // Staff can access candidature page for inspection - no redirection
+          console.log(`Staff ${profile.role} accessing candidature page in preview mode`);
         }
       }
     };
@@ -708,6 +714,12 @@ export default function CandidaturePage() {
                         transition={{ duration: 0.3 }}
                         className="space-y-4 sm:space-y-6"
                       >
+                        {/* Context-aware UI feedback for staff */}
+                        {profile && (profile.role === 'admin' || profile.role === 'jury') && (
+                          <div className="bg-zinc-800/80 border border-zinc-700/60 p-3 rounded-xl text-xs text-zinc-300 mb-4 flex items-center gap-2 animate-fade-in">
+                            <span>💡 <strong>Mode Aperçu Staff :</strong> Vous êtes connecté en tant que {profile.role.toUpperCase()}. Vous pouvez visualiser et tester l'interface du formulaire librement.</span>
+                          </div>
+                        )}
                         <div className="mb-8">
                           <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-4">CHOISIS TA CATÉGORIE</label>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1277,6 +1289,12 @@ export default function CandidaturePage() {
 
               {viewState === 'login' && (
                 <form action={signInFormAction} className="space-y-4 sm:space-y-5 animate-fadeIn py-4">
+                  {/* Context-aware UI feedback for staff */}
+                  {profile && (profile.role === 'admin' || profile.role === 'jury') && (
+                    <div className="bg-zinc-800/80 border border-zinc-700/60 p-3 rounded-xl text-xs text-zinc-300 mb-4 flex items-center gap-2 animate-fade-in">
+                      <span>💡 <strong>Mode Aperçu Staff :</strong> Vous êtes connecté en tant que {profile.role.toUpperCase()}. Vous pouvez visualiser et tester l'interface du formulaire librement.</span>
+                    </div>
+                  )}
                   {signInState?.error && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
                       {signInState.error}

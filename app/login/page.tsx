@@ -3,18 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useFormState } from 'react-dom';
 import { Lock, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { signInStaff } from '@/app/actions/staff-auth';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
-  const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [signInStaffState, signInStaffFormAction] = useFormState(signInStaff, null);
 
   // Handle initial hydration and session check
   useEffect(() => {
@@ -41,91 +41,6 @@ export default function LoginPage() {
     };
     void checkSession();
   }, [router]);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Prevent multiple submissions
-    if (isSubmitting) {
-      console.log('Login already in progress, ignoring duplicate submission');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    setLoading(true);
-    setError('');
-
-    try {
-      if (!supabase) {
-        setError('Erreur de configuration du système. Veuillez réessayer plus tard.');
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-      if (error) {
-        setError('Adresse email ou mot de passe incorrect. Veuillez réessayer.');
-        setLoading(false);
-        return;
-      }
-
-      if (!data.session) {
-        setError('Impossible de se connecter. Veuillez vérifier vos identifiants.');
-        setLoading(false);
-        return;
-      }
-
-      // Get user role from profiles
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.session.user.id)
-        .single();
-
-      if (!profile) {
-        setError('Compte introuvable. Veuillez contacter l\'administration.');
-        setLoading(false);
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Store user info in localStorage for dashboard to use
-      localStorage.setItem('user_id', data.session.user.id);
-      localStorage.setItem('user_role', profile.role);
-
-      // Store user info in cookies for middleware authentication
-      const cookieOptions = 'path=/; max-age=604800; SameSite=Lax; Secure'; // 7 days
-      document.cookie = `user_id=${data.session.user.id}; ${cookieOptions}`;
-      document.cookie = `user_role=${profile.role}; ${cookieOptions}`;
-
-      console.log('Login verification - storedUserId:', data.session.user.id, 'storedUserRole:', profile.role);
-      console.log('Cookies set for middleware authentication');
-
-      // Redirect based on role - only admin and jury (candidates use candidature page)
-      let redirectUrl = '';
-      if (profile.role === 'admin') {
-        redirectUrl = '/dashboard/admin';
-      } else if (profile.role === 'jury') {
-        redirectUrl = '/dashboard/jury';
-      } else {
-        setError('Accès non autorisé. Cette page est réservée aux membres du jury et au staff administratif. Les candidats doivent utiliser la page de candidature.');
-        setLoading(false);
-        setIsSubmitting(false);
-        return;
-      }
-
-      console.log('Redirecting to:', redirectUrl);
-      // Use router.push for client-side navigation (middleware will handle auth)
-      router.push(redirectUrl);
-    } catch (err: any) {
-      console.error('Login error:', err);
-      setError('Erreur de connexion. Veuillez réessayer.');
-    } finally {
-      setLoading(false);
-      setIsSubmitting(false);
-    }
-  };
 
   if (!isHydrated) {
     return (
@@ -157,10 +72,10 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
-              {error && (
+            <form action={signInStaffFormAction} className="space-y-4">
+              {signInStaffState?.error && (
                 <div className="bg-red-900/20 border border-red-900/50 rounded-none p-3 text-sm text-red-400">
-                  {error}
+                  {signInStaffState.error}
                 </div>
               )}
 
@@ -199,20 +114,12 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#e5c47f] text-black font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent transition-all hover:bg-[#d4b36f] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#e5c47f] text-black font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent transition-all hover:bg-[#d4b36f] active:scale-[0.98]"
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Connexion...
-                  </>
-                ) : (
-                  <>
-                    Se connecter
-                    <ArrowRight className="w-3 h-3" />
-                  </>
-                )}
+                <>
+                  Se connecter
+                  <ArrowRight className="w-3 h-3" />
+                </>
               </button>
             </form>
 
