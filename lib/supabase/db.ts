@@ -202,6 +202,29 @@ export const db = {
     return null;
   },
 
+  deleteCandidate: async (id: string): Promise<boolean> => {
+    if (supabase) {
+      // First try standard delete
+      const { error } = await supabase.from('candidates').delete().eq('id', id);
+      if (!error) return true;
+
+      // If that fails (RLS), try RPC if we have one
+      const { data: rpcData, error: rpcError } = await supabase.rpc('delete_candidate', {
+        candidate_uuid: id
+      });
+      if (!rpcError) return true;
+      
+      console.error('Error deleting candidate:', error || rpcError);
+      return false;
+    }
+
+    initLocalStorage();
+    const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
+    const filtered = candidates.filter((c) => c.id !== id);
+    localStorage.setItem('ttb_candidates', JSON.stringify(filtered));
+    return true;
+  },
+
   getVotes: async (): Promise<Vote[]> => {
     if (supabase) {
       const { data, error } = await supabase.from('votes').select('*');

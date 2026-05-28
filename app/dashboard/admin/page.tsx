@@ -441,6 +441,33 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteCandidate = async (id: string) => {
+    const candidate = candidates.find(c => c.id === id);
+    if (!candidate) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'SUPPRESSION DÉFINITIVE',
+      message: `Êtes-vous sûr de vouloir supprimer définitivement le candidat "${candidate.stage_name}" ? Cette action est irréversible et supprimera également ses votes et notes éventuels.`,
+      onConfirm: async () => {
+        try {
+          const success = await db.deleteCandidate(id);
+          if (success) {
+            setCandidates(prev => prev.filter(c => c.id !== id));
+            addToast('success', 'Candidat supprimé avec succès');
+          } else {
+            addToast('error', 'Erreur lors de la suppression');
+          }
+        } catch (err) {
+          console.error('Delete error:', err);
+          addToast('error', 'Erreur lors de la suppression');
+        } finally {
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        }
+      }
+    });
+  };
+
   const handleConfirmCandidate = async (id: string, isConfirmed: boolean) => {
     try {
       if (isConfirmed) {
@@ -950,16 +977,32 @@ export default function AdminDashboard() {
                                 >
                                   <XIcon className="w-4 h-4" />
                                 </button>
+                                <button
+                                  onClick={() => handleDeleteCandidate(candidate.id)}
+                                  className="text-zinc-500 hover:text-red-600 transition-colors"
+                                  title="Supprimer définitivement"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </>
                             )}
                             {candidate.status === 'rejected' && (
-                              <button
-                                onClick={() => handleConfirmCandidate(candidate.id, true)}
-                                className="text-zinc-500 hover:text-emerald-400 transition-colors"
-                                title="Confirmer"
-                              >
-                                <CheckCircle2 className="w-4 h-4" />
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleConfirmCandidate(candidate.id, true)}
+                                  className="text-zinc-500 hover:text-emerald-400 transition-colors"
+                                  title="Confirmer"
+                                >
+                                  <CheckCircle2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCandidate(candidate.id)}
+                                  className="text-zinc-500 hover:text-red-600 transition-colors"
+                                  title="Supprimer définitivement"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
                             )}
                             {candidate.status === 'approved' && (
                               <>
@@ -971,9 +1014,9 @@ export default function AdminDashboard() {
                                   <XIcon className="w-4 h-4" />
                                 </button>
                                 <button
-                                  onClick={() => handleCandidateStatus(candidate.id, 'rejected')}
-                                  className="text-zinc-500 hover:text-red-400 transition-colors"
-                                  title="Rejeter"
+                                  onClick={() => handleDeleteCandidate(candidate.id)}
+                                  className="text-zinc-500 hover:text-red-600 transition-colors"
+                                  title="Supprimer définitivement"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
