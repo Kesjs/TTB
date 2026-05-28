@@ -517,90 +517,115 @@ export default function JuryDashboard() {
           )}
 
           {activeTab === 'evaluation' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
-              {/* Section Gauche : Liste des Candidats & Sélection */}
-              <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4 sm:p-6 h-fit space-y-4 sm:space-y-6 shadow-2xl">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="flex items-center gap-1.5 text-xs font-bold text-[#e5c47f] uppercase tracking-widest mb-1">
-                      <ClipboardList className="w-3.5 h-3.5" />
-                      Évaluation en Cours
-                    </span>
-                    <h2 className="font-heading font-black text-lg sm:text-xl text-white uppercase tracking-tight">Candidats en Scène</h2>
-                    <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">Sélectionnez le candidat physique présent sur le plateau de l'événement.</p>
+            <div className="flex flex-col gap-6 sm:gap-8">
+              {/* Section Mobile : Sélecteur de Candidat (Horizontal sur mobile) */}
+              <div className="lg:hidden bg-zinc-950 border border-zinc-900 rounded-2xl p-4 shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-[#e5c47f]" />
+                    <h2 className="text-[10px] font-black uppercase tracking-widest text-white">Candidats en Scène</h2>
                   </div>
-                  <div className="hidden sm:block w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center border border-zinc-800">
-                    <span className="text-xs font-bold text-zinc-400">
-                      {(() => {
-                        if (systemControl?.current_phase === 'VOTES_TOP_40') return candidates.filter(c => c.is_top_40).length;
-                        if (systemControl?.current_phase === 'SEMIFINAL') return candidates.filter(c => c.is_semifinalist).length;
-                        if (systemControl?.current_phase === 'FINAL') return candidates.filter(c => c.is_finalist).length;
-                        return candidates.length;
-                      })()}
-                    </span>
-                  </div>
+                  <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
+                    {(() => {
+                      if (systemControl?.current_phase === 'VOTES_TOP_40') return candidates.filter(c => c.is_top_40).length;
+                      if (systemControl?.current_phase === 'SEMIFINAL') return candidates.filter(c => c.is_semifinalist).length;
+                      if (systemControl?.current_phase === 'FINAL') return candidates.filter(c => c.is_finalist).length;
+                      return candidates.length;
+                    })()} Artistes
+                  </span>
                 </div>
-
-                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
                   {(() => {
-                    // Filter candidates based on phase
                     let filteredCandidates = candidates;
-                    if (systemControl?.current_phase === 'VOTES_TOP_40') {
-                      filteredCandidates = candidates.filter(c => c.is_top_40);
-                    } else if (systemControl?.current_phase === 'SEMIFINAL') {
-                      filteredCandidates = candidates.filter(c => c.is_semifinalist);
-                    } else if (systemControl?.current_phase === 'FINAL') {
-                      filteredCandidates = candidates.filter(c => c.is_finalist);
-                    }
+                    if (systemControl?.current_phase === 'VOTES_TOP_40') filteredCandidates = candidates.filter(c => c.is_top_40);
+                    else if (systemControl?.current_phase === 'SEMIFINAL') filteredCandidates = candidates.filter(c => c.is_semifinalist);
+                    else if (systemControl?.current_phase === 'FINAL') filteredCandidates = candidates.filter(c => c.is_finalist);
 
                     return filteredCandidates.map((c) => {
                       const isLive = systemControl?.live_voting_candidate_id === c.id;
                       const isRated = existingRatings.some(r => r.candidate_id === c.id && r.phase === systemControl?.current_phase);
+                      const isActive = activeCandidateId === c.id;
 
                       return (
-                      <button
-                        key={c.id}
-                        onClick={() => setActiveCandidateId(c.id)}
-                        className={`w-full text-left p-3.5 rounded-xl border flex items-center justify-between transition-all ${
-                          activeCandidateId === c.id
-                            ? 'bg-zinc-900 text-white border-[#e5c47f]'
-                            : 'bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:border-zinc-700'
-                        }`}
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-heading font-bold text-sm text-white">{c.stage_name}</span>
-                            {renderCandidatureBadge(c)}
-                            {isLive && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" title="En Direct" />
-                            )}
+                        <button
+                          key={c.id}
+                          onClick={() => setActiveCandidateId(c.id)}
+                          className={`flex-shrink-0 min-w-[140px] p-3 rounded-xl border transition-all relative ${
+                            isActive ? 'bg-zinc-900 border-[#e5c47f] ring-1 ring-[#e5c47f]/50' : 'bg-zinc-900/40 border-zinc-800'
+                          }`}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`text-[10px] font-bold uppercase truncate ${isActive ? 'text-white' : 'text-zinc-400'}`}>
+                                {c.stage_name}
+                              </span>
+                              {isLive && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                            </div>
+                            <span className="text-[8px] text-zinc-500 uppercase tracking-tighter truncate">{c.discipline}</span>
                           </div>
-                          <span className="text-[10px] text-zinc-500 block">
-                            {c.discipline} • {c.region}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
                           {isRated && (
-                            <span className="p-1 bg-emerald-950/40 text-emerald-400 border border-emerald-900 rounded-full">
-                              <Check className="w-3 h-3" />
-                            </span>
+                            <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white rounded-full p-0.5 shadow-lg border border-emerald-400">
+                              <Check className="w-2.5 h-2.5" />
+                            </div>
                           )}
-                          {isLive && (
-                            <span className="text-[9px] px-2 py-0.5 bg-red-600 text-white font-bold rounded uppercase">
-                              LIVE
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
+                        </button>
+                      );
                     });
                   })()}
                 </div>
               </div>
 
-              {/* Section Centrale : Sliders de Notation */}
-              <div className="lg:col-span-2 bg-zinc-950 border border-zinc-900 rounded-2xl p-4 sm:p-8 shadow-2xl flex flex-col justify-between">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+                {/* Section Desktop : Liste des Candidats (Masquée sur mobile) */}
+                <div className="hidden lg:block bg-zinc-950 border border-zinc-900 rounded-2xl p-6 h-fit space-y-6 shadow-2xl sticky top-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-[#e5c47f] uppercase tracking-widest mb-1">
+                        <ClipboardList className="w-3.5 h-3.5" />
+                        Évaluation en Cours
+                      </span>
+                      <h2 className="font-heading font-black text-xl text-white uppercase tracking-tight">Candidats en Scène</h2>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+                    {(() => {
+                      let filteredCandidates = candidates;
+                      if (systemControl?.current_phase === 'VOTES_TOP_40') filteredCandidates = candidates.filter(c => c.is_top_40);
+                      else if (systemControl?.current_phase === 'SEMIFINAL') filteredCandidates = candidates.filter(c => c.is_semifinalist);
+                      else if (systemControl?.current_phase === 'FINAL') filteredCandidates = candidates.filter(c => c.is_finalist);
+
+                      return filteredCandidates.map((c) => {
+                        const isLive = systemControl?.live_voting_candidate_id === c.id;
+                        const isRated = existingRatings.some(r => r.candidate_id === c.id && r.phase === systemControl?.current_phase);
+
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => setActiveCandidateId(c.id)}
+                            className={`w-full text-left p-3.5 rounded-xl border flex items-center justify-between transition-all ${
+                              activeCandidateId === c.id
+                                ? 'bg-zinc-900 text-white border-[#e5c47f]'
+                                : 'bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-heading font-bold text-sm text-white">{c.stage_name}</span>
+                                {isLive && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                              </div>
+                              <span className="text-[10px] text-zinc-500 block">{c.discipline} • {c.region}</span>
+                            </div>
+                            {isRated && <Check className="w-3.5 h-3.5 text-emerald-500" />}
+                          </button>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                {/* Section Centrale : Sliders de Notation */}
+                <div className="lg:col-span-2 bg-zinc-950 border border-zinc-900 rounded-2xl p-4 sm:p-8 shadow-2xl flex flex-col justify-between min-h-[500px]">
                 {activeCandidate ? (
                   <form onSubmit={handleSaveScore} className="space-y-6 sm:space-y-8">
 
@@ -637,125 +662,139 @@ export default function JuryDashboard() {
                     {/* Sliders */}
                     <div className="space-y-6 sm:space-y-8 py-4">
                       {/* 1. Technique */}
-                      <div className="space-y-3">
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                          <label className="text-sm font-semibold tracking-wide text-zinc-300 flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-[#e5c47f]" />
+                      <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                          <label className="text-xs sm:text-sm font-bold tracking-widest text-zinc-400 uppercase flex items-center gap-2">
+                            <div className="w-6 h-6 rounded bg-[#e5c47f]/10 flex items-center justify-center">
+                              <Sparkles className="w-3.5 h-3.5 text-[#e5c47f]" />
+                            </div>
                             Technique Artistique
                           </label>
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <button
-                                type="button"
-                                onClick={() => adjustScore(setScoreTechnique, scoreTechnique, -0.5)}
-                                className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 hover:border-zinc-700 transition-colors active:scale-95"
-                              >
-                                <Minus className="w-4 h-4 text-zinc-400" />
-                              </button>
-                              <span className="font-heading font-black text-lg sm:text-xl text-[#e5c47f] bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 px-3 sm:px-4 py-1 rounded-lg min-w-[70px] sm:min-w-[80px] text-center shadow-lg">
-                                {scoreTechnique} / 20
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => adjustScore(setScoreTechnique, scoreTechnique, 0.5)}
-                                className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 hover:border-zinc-700 transition-colors active:scale-95"
-                              >
-                                <Plus className="w-4 h-4 text-zinc-400" />
-                              </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => adjustScore(setScoreTechnique, scoreTechnique, -0.5)}
+                              className="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-all active:scale-90"
+                            >
+                              <Minus className="w-4 h-4 text-zinc-400" />
+                            </button>
+                            <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 min-w-[100px] text-center shadow-inner">
+                              <span className="font-mono font-black text-lg text-white">{scoreTechnique}</span>
+                              <span className="text-[10px] text-zinc-600 ml-1">/20</span>
                             </div>
+                            <button
+                              type="button"
+                              onClick={() => adjustScore(setScoreTechnique, scoreTechnique, 0.5)}
+                              className="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-all active:scale-90"
+                            >
+                              <Plus className="w-4 h-4 text-zinc-400" />
+                            </button>
                           </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="20"
-                            step="0.5"
-                            value={scoreTechnique}
-                            onChange={(e) => setScoreTechnique(parseFloat(e.target.value))}
-                            className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#e5c47f]"
-                          />
-                          <p className="text-[10px] text-zinc-500 leading-relaxed">Précision de l'exécution, justesse vocale, rythme, complexité technique.</p>
                         </div>
-
-                        {/* 2. Originalité */}
-                        <div className="space-y-3">
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                            <label className="text-sm font-semibold tracking-wide text-zinc-300 flex items-center gap-2">
-                              <Sparkles className="w-4 h-4 text-[#e5c47f]" />
-                              Originalité & Créativité
-                            </label>
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <button
-                                type="button"
-                                onClick={() => adjustScore(setScoreOriginalite, scoreOriginalite, -0.5)}
-                                className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 hover:border-zinc-700 transition-colors active:scale-95"
-                              >
-                                <Minus className="w-4 h-4 text-zinc-400" />
-                              </button>
-                              <span className="font-heading font-black text-lg sm:text-xl text-[#e5c47f] bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 px-3 sm:px-4 py-1 rounded-lg min-w-[70px] sm:min-w-[80px] text-center shadow-lg">
-                                {scoreOriginalite} / 20
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => adjustScore(setScoreOriginalite, scoreOriginalite, 0.5)}
-                                className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 hover:border-zinc-700 transition-colors active:scale-95"
-                              >
-                                <Plus className="w-4 h-4 text-zinc-400" />
-                              </button>
-                            </div>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="20"
-                            step="0.5"
-                            value={scoreOriginalite}
-                            onChange={(e) => setScoreOriginalite(parseFloat(e.target.value))}
-                            className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#e5c47f]"
-                          />
-                          <p className="text-[10px] text-zinc-500 leading-relaxed">Créativité, innovation, arrangement unique, identité culturelle béninoise.</p>
-                        </div>
-
-                        {/* 3. Présence scénique */}
-                        <div className="space-y-3">
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                            <label className="text-sm font-semibold tracking-wide text-zinc-300 flex items-center gap-2">
-                              <Sparkles className="w-4 h-4 text-[#e5c47f]" />
-                              Présence Scénique & Charisme
-                            </label>
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <button
-                                type="button"
-                                onClick={() => adjustScore(setScorePresence, scorePresence, -0.5)}
-                                className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 hover:border-zinc-700 transition-colors active:scale-95"
-                              >
-                                <Minus className="w-4 h-4 text-zinc-400" />
-                              </button>
-                              <span className="font-heading font-black text-lg sm:text-xl text-[#e5c47f] bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 px-3 sm:px-4 py-1 rounded-lg min-w-[70px] sm:min-w-[80px] text-center shadow-lg">
-                                {scorePresence} / 20
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => adjustScore(setScorePresence, scorePresence, 0.5)}
-                                className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 hover:border-zinc-700 transition-colors active:scale-95"
-                              >
-                                <Plus className="w-4 h-4 text-zinc-400" />
-                              </button>
-                            </div>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="20"
-                            step="0.5"
-                            value={scorePresence}
-                            onChange={(e) => setScorePresence(parseFloat(e.target.value))}
-                            className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#e5c47f]"
-                          />
-                          <p className="text-[10px] text-zinc-500 leading-relaxed">Charisme, connexion avec l'audience, occupation spatiale, émotion partagée.</p>
-                        </div>
-
+                        <input
+                          type="range"
+                          min="0"
+                          max="20"
+                          step="0.5"
+                          value={scoreTechnique}
+                          onChange={(e) => setScoreTechnique(parseFloat(e.target.value))}
+                          className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-[#e5c47f] border border-zinc-800"
+                        />
+                        <p className="text-[10px] text-zinc-500 font-medium leading-relaxed italic border-l-2 border-zinc-800 pl-3">
+                          Précision de l'exécution, justesse vocale, rythme, complexité technique.
+                        </p>
                       </div>
 
-                      {/* Barre de soumission */}
+                      {/* 2. Originalité */}
+                      <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                          <label className="text-xs sm:text-sm font-bold tracking-widest text-zinc-400 uppercase flex items-center gap-2">
+                            <div className="w-6 h-6 rounded bg-[#e5c47f]/10 flex items-center justify-center">
+                              <Sparkles className="w-3.5 h-3.5 text-[#e5c47f]" />
+                            </div>
+                            Originalité & Créativité
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => adjustScore(setScoreOriginalite, scoreOriginalite, -0.5)}
+                              className="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-all active:scale-90"
+                            >
+                              <Minus className="w-4 h-4 text-zinc-400" />
+                            </button>
+                            <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 min-w-[100px] text-center shadow-inner">
+                              <span className="font-mono font-black text-lg text-white">{scoreOriginalite}</span>
+                              <span className="text-[10px] text-zinc-600 ml-1">/20</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => adjustScore(setScoreOriginalite, scoreOriginalite, 0.5)}
+                              className="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-all active:scale-90"
+                            >
+                              <Plus className="w-4 h-4 text-zinc-400" />
+                            </button>
+                          </div>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="20"
+                          step="0.5"
+                          value={scoreOriginalite}
+                          onChange={(e) => setScoreOriginalite(parseFloat(e.target.value))}
+                          className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-[#e5c47f] border border-zinc-800"
+                        />
+                        <p className="text-[10px] text-zinc-500 font-medium leading-relaxed italic border-l-2 border-zinc-800 pl-3">
+                          Créativité, innovation, arrangement unique, identité culturelle béninoise.
+                        </p>
+                      </div>
+
+                      {/* 3. Présence scénique */}
+                      <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                          <label className="text-xs sm:text-sm font-bold tracking-widest text-zinc-400 uppercase flex items-center gap-2">
+                            <div className="w-6 h-6 rounded bg-[#e5c47f]/10 flex items-center justify-center">
+                              <Sparkles className="w-3.5 h-3.5 text-[#e5c47f]" />
+                            </div>
+                            Présence Scénique & Charisme
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => adjustScore(setScorePresence, scorePresence, -0.5)}
+                              className="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-all active:scale-90"
+                            >
+                              <Minus className="w-4 h-4 text-zinc-400" />
+                            </button>
+                            <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 min-w-[100px] text-center shadow-inner">
+                              <span className="font-mono font-black text-lg text-white">{scorePresence}</span>
+                              <span className="text-[10px] text-zinc-600 ml-1">/20</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => adjustScore(setScorePresence, scorePresence, 0.5)}
+                              className="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-all active:scale-90"
+                            >
+                              <Plus className="w-4 h-4 text-zinc-400" />
+                            </button>
+                          </div>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="20"
+                          step="0.5"
+                          value={scorePresence}
+                          onChange={(e) => setScorePresence(parseFloat(e.target.value))}
+                          className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-[#e5c47f] border border-zinc-800"
+                        />
+                        <p className="text-[10px] text-zinc-500 font-medium leading-relaxed italic border-l-2 border-zinc-800 pl-3">
+                          Charisme, connexion avec l'audience, occupation spatiale, émotion partagée.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Barre de soumission */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 sm:pt-6 border-t border-zinc-900 gap-4">
                         {success ? (
                           <div className="text-emerald-400 text-sm font-bold flex items-center gap-2 bg-emerald-950/20 border border-emerald-900/50 px-4 py-2 rounded-lg">
@@ -793,6 +832,7 @@ export default function JuryDashboard() {
                   )}
                 </div>
               </div>
+            </div>
           )}
           {activeTab === 'history' && (
             <div className="text-center py-20">
