@@ -182,7 +182,8 @@ export const auth = {
       .single();
 
     if (candidateError) {
-      throw new Error('L\'enregistrement de la candidature a échoué. Veuillez réessayer.');
+      console.error('[Auth] Candidate registration error:', candidateError);
+      throw new Error(`L'enregistrement de la candidature a échoué : ${candidateError.message}`);
     }
 
     return {
