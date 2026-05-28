@@ -51,6 +51,21 @@ export default function JuryDashboard() {
     return roadmapSteps.findIndex(step => step.id === systemControl.current_phase);
   }, [systemControl]);
 
+  useEffect(() => {
+    const checkJuryRole = async () => {
+      try {
+        const profile = await db.getCurrentUserProfile();
+        if (!profile || profile.role !== 'jury') {
+          console.warn('[JuryDashboard] Access denied: Not a jury member');
+          window.location.href = '/login';
+        }
+      } catch (err) {
+        window.location.href = '/login';
+      }
+    };
+    void checkJuryRole();
+  }, []);
+
   const stats = useMemo(() => {
     const phase = systemControl?.current_phase;
     if (!phase) return { evaluated: 0, total: 0 };

@@ -140,6 +140,21 @@ export default function AdminDashboard() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   };
 
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      try {
+        const profile = await db.getCurrentUserProfile();
+        if (!profile || profile.role !== 'admin') {
+          console.warn('[AdminDashboard] Access denied: Not an admin');
+          window.location.href = '/login';
+        }
+      } catch (err) {
+        window.location.href = '/login';
+      }
+    };
+    void checkAdminRole();
+  }, []);
+
   // Data Hydration
   useEffect(() => {
     const loadData = async () => {
