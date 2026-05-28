@@ -254,9 +254,9 @@ function HomeContent() {
 
   const showCandidateGrid = useMemo(() => {
 
-    return systemControl.current_phase !== 'PRESELECTION';
+    return true; // Toujours afficher la grille si des candidats sont approuvés
 
-  }, [systemControl.current_phase]);
+  }, []);
 
 
 
