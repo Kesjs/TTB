@@ -765,7 +765,7 @@ export default function CandidaturePage() {
                           {stageNameStatus === 'available' && (
                             <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 p-2.5 rounded-lg text-[10px] font-bold mt-2 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
                               <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                              ✨ {formData.stageName} est disponible pour l&apos;Édition 2026 !
+                               {formData.stageName}  est disponible pour l&apos;Édition 2026 !
                             </div>
                           )}
 
@@ -773,7 +773,7 @@ export default function CandidaturePage() {
                             <div className="space-y-3">
                               <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 p-2.5 rounded-lg text-[10px] font-bold mt-2 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
                                 <X className="w-3.5 h-3.5 text-amber-500" />
-                                ❌ {formData.stageName} est déjà réservé par un autre artiste.
+                                 {formData.stageName} est déjà réservé par un autre artiste.
                               </div>
                               
                               {/* IA Suggestions */}
