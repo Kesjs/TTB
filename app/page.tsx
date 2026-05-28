@@ -334,6 +334,8 @@ function HomeContent() {
 
     <div className="min-h-screen bg-white flex flex-col text-[#050505] antialiased selection:bg-[#e5c47f] selection:text-white pt-12 sm:pt-20">
 
+      <Navbar currentPhase={systemControl.current_phase} isLoading={loading} />
+
       {loading ? (
 
         <div className="flex-1 flex items-center justify-center bg-white">
@@ -351,8 +353,6 @@ function HomeContent() {
       ) : (
 
         <>
-          <Navbar currentPhase={systemControl.current_phase} />
-
           {error && (
 
             <div className="bg-amber-50 border border-amber-200 px-4 py-3 text-center">

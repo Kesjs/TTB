@@ -8,9 +8,10 @@ import { auth } from '@/lib/supabase/auth';
 
 interface NavbarProps {
   currentPhase?: string;
+  isLoading?: boolean;
 }
 
-export default function Navbar({ currentPhase = 'PRESELECTION' }: NavbarProps) {
+export default function Navbar({ currentPhase = 'PRESELECTION', isLoading = false }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -80,7 +81,9 @@ export default function Navbar({ currentPhase = 'PRESELECTION' }: NavbarProps) {
 
         {/* BOUTONS D'ACTIONS */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {isDashboard ? (
+          {isLoading ? (
+            <div className="animate-pulse bg-zinc-100 border border-zinc-200 w-24 sm:w-32 h-9 rounded-none" />
+          ) : isDashboard ? (
             <button
               onClick={handleSignOut}
               className="hidden lg:flex items-center gap-2 px-4 sm:px-5 py-2 bg-red-600 text-white font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-red-500 transition-all duration-300 transform active:scale-95"
@@ -145,7 +148,9 @@ export default function Navbar({ currentPhase = 'PRESELECTION' }: NavbarProps) {
             })}
             
             <div className="pt-2 mt-2 border-t border-slate-200">
-              {isDashboard ? (
+              {isLoading ? (
+                <div className="animate-pulse bg-zinc-100 border border-zinc-200 w-full h-10 rounded-none" />
+              ) : isDashboard ? (
                 <button
                   onClick={() => {
                     handleSignOut();
