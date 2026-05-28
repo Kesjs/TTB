@@ -191,9 +191,10 @@ export default function AdminDashboard() {
 
       // Realtime subscription
       const channels: any[] = [];
+      const supabaseClient = supabase;
 
-      if (supabase) {
-        const systemChannel = supabase
+      if (supabaseClient) {
+        const systemChannel = supabaseClient
           .channel('system_control_admin')
           .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_control' }, (payload) => {
             const newControl = payload.new as SystemControl;
@@ -206,7 +207,7 @@ export default function AdminDashboard() {
           .subscribe();
         channels.push(systemChannel);
 
-        const ratingsChannel = supabase
+        const ratingsChannel = supabaseClient
           .channel('jury_ratings_admin')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'jury_ratings' }, (payload) => {
             console.log('Jury rating updated:', payload);
@@ -217,9 +218,7 @@ export default function AdminDashboard() {
         channels.push(ratingsChannel);
 
         return () => {
-          if (supabase) {
-            channels.forEach(channel => supabase.removeChannel(channel));
-          }
+          channels.forEach(channel => supabaseClient.removeChannel(channel));
         };
       }
   }, []);
