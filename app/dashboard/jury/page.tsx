@@ -646,7 +646,7 @@ export default function JuryDashboard() {
                   <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
                     {filteredCandidates.map((c) => {
                       const isLive = systemControl?.live_voting_candidate_id === c.id;
-                      const rating = getCandidateRating(c.id);
+                      const ratingInfo = getCandidateRatingDetails(c.id);
 
                       return (
                         <button
