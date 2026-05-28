@@ -26,6 +26,14 @@ export default function CandidaturePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // --- NEW PRODUCTION STATES ---
+  const [isSubmittingSuccess, setIsSubmittingSuccess] = useState(false);
+  const [stageNameStatus, setStageNameStatus] = useState<'available' | 'taken' | 'checking' | null>(null);
+  const [emailStatus, setEmailStatus] = useState<'available' | 'taken' | 'checking' | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
   // Password criteria validation state
   const [passwordCriteria, setPasswordCriteria] = useState({
     minLength: false,
@@ -108,6 +116,92 @@ export default function CandidaturePage() {
     };
     void fetchPhase();
   }, [viewState]);
+
+  // --- AUTO-SAVE LOGIC ---
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !draftLoaded) {
+      const savedDraft = localStorage.getItem('ttb_candidature_draft');
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          setFormData(prev => ({
+            ...prev,
+            ...parsed,
+            password: '',
+            confirmPassword: ''
+          }));
+          setCandidatureType(parsed.candidatureType || 'solo');
+          setCurrentStep(parsed.currentStep || 1);
+        } catch (e) {
+          console.error('Draft restoration failed', e);
+        }
+      }
+      setDraftLoaded(true);
+    }
+  }, [draftLoaded]);
+
+  useEffect(() => {
+    if (draftLoaded && !isSubmittingSuccess) {
+      const draftData = {
+        ...formData,
+        candidatureType,
+        currentStep,
+        password: '',
+        confirmPassword: ''
+      };
+      localStorage.setItem('ttb_candidature_draft', JSON.stringify(draftData));
+    }
+  }, [formData, candidatureType, currentStep, draftLoaded, isSubmittingSuccess]);
+
+  // --- UNIQUENESS CHECKS ---
+  const checkStageNameUniqueness = async (name: string) => {
+    if (!name || name.length < 2 || !supabase) return;
+    setStageNameStatus('checking');
+    try {
+      const { data } = await supabase.from('candidates').select('id').eq('stage_name', name.trim()).maybeSingle();
+      if (data) {
+        setStageNameStatus('taken');
+        generateSuggestions(name, formData.discipline);
+      } else {
+        setStageNameStatus('available');
+        setSuggestions([]);
+      }
+    } catch (err) {
+      setStageNameStatus(null);
+    }
+  };
+
+  const generateSuggestions = async (name: string, category: string) => {
+    /* EDGE FUNCTION PROMPT: ["Pseudo1", "Pseudo2", "Pseudo3"] */
+    if (!supabase) return;
+    setIsGeneratingSuggestions(true);
+    try {
+      const { data } = await supabase.functions.invoke('generate-stage-names', { body: { name, category } });
+      if (data?.suggestions) setSuggestions(data.suggestions);
+      else setSuggestions([`${name} Officiel`, `${name} 229`, `The ${name}`]);
+    } catch {
+      setSuggestions([`${name} Officiel`, `${name} 229`, `The ${name}`]);
+    } finally {
+      setIsGeneratingSuggestions(false);
+    }
+  };
+
+  const checkEmailUniqueness = async (email: string) => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !supabase) return;
+    setEmailStatus('checking');
+    try {
+      const { data } = await supabase.from('candidates').select('id').eq('email', email.trim()).maybeSingle();
+      if (data) {
+        setEmailStatus('taken');
+        setFieldErrors(prev => ({ ...prev, email: "Ce compte existe déjà, connectez-vous plutôt" }));
+      } else {
+        setEmailStatus('available');
+        setFieldErrors(prev => ({ ...prev, email: "" }));
+      }
+    } catch {
+      setEmailStatus(null);
+    }
+  };
 
   const validateField = (fieldName: string, value: string) => {
     let error = '';
@@ -248,14 +342,19 @@ export default function CandidaturePage() {
         memberCount: formData.memberCount,
       });
 
-      localStorage.setItem('user_id', result.user.id);
-      localStorage.setItem('user_role', 'candidate');
-      const cookieOptions = 'path=/; max-age=604800; SameSite=Lax; Secure';
-      document.cookie = `user_id=${result.user.id}; ${cookieOptions}`;
-      document.cookie = `user_role=candidate; ${cookieOptions}`;
+      localStorage.removeItem('ttb_candidature_draft');
+      setIsSubmittingSuccess(true);
+      
+      // Artificial delay for immersive transition
+      setTimeout(() => {
+        localStorage.setItem('user_id', result.user.id);
+        localStorage.setItem('user_role', 'candidate');
+        const cookieOptions = 'path=/; max-age=604800; SameSite=Lax; Secure';
+        document.cookie = `user_id=${result.user.id}; ${cookieOptions}`;
+        document.cookie = `user_role=candidate; ${cookieOptions}`;
+        router.push('/dashboard/candidate');
+      }, 2000);
 
-      clearInterval(progressInterval);
-      router.push('/dashboard/candidate');
     } catch (err: any) {
       console.error('Erreur inscription:', err);
       clearInterval(progressInterval);
@@ -384,6 +483,25 @@ export default function CandidaturePage() {
     setCrop({ x: 0, y: 0 });
     setZoom(1);
   };
+
+  if (isSubmittingSuccess) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center animate-in fade-in duration-700">
+        <div className="fixed top-0 left-0 w-full h-[2px] bg-[#e5c47f]/20 overflow-hidden">
+          <div className="h-full bg-[#e5c47f] animate-progress-fast shadow-[0_0_15px_rgba(229,196,127,0.5)]" />
+        </div>
+        <div className="max-w-md w-full px-6 text-center animate-in zoom-in-95 duration-1000">
+          <h2 className="text-2xl sm:text-3xl font-light tracking-tight text-white mb-3">Dossier enregistré.</h2>
+          <p className="text-zinc-500 text-sm font-body">Préparation de votre espace candidat...</p>
+          <div className="mt-12 flex justify-center">
+            <div className="w-12 h-12 rounded-full border border-white/5 flex items-center justify-center">
+              <div className="w-1 h-1 bg-[#e5c47f] rounded-full animate-ping" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white text-[#050505] pt-24 sm:pt-32 pb-12 sm:pb-16 selection:bg-[#e5c47f] selection:text-black">
@@ -547,15 +665,51 @@ export default function CandidaturePage() {
                         transition={{ duration: 0.3 }}
                         className="space-y-4 sm:space-y-6"
                       >
-                        <div className="mb-6">
+                        <div className="mb-8">
+                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-4">CHOISIS TA CATÉGORIE</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {categories.map((category) => {
+                              const Icon = category.icon;
+                              const isSelected = formData.discipline === category.id;
+                              return (
+                                <button
+                                  key={category.id}
+                                  type="button"
+                                  onClick={() => !isUploading && setFormData({ ...formData, discipline: category.id })}
+                                  disabled={isUploading}
+                                  className={`p-4 border transition-all duration-300 text-left group hover:scale-[1.02] active:scale-[0.98] ${
+                                    isSelected
+                                      ? 'bg-zinc-800 border-[#e5c47f] ring-1 ring-[#e5c47f] text-white shadow-lg shadow-[#e5c47f]/10'
+                                      : 'bg-white border-zinc-200 text-[#050505] hover:border-zinc-400'
+                                  } ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isSelected ? 'text-[#e5c47f]' : 'text-zinc-400 group-hover:text-zinc-600'}`} />
+                                    <div className="flex-1">
+                                      <h3 className="text-[10px] font-black uppercase tracking-wider mb-1 leading-tight">{category.title}</h3>
+                                      <p className={`text-[9px] leading-relaxed transition-colors ${isSelected ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                                        {category.subtitle}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {touchedFields.discipline && fieldErrors.discipline && (
+                            <p className="font-mono text-[9px] uppercase text-red-500 mt-2">{fieldErrors.discipline}</p>
+                          )}
+                        </div>
+
+                        <div className="mb-8">
                           <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-3">Type de candidature</label>
                           <div className="flex gap-3">
                             <button
                               type="button"
                               onClick={() => { setCandidatureType('solo'); setFormData({ ...formData, memberCount: 1 }); }}
-                              className={`flex-1 py-3 px-4 border transition-all text-xs uppercase tracking-[0.15em] font-bold ${
+                              className={`flex-1 py-3 px-4 border transition-all text-[10px] uppercase tracking-[0.2em] font-bold ${
                                 candidatureType === 'solo'
-                                  ? 'border-[#050505] bg-[#050505] text-white'
+                                  ? 'border-[#050505] bg-[#050505] text-white shadow-inner'
                                   : 'border-zinc-200 bg-white text-zinc-600 hover:border-[#050505]'
                               }`}
                             >
@@ -564,9 +718,9 @@ export default function CandidaturePage() {
                             <button
                               type="button"
                               onClick={() => { setCandidatureType('group'); setFormData({ ...formData, memberCount: 2 }); }}
-                              className={`flex-1 py-3 px-4 border transition-all text-xs uppercase tracking-[0.15em] font-bold ${
+                              className={`flex-1 py-3 px-4 border transition-all text-[10px] uppercase tracking-[0.2em] font-bold ${
                                 candidatureType === 'group'
-                                  ? 'border-[#050505] bg-[#050505] text-white'
+                                  ? 'border-[#050505] bg-[#050505] text-white shadow-inner'
                                   : 'border-zinc-200 bg-white text-zinc-600 hover:border-[#050505]'
                               }`}
                             >
@@ -579,58 +733,82 @@ export default function CandidaturePage() {
                           <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">
                             {candidatureType === 'solo' ? 'Nom de scène' : 'Nom du groupe'}
                           </label>
-                          <input
-                            type="text"
-                            required
-                            value={formData.stageName}
-                            onChange={(event) => setFormData({ ...formData, stageName: event.target.value })}
-                            onBlur={() => handleFieldBlur('stageName', formData.stageName)}
-                            placeholder={candidatureType === 'solo' ? "EX: SIKA VOICE" : "EX: LES ÉLÉVATEURS"}
-                            className={`w-full bg-zinc-50 border p-3 sm:p-4 text-sm font-heading tracking-wide focus:outline-none transition-colors ${
-                              touchedFields.stageName && fieldErrors.stageName
-                                ? 'border-red-500'
-                                : 'border-zinc-200 focus:border-black'
-                            }`}
-                            disabled={isUploading}
-                          />
-                          {touchedFields.stageName && fieldErrors.stageName && (
-                            <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.stageName}</p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-3">CHOISIS TA CATÉGORIE</label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {categories.map((category) => {
-                              const Icon = category.icon;
-                              const isSelected = formData.discipline === category.id;
-                              return (
-                                <button
-                                  key={category.id}
-                                  type="button"
-                                  onClick={() => !isUploading && setFormData({ ...formData, discipline: category.id })}
-                                  disabled={isUploading}
-                                  className={`p-4 border transition-all text-left ${
-                                    isSelected
-                                      ? 'bg-zinc-800 border-zinc-800 text-white'
-                                      : 'bg-white border-zinc-200 text-[#050505] hover:border-zinc-400'
-                                  } ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <Icon className={`w-5 h-5 flex-shrink-0 ${isSelected ? 'text-white' : 'text-zinc-500'}`} />
-                                    <div className="flex-1">
-                                      <h3 className="text-xs font-bold uppercase tracking-wider mb-1">{category.title}</h3>
-                                      <p className={`text-[10px] leading-relaxed ${isSelected ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                                        {category.subtitle}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </button>
-                              );
-                            })}
+                          <div className="relative">
+                            <input
+                              type="text"
+                              required
+                              value={formData.stageName}
+                              onChange={(event) => setFormData({ ...formData, stageName: event.target.value })}
+                              onBlur={(event) => {
+                                handleFieldBlur('stageName', event.target.value);
+                                checkStageNameUniqueness(event.target.value);
+                              }}
+                              placeholder={candidatureType === 'solo' ? "EX: SIKA VOICE" : "EX: LES ÉLÉVATEURS"}
+                              className={`w-full bg-zinc-50 border p-3 sm:p-4 text-sm font-heading tracking-wide focus:outline-none transition-all duration-300 ${
+                                stageNameStatus === 'taken'
+                                  ? 'border-red-500 bg-red-50/30'
+                                  : stageNameStatus === 'available'
+                                  ? 'border-emerald-500 bg-emerald-50/30'
+                                  : 'border-zinc-200 focus:border-black'
+                              }`}
+                              disabled={isUploading}
+                            />
+                            {stageNameStatus === 'checking' && (
+                              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                <span className="text-[10px] text-zinc-400 animate-pulse font-mono uppercase">Vérification...</span>
+                                <Loader2 className="w-3 h-3 animate-spin text-zinc-400" />
+                              </div>
+                            )}
                           </div>
-                          {touchedFields.discipline && fieldErrors.discipline && (
-                            <p className="font-mono text-[9px] uppercase text-red-500 mt-2">{fieldErrors.discipline}</p>
+
+                          {/* Availability Banners */}
+                          {stageNameStatus === 'available' && (
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 p-2.5 rounded-lg text-[10px] font-bold mt-2 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                              ✨ {formData.stageName} est disponible pour l&apos;Édition 2026 !
+                            </div>
+                          )}
+
+                          {stageNameStatus === 'taken' && (
+                            <div className="space-y-3">
+                              <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 p-2.5 rounded-lg text-[10px] font-bold mt-2 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                                <X className="w-3.5 h-3.5 text-amber-500" />
+                                ❌ {formData.stageName} est déjà réservé par un autre artiste.
+                              </div>
+                              
+                              {/* IA Suggestions */}
+                              {suggestions.length > 0 && (
+                                <div className="animate-in fade-in slide-in-from-top-2 duration-500">
+                                  <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold mb-2 ml-1">Suggestions de l&apos;IA :</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {suggestions.map((suggestion, idx) => (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => {
+                                          setFormData({ ...formData, stageName: suggestion });
+                                          setStageNameStatus('available');
+                                          setSuggestions([]);
+                                        }}
+                                        className="px-3 py-1.5 bg-white border border-zinc-200 text-zinc-800 text-[10px] font-bold rounded-full hover:border-[#e5c47f] hover:text-[#e5c47f] transition-all"
+                                      >
+                                        {suggestion}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {isGeneratingSuggestions && (
+                                <div className="flex items-center gap-2 ml-1">
+                                  <Loader2 className="w-3 h-3 animate-spin text-[#e5c47f]" />
+                                  <span className="text-[10px] text-zinc-400 font-mono italic">L&apos;IA affine de nouvelles idées...</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {touchedFields.stageName && fieldErrors.stageName && !stageNameStatus && (
+                            <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.stageName}</p>
                           )}
                         </div>
 
@@ -756,21 +934,38 @@ export default function CandidaturePage() {
                           </div>
                           <div>
                             <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">Adresse E-mail</label>
-                            <input 
-                              type="email" 
-                              required 
-                              value={formData.email} 
-                              onChange={(event) => setFormData({ ...formData, email: event.target.value })}
-                              onBlur={() => handleFieldBlur('email', formData.email)}
-                              placeholder="ARTISTE@GMAIL.COM" 
-                              className={`w-full bg-zinc-50 border p-3 sm:p-4 text-sm font-heading tracking-wide focus:outline-none transition-colors ${
-                                touchedFields.email && fieldErrors.email
-                                  ? 'border-red-500'
-                                  : 'border-zinc-200 focus:border-black'
-                              }`}
-                              disabled={isUploading}
-                            />
-                            {touchedFields.email && fieldErrors.email && (
+                            <div className="relative">
+                              <input 
+                                type="email" 
+                                required 
+                                value={formData.email} 
+                                onChange={(event) => setFormData({ ...formData, email: event.target.value })}
+                                onBlur={(event) => {
+                                  handleFieldBlur('email', event.target.value);
+                                  checkEmailUniqueness(event.target.value);
+                                }}
+                                placeholder="ARTISTE@GMAIL.COM" 
+                                className={`w-full bg-zinc-50 border p-3 sm:p-4 text-sm font-heading tracking-wide focus:outline-none transition-all duration-300 ${
+                                  emailStatus === 'taken'
+                                    ? 'border-red-500 bg-red-50/30'
+                                    : emailStatus === 'available'
+                                    ? 'border-emerald-500 bg-emerald-50/30'
+                                    : 'border-zinc-200 focus:border-black'
+                                }`}
+                                disabled={isUploading}
+                              />
+                              {emailStatus === 'checking' && (
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-400" />
+                                </div>
+                              )}
+                            </div>
+                            {emailStatus === 'taken' && (
+                              <p className="font-mono text-[9px] uppercase text-red-500 mt-1.5 flex items-center gap-1">
+                                <X className="w-3 h-3" /> Ce compte existe déjà, connectez-vous plutôt
+                              </p>
+                            )}
+                            {touchedFields.email && fieldErrors.email && !emailStatus && (
                               <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.email}</p>
                             )}
                           </div>
@@ -905,7 +1100,15 @@ export default function CandidaturePage() {
                           <button
                             type="button"
                             onClick={() => setCurrentStep(3)}
-                            disabled={!formData.region || !formData.email || !formData.password || !formData.confirmPassword || !!fieldErrors.password || !!fieldErrors.confirmPassword}
+                            disabled={
+                              !formData.region || 
+                              !formData.email || 
+                              emailStatus === 'taken' ||
+                              !formData.password || 
+                              !formData.confirmPassword || 
+                              !!fieldErrors.password || 
+                              !!fieldErrors.confirmPassword
+                            }
                             className="flex-1 py-3 sm:py-4 bg-[#050505] text-white text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] hover:text-black transition-all flex items-center justify-center gap-2 rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             SUIVANT <ArrowRight className="w-3.5 h-3.5" />
