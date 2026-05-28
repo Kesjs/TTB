@@ -21,21 +21,21 @@ export default function Reglement() {
             <section>
               <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 1 - Organisation</h2>
               <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
-                <p>Le concours Top Talent du Bénin est organisé par le Ministère du Tourisme, de la Culture et des Arts. L'édition 2026 vise à révéler et propulser les talents artistiques les plus prometteurs du Bénin.</p>
+                <p>Le concours Top Talent Bénin est organisé par l'administration de la plateforme académique. L'édition 2026 vise à révéler, évaluer et propulser les talents artistiques les plus prometteurs du Bénin à travers un parcours transparent, équitable et entièrement numérisé.</p>
               </div>
             </section>
             
             <section>
-              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 2 - Participation</h2>
+              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 2 - Participation et Conditions d'Âge</h2>
               <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
-                <p>Le concours est ouvert à toute personne de nationalité béninoise âgée d'au moins 18 ans. Chaque candidat ne peut s'inscrire que dans une seule discipline artistique.</p>
+                <p>Le concours est ouvert à toute personne de nationalité béninoise, sans aucune limite d'âge. Les inscriptions sont accueillies au sein des 12 départements du Bénin. Chaque candidat ne peut s'inscrire que dans une seule discipline artistique et doit certifier l'authenticité de son identité ainsi que des médias soumis.</p>
               </div>
             </section>
             
             <section>
               <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 3 - Disciplines acceptées</h2>
               <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
-                <p>Les disciplines acceptées sont :</p>
+                <p>Les disciplines acceptées au sein de la plateforme sont au nombre de huit (8) :</p>
                 <ul className="list-disc list-inside space-y-1 ml-4">
                   <li>Musique</li>
                   <li>Danse</li>
@@ -50,63 +50,79 @@ export default function Reglement() {
             </section>
             
             <section>
-              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 4 - Inscription</h2>
+              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 4 - Inscription et Dépôt des Dossiers</h2>
               <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
-                <p>Les inscriptions se font exclusivement en ligne via la plateforme toptalentbenin.com. Chaque candidat doit fournir une vidéo de présentation respectant les critères techniques spécifiés (format, durée, qualité). Tout dossier incomplet sera rejeté.</p>
+                <p>Les inscriptions se font exclusivement en ligne via l'interface publique officielle <code>toptalentbenin.vercel.app/candidature</code>. Chaque candidat doit compléter le parcours d'inscription en 3 étapes, incluant la validation des informations de contact et le dépôt d'une vidéo de prestation respectant les critères demandés. Tout dossier incomplet ou non validé par l'administrateur système sera rejeté.</p>
               </div>
             </section>
             
             <section>
-              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 5 - Sélection</h2>
+              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 5 - Le Parcours d'Élimination (Les 4 Phases)</h2>
               <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
-                <p>La sélection s'effectue en plusieurs phases :</p>
-                <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li><strong>Présélection :</strong> Le comité artistique sélectionne 40 candidats</li>
-                  <li><strong>Quarts de finale :</strong> Le public et le jury éliminent 16 candidats</li>
-                  <li><strong>Demi-finales :</strong> 24 candidats s'affrontent, 12 qualifiés</li>
-                  <li><strong>Phase Or :</strong> 12 candidats, 6 finalistes</li>
-                  <li><strong>Finale :</strong> 6 candidats, 1 lauréat</li>
+                <p>Le concours s'organise autour de quatre (4) phases strictes et progressives :</p>
+                <ul className="list-decimal list-inside space-y-3 ml-4">
+                  <li>
+                    <strong>Phase 01 - Auditions Nationales (Sélection Initiale) :</strong> 
+                    Ouverture des dossiers dans les 12 départements. Après validation administrative, le jury professionnel analyse les candidatures et sélectionne rigoureusement les <strong>40 meilleurs profils</strong> pour rejoindre la phase nationale.
+                  </li>
+                  <li>
+                    <strong>Phase 02 - Quarts de Finale (Le Top 40) :</strong> 
+                    La compétition devient publique. Les 40 artistes s'affrontent et sont soumis au vote. L'avis du jury et le vote public éliminent 20 candidats pour ne conserver que <strong>20 artistes</strong>.
+                  </li>
+                  <li>
+                    <strong>Phase 03 - Demi-Finales (Le Top 20) :</strong> 
+                    Les compteurs de notation sont remis à zéro. Sous la double pression des votes du public et de l'expertise du jury, la sélection se resserre drastiquement pour retenir uniquement les <strong>8 grands finalistes</strong>.
+                  </li>
+                  <li>
+                    <strong>Phase 04 - Grande Finale (Le Top 8) :</strong> 
+                    L'apothéose de la compétition. Les 8 artistes d'élite s'affrontent en direct. Le vote souverain détermine le trio de tête ainsi que le vainqueur ultime.
+                  </li>
                 </ul>
               </div>
             </section>
             
             <section>
-              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 6 - Vote du public</h2>
+              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 6 - Mécanisme de Vote et Pondération</h2>
               <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
-                <p>Le vote du public est ouvert via paiement mobile (MTN, MOOV) ou carte bancaire via FedaPay. Chaque vote a un coût fixe. Le vote du public compte pour 50% du score final, les 50% restants étant attribués par le jury professionnel.</p>
-              </div>
-            </section>
-            
-            <section>
-              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 7 - Jury</h2>
-              <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
-                <p>Un jury de professionnels du secteur artistique est nommé par le Ministère. Les membres du jury évaluent les candidats sur des critères techniques, d'originalité et de présence scénique. Les décisions du jury sont souveraines et sans appel.</p>
-              </div>
-            </section>
-            
-            <section>
-              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 8 - Récompenses</h2>
-              <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
-                <p>Les récompenses sont attribuées selon le classement final :</p>
+                <p>Pour garantir une équité absolue et valoriser l'excellence, les votes lors des phases publiques (Quarts, Demis, et Finale) sont régis par un système de double validation à parts égales :</p>
                 <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li><strong>Lauréat Majeur :</strong> Grand Prix + Accompagnement professionnel d'un an</li>
-                  <li><strong>Finalistes :</strong> Bourses et opportunités de visibilité</li>
-                  <li><strong>Demi-finalistes :</strong> Certifications officielles</li>
+                  <li><strong>50% de la note :</strong> Attribuée par l'évaluation et l'expertise du Jury Professionnel.</li>
+                  <li><strong>50% de la note :</strong> Issue des votes payants sécurisés du Public.</li>
+                </ul>
+                <p className="mt-2">Les votes du public s'effectuent par paiement mobile ou carte bancaire. Toute tentative de fraude ou manipulation technique des flux de vote entraînera la disqualification immédiate et sans recours du candidat concerné.</p>
+              </div>
+            </section>
+            
+            <section>
+              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 7 - Collège du Jury Académique</h2>
+              <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
+                <p>Un collège de trois (3) jurés professionnels est nommé pour évaluer de manière indépendante les prestations. Chaque juré dispose d'un espace d'évaluation numérique strictement isolé et sécurisé par identifiant unique en base de données Supabase. Les critères portent sur la technique, l'originalité et la présence scénique. Les décisions et délibérations consolidées du jury sont souveraines et sans appel.</p>
+              </div>
+            </section>
+            
+            <section>
+              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 8 - Récompenses et Dotations</h2>
+              <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
+                <p>Des dotations de franchissement et des distinctions honorifiques sont octroyées selon les paliers atteints :</p>
+                <ul className="list-disc list-inside space-y-2 ml-4">
+                  <li><strong>À l'issue des Quarts de Finale (Top 20) :</strong> Attribution d'une Certification Officielle de l'Édition 2026.</li>
+                  <li><strong>À l'issue des Demi-Finales (Top 8) :</strong> Octroi d'une campagne de visibilité majeure sur les réseaux nationaux de la plateforme.</li>
+                  <li><strong>Au vainqueur de la Grande Finale :</strong> Le titre prestigieux d'Icône 2026, accompagné du Grand Prix d'une valeur de <strong>1 000 000 FCFA</strong> et d'un accompagnement professionnel d'un an pour le développement de sa carrière.</li>
                 </ul>
               </div>
             </section>
             
             <section>
-              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 9 - Droits d'image</h2>
+              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 9 - Droits d'Image</h2>
               <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
-                <p>Par leur participation, les candidats autorisent l'organisation à utiliser leur image, leur nom et leurs prestations à des fins promotionnelles, sans contrepartie financière, pour toute la durée du concours et pendant une période de 5 ans après la finale.</p>
+                <p>Du fait de leur inscription et de leur participation aux phases publiques, les candidats accordent à la plateforme Top Talent Bénin le droit non exclusif d'utiliser leur nom, image, descriptif et captations vidéo de prestation. Cette autorisation s'applique dans le cadre strict de la diffusion, de la promotion et de la valorisation de l'événement sur l'ensemble des canaux numériques et médias officiels.</p>
               </div>
             </section>
             
             <section>
-              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 10 - Litiges</h2>
+              <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-400 mb-4">Article 10 - Sécurité et Protection des Données</h2>
               <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
-                <p>Tout litige relatif à l'interprétation ou à l'exécution du présent règlement sera soumis à la compétence exclusive des tribunaux béninois. Le règlement est disponible sur demande auprès du Ministère du Tourisme, de la Culture et des Arts.</p>
+                <p>Les données personnelles, documents d'identité et médias collectés lors de l'inscription font l'objet d'un traitement informatique hautement sécurisé par le protocole de sécurité Supabase au niveau de la base de données. L'accès aux informations sensibles est restreint à l'administrateur système et aux membres du jury pour les besoins exclusifs et stricts du processus de notation et de contrôle du concours.</p>
               </div>
             </section>
           </div>
