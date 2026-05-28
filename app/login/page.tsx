@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
@@ -12,8 +12,35 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Handle initial hydration and session check
+  useEffect(() => {
+    setIsHydrated(true);
+    const checkSession = async () => {
+      if (!supabase) return;
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.session.user.id)
+          .single();
+        
+        if (profile?.role === 'admin') {
+          router.push('/dashboard/admin');
+        } else if (profile?.role === 'jury') {
+          router.push('/dashboard/jury');
+        } else if (profile?.role === 'candidate') {
+          // Candidates shouldn't be on this login page
+          router.push('/candidature?view=login');
+        }
+      }
+    };
+    void checkSession();
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,16 +102,14 @@ export default function LoginPage() {
       console.log('Login verification - storedUserId:', data.session.user.id, 'storedUserRole:', profile.role);
       console.log('Cookies set for middleware authentication');
 
-      // Redirect based on role
+      // Redirect based on role - only admin and jury (candidates use candidature page)
       let redirectUrl = '';
       if (profile.role === 'admin') {
         redirectUrl = '/dashboard/admin';
       } else if (profile.role === 'jury') {
         redirectUrl = '/dashboard/jury';
-      } else if (profile.role === 'candidate') {
-        redirectUrl = '/dashboard/candidate';
       } else {
-        setError('Accès non autorisé.');
+        setError('Accès non autorisé. Cette page est réservée aux membres du jury et au staff administratif. Les candidats doivent utiliser la page de candidature.');
         setLoading(false);
         setIsSubmitting(false);
         return;
@@ -101,6 +126,14 @@ export default function LoginPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e5c47f]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] text-[#050505] flex items-center justify-center selection:bg-[#e5c47f] selection:text-black">
