@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [signInStaffState, signInStaffFormAction] = useFormState(signInStaff, null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Nettoyer la session fantôme avant l'authentification
+  // Soumission simple du formulaire (nettoyage déjà fait au chargement)
   const handleCleanLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -25,60 +25,70 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      // 1. Nettoyer la session côté client
-      if (supabase) {
-        await supabase.auth.signOut();
-      }
+      console.log('🔑 Soumission du formulaire avec email:', email);
       
-      // 2. Effacer manuellement les cookies de rôle
-      document.cookie = "user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      document.cookie = "user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      
-      // 3. Nettoyer localStorage
-      localStorage.removeItem('user_id');
-      localStorage.removeItem('user_role');
-      
-      console.log('🧹 Session fantôme nettoyée, tentative d\'authentification...');
-      
-      // 4. Créer et soumettre le formulaire manuellement
+      // Créer et soumettre le formulaire avec les valeurs actuelles
       const form = e.target as HTMLFormElement;
       const formData = new FormData(form);
       
-      // 5. Exécuter l'action serveur
+      // Exécuter l'action serveur
       await signInStaffFormAction(formData);
       
     } catch (error) {
-      console.error('Erreur lors du nettoyage de session:', error);
+      console.error('Erreur lors de la soumission:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Handle initial hydration and session check
+  // Nettoyage de session au chargement de la page
   useEffect(() => {
     setIsHydrated(true);
-    const checkSession = async () => {
-      if (!supabase) return;
-      const { data } = await supabase.auth.getSession();
-      
-      // If a session exists, we show a choice instead of auto-redirecting
-      // to avoid getting "stuck" in a role (Admin/Jury conflict)
-      if (data.session) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role, full_name')
-          .eq('id', data.session.user.id)
-          .single();
-        
-        if (profile) {
-          // Store existing profile to show "Continue as..." option if we wanted to be fancy
-          // For now, we just stay on the login page but don't force redirect
-          console.log('[Login] Active session detected for:', profile.full_name, '(', profile.role, ')');
+    
+    const cleanupSession = async () => {
+      try {
+        // 1. Nettoyer la session côté client (avec gestion d'erreur 403)
+        if (supabase) {
+          try {
+            await supabase.auth.signOut({ scope: 'local' });
+          } catch (signOutError) {
+            console.warn("Échec du signOut serveur, nettoyage forcé du stockage local...", signOutError);
+          }
         }
+        
+        // 2. NETTOYAGE FORCÉ DU LOCALSTORAGE ET SESSIONSTORAGE
+        if (typeof window !== 'undefined') {
+          localStorage.clear();
+          sessionStorage.clear();
+          
+          // Supprimer spécifiquement les clés Supabase au cas où clear() ne suffit pas
+          Object.keys(localStorage).forEach((key) => {
+            if (key.startsWith('sb-')) localStorage.removeItem(key);
+          });
+        }
+        
+        // 3. NETTOYAGE FORCÉ DES COOKIES
+        document.cookie = "user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        
+        // Nettoyer tous les cookies Supabase
+        document.cookie.split(";").forEach((c) => {
+          const cookie = c.trim();
+          if (cookie.startsWith('sb-') || cookie.includes('supabase')) {
+            const cookieName = cookie.split("=")[0];
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`;
+          }
+        });
+        
+        console.log('🧹 Session nettoyée au chargement de la page login');
+      } catch (error) {
+        console.error('Erreur lors du nettoyage de session au chargement:', error);
       }
     };
-    void checkSession();
-  }, [router]);
+    
+    cleanupSession();
+  }, []);
 
   if (!isHydrated) {
     return (
