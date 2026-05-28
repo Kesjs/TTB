@@ -776,127 +776,6 @@ export default function CandidaturePage() {
                           </div>
                         </div>
 
-                        <div>
-                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">Courte biographie artistique (Optionnel)</label>
-                          <textarea
-                            value={formData.bio}
-                            onChange={(event) => setFormData({ ...formData, bio: event.target.value.slice(0, 150) })}
-                            placeholder="Décrivez votre parcours artistique en quelques mots..."
-                            maxLength={150}
-                            rows={3}
-                            className="w-full bg-zinc-50 border border-zinc-200 p-3 sm:p-4 text-sm font-body tracking-wide focus:outline-none focus:border-black resize-none rounded-none"
-                            disabled={isUploading}
-                          />
-                          <p className="text-[9px] text-zinc-400 mt-1 text-right">{formData.bio.length}/150 caractères</p>
-                        </div>
-
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(1)}
-                            disabled={isUploading}
-                            className="flex-1 py-3 sm:py-4 border border-zinc-200 text-zinc-600 text-xs uppercase tracking-[0.2em] font-bold hover:border-[#050505] hover:text-[#050505] transition-all rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            PRÉCÉDENT
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(3)}
-                            disabled={!formData.region || !formData.email}
-                            className="flex-1 py-3 sm:py-4 bg-[#050505] text-white text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] hover:text-black transition-all flex items-center justify-center gap-2 rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            SUIVANT <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Step 3: Media & Security */}
-                  <AnimatePresence mode="wait">
-                    {currentStep === 3 && (
-                      <motion.div
-                        key="step3"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-4 sm:space-y-6"
-                      >
-                        <div>
-                          <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold mb-2">Capsule Vidéo (1 Min Max)</label>
-                          <div
-                            onClick={() => !isUploading && videoInputRef.current?.click()}
-                            className={`border-2 border-dashed transition-colors p-6 sm:p-8 text-center cursor-pointer flex flex-col items-center justify-center space-y-2 group ${
-                              fieldErrors.video ? 'border-red-500 bg-red-50' : 'border-zinc-200 hover:border-black bg-zinc-50'
-                            } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
-                          >
-                            <input type="file" ref={videoInputRef} onChange={handleVideoChange} accept="video/*" className="hidden" disabled={isUploading} />
-                            {videoPreview ? (
-                              <div className="w-full space-y-3">
-                                <div className="flex items-center gap-2 text-emerald-600 text-sm font-bold uppercase tracking-wider">
-                                  <Film className="w-4 h-4" /> {videoPreview.name}
-                                </div>
-                                <video
-                                  src={URL.createObjectURL(videoPreview)}
-                                  controls
-                                  className="w-full max-h-48 object-cover rounded-lg"
-                                />
-                              </div>
-                            ) : (
-                              <>
-                                <Upload className="w-5 h-5 text-zinc-400 group-hover:text-black transition-colors" />
-                                <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Sélectionner le fichier</span>
-                                <span className="text-xs text-zinc-400 font-body">MP4 ou MOV (Max 50 Mo)</span>
-                              </>
-                            )}
-                          </div>
-                          {fieldErrors.video && (
-                            <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.video}</p>
-                          )}
-                          {isUploading && (
-                            <div className="w-full bg-zinc-200 h-[2px] mt-2 rounded-none overflow-hidden">
-                              <div 
-                                className="bg-black h-full transition-all duration-300" 
-                                style={{ width: `${uploadProgress}%` }}
-                              />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="border-t border-zinc-100 pt-4 sm:pt-5">
-                          <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold mb-2">Image de couverture (Photo de profil)</label>
-                          <div
-                            onClick={() => !isUploading && coverImageInputRef.current?.click()}
-                            className={`border-2 border-dashed transition-colors p-6 sm:p-8 text-center cursor-pointer flex flex-col items-center justify-center space-y-2 group ${
-                              fieldErrors.coverImage ? 'border-red-500 bg-red-50' : 'border-zinc-200 hover:border-black bg-zinc-50'
-                            } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
-                          >
-                            <input type="file" ref={coverImageInputRef} onChange={handleCoverImageChange} accept="image/*" className="hidden" disabled={isUploading} />
-                            {coverImagePreview ? (
-                              <div className="w-full space-y-3">
-                                <div className="flex items-center gap-2 text-emerald-600 text-sm font-bold uppercase tracking-wider">
-                                  <CheckCircle2 className="w-4 h-4" /> {coverImagePreview.name}
-                                </div>
-                                <img
-                                  src={URL.createObjectURL(coverImagePreview)}
-                                  alt="Preview"
-                                  className="w-full max-h-48 object-cover rounded-lg"
-                                />
-                              </div>
-                            ) : (
-                              <>
-                                <Upload className="w-5 h-5 text-zinc-400 group-hover:text-black transition-colors" />
-                                <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Sélectionner l'image</span>
-                                <span className="text-xs text-zinc-400 font-body">JPG ou PNG (Max 5 Mo)</span>
-                              </>
-                            )}
-                          </div>
-                          {fieldErrors.coverImage && (
-                            <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.coverImage}</p>
-                          )}
-                        </div>
-
                         <div className="border-t border-zinc-100 pt-4 sm:pt-5">
                           <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold mb-2">Créez votre mot de passe d&apos;accès</label>
                           <div className="relative">
@@ -1007,6 +886,127 @@ export default function CandidaturePage() {
                         <div className="flex gap-3">
                           <button
                             type="button"
+                            onClick={() => setCurrentStep(1)}
+                            disabled={isUploading}
+                            className="flex-1 py-3 sm:py-4 border border-zinc-200 text-zinc-600 text-xs uppercase tracking-[0.2em] font-bold hover:border-[#050505] hover:text-[#050505] transition-all rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            PRÉCÉDENT
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(3)}
+                            disabled={!formData.region || !formData.email || !formData.password || !formData.confirmPassword || !!fieldErrors.password || !!fieldErrors.confirmPassword}
+                            className="flex-1 py-3 sm:py-4 bg-[#050505] text-white text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] hover:text-black transition-all flex items-center justify-center gap-2 rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            SUIVANT <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Step 3: Media & Security */}
+                  <AnimatePresence mode="wait">
+                    {currentStep === 3 && (
+                      <motion.div
+                        key="step3"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-4 sm:space-y-6"
+                      >
+                        <div>
+                          <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold mb-2">Capsule Vidéo (1 Min Max)</label>
+                          <div
+                            onClick={() => !isUploading && videoInputRef.current?.click()}
+                            className={`border-2 border-dashed transition-colors p-6 sm:p-8 text-center cursor-pointer flex flex-col items-center justify-center space-y-2 group ${
+                              fieldErrors.video ? 'border-red-500 bg-red-50' : 'border-zinc-200 hover:border-black bg-zinc-50'
+                            } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
+                          >
+                            <input type="file" ref={videoInputRef} onChange={handleVideoChange} accept="video/*" className="hidden" disabled={isUploading} />
+                            {videoPreview ? (
+                              <div className="w-full space-y-3">
+                                <div className="flex items-center gap-2 text-emerald-600 text-sm font-bold uppercase tracking-wider">
+                                  <Film className="w-4 h-4" /> {videoPreview.name}
+                                </div>
+                                <video
+                                  src={URL.createObjectURL(videoPreview)}
+                                  controls
+                                  className="w-full max-h-48 object-cover rounded-lg"
+                                />
+                              </div>
+                            ) : (
+                              <>
+                                <Upload className="w-5 h-5 text-zinc-400 group-hover:text-black transition-colors" />
+                                <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Sélectionner le fichier</span>
+                                <span className="text-xs text-zinc-400 font-body">MP4 ou MOV (Max 50 Mo)</span>
+                              </>
+                            )}
+                          </div>
+                          {fieldErrors.video && (
+                            <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.video}</p>
+                          )}
+                          {isUploading && (
+                            <div className="w-full bg-zinc-200 h-[2px] mt-2 rounded-none overflow-hidden">
+                              <div 
+                                className="bg-black h-full transition-all duration-300" 
+                                style={{ width: `${uploadProgress}%` }}
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="border-t border-zinc-100 pt-4 sm:pt-5">
+                          <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold mb-2">Image de couverture (Photo de profil)</label>
+                          <div
+                            onClick={() => !isUploading && coverImageInputRef.current?.click()}
+                            className={`border-2 border-dashed transition-colors p-6 sm:p-8 text-center cursor-pointer flex flex-col items-center justify-center space-y-2 group ${
+                              fieldErrors.coverImage ? 'border-red-500 bg-red-50' : 'border-zinc-200 hover:border-black bg-zinc-50'
+                            } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
+                          >
+                            <input type="file" ref={coverImageInputRef} onChange={handleCoverImageChange} accept="image/*" className="hidden" disabled={isUploading} />
+                            {coverImagePreview ? (
+                              <div className="w-full space-y-3">
+                                <div className="flex items-center gap-2 text-emerald-600 text-sm font-bold uppercase tracking-wider">
+                                  <CheckCircle2 className="w-4 h-4" /> {coverImagePreview.name}
+                                </div>
+                                <img
+                                  src={URL.createObjectURL(coverImagePreview)}
+                                  alt="Preview"
+                                  className="w-full max-h-48 object-cover rounded-lg"
+                                />
+                              </div>
+                            ) : (
+                              <>
+                                <Upload className="w-5 h-5 text-zinc-400 group-hover:text-black transition-colors" />
+                                <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Sélectionner l'image</span>
+                                <span className="text-xs text-zinc-400 font-body">JPG ou PNG (Max 5 Mo)</span>
+                              </>
+                            )}
+                          </div>
+                          {fieldErrors.coverImage && (
+                            <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.coverImage}</p>
+                          )}
+                        </div>
+
+                        <div className="border-t border-zinc-100 pt-4 sm:pt-5">
+                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">Courte biographie artistique (Optionnel)</label>
+                          <textarea
+                            value={formData.bio}
+                            onChange={(event) => setFormData({ ...formData, bio: event.target.value.slice(0, 150) })}
+                            placeholder="Décrivez votre parcours artistique en quelques mots..."
+                            maxLength={150}
+                            rows={3}
+                            className="w-full bg-zinc-50 border border-zinc-200 p-3 sm:p-4 text-sm font-body tracking-wide focus:outline-none focus:border-black resize-none rounded-none"
+                            disabled={isUploading}
+                          />
+                          <p className="text-[9px] text-zinc-400 mt-1 text-right">{formData.bio.length}/150 caractères</p>
+                        </div>
+
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
                             onClick={() => setCurrentStep(2)}
                             disabled={isUploading}
                             className="flex-1 py-3 sm:py-4 border border-zinc-200 text-zinc-600 text-xs uppercase tracking-[0.2em] font-bold hover:border-[#050505] hover:text-[#050505] transition-all rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1016,7 +1016,7 @@ export default function CandidaturePage() {
                           <button
                             type="submit"
                             disabled={isUploading}
-                            className="flex-1 py-3 sm:py-4 bg-[#050505] text-white text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] hover:text-black transition-colors flex items-center justify-center gap-2 sm:gap-3 rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 py-3 sm:py-4 bg-[#050509] text-white text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] hover:text-black transition-colors flex items-center justify-center gap-2 sm:gap-3 rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {isUploading ? (
                               <>
