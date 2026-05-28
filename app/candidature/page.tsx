@@ -15,9 +15,8 @@ import CustomSelect from '@/components/ui/CustomSelect';
 
 export default function CandidaturePage() {
   const router = useRouter();
-  const [viewState, setViewState] = useState<'form' | 'login' | 'dashboard'>(() => (
-    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'login' ? 'login' : 'form'
-  ));
+  const [viewState, setViewState] = useState<'form' | 'login' | 'dashboard'>('form');
+  const [isHydrated, setIsHydrated] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -57,6 +56,33 @@ export default function CandidaturePage() {
   // Validation states
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
+  // Handle initial hydration and session check
+  useEffect(() => {
+    setIsHydrated(true);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'login') {
+      setViewState('login');
+    }
+
+    // Check if user is already logged in as candidate
+    const checkSession = async () => {
+      if (!supabase) return;
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.session.user.id)
+          .single();
+        
+        if (profile?.role === 'candidate') {
+          router.push('/dashboard/candidate');
+        }
+      }
+    };
+    void checkSession();
+  }, [router]);
 
   // Update password criteria and confirm password validation in real-time
   useEffect(() => {
@@ -488,6 +514,15 @@ export default function CandidaturePage() {
     setCrop({ x: 0, y: 0 });
     setZoom(1);
   };
+
+  // Prevent hydration mismatch by showing a loading state or nothing until hydrated
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e5c47f]"></div>
+      </div>
+    );
+  }
 
   if (isSubmittingSuccess) {
     return (
