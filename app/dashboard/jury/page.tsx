@@ -90,7 +90,7 @@ export default function JuryDashboard() {
 
   const getCandidateRatingDetails = (candidateId: string) => {
     const rating = existingRatings.find(
-      r => r.candidate_id === candidateId && r.phase === systemControl?.current_phase
+      r => r.candidate_id === candidateId && r.phase === systemControl?.current_phase && r.jury_id === juryId
     );
     if (!rating) return null;
     return {
@@ -243,14 +243,16 @@ export default function JuryDashboard() {
 
   useEffect(() => {
     isMounted.current = true;
-    loadData();
+    void loadData();
 
-    // Realtime subscription for system_control
+    // Realtime subscriptions
     if (supabase) {
-      const channel = supabase
+      // 1. System Control subscription
+      const systemChannel = supabase
         .channel('jury_system_control')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_control' }, (payload) => {
           if (!isMounted.current) return;
+          console.log('[Jury] System control update received');
           const newControl = payload.new as SystemControl;
           setSystemControl(newControl);
           // Auto-select the live candidate if admin changes it
@@ -260,9 +262,31 @@ export default function JuryDashboard() {
         })
         .subscribe();
 
+      // 2. Candidates subscription (to see new approvals)
+      const candidatesChannel = supabase
+        .channel('jury_candidates')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'candidates' }, (payload) => {
+          if (!isMounted.current) return;
+          console.log('[Jury] Candidates update received');
+          void loadData();
+        })
+        .subscribe();
+
+      // 3. Ratings subscription (to see other jurors' work or sync)
+      const ratingsChannel = supabase
+        .channel('jury_ratings')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'jury_ratings' }, (payload) => {
+          if (!isMounted.current) return;
+          console.log('[Jury] Ratings update received');
+          void loadData();
+        })
+        .subscribe();
+
       return () => {
         isMounted.current = false;
-        channel.unsubscribe();
+        systemChannel.unsubscribe();
+        candidatesChannel.unsubscribe();
+        ratingsChannel.unsubscribe();
       };
     }
 
@@ -273,10 +297,10 @@ export default function JuryDashboard() {
 
   // Mettre à jour les sliders si le candidat sélectionné a déjà une note
   useEffect(() => {
-    if (!activeCandidateId || !systemControl) return;
+    if (!activeCandidateId || !systemControl || !juryId) return;
     const currentPhase = systemControl.current_phase;
     const rating = existingRatings.find(
-      r => r.candidate_id === activeCandidateId && r.phase === currentPhase
+      r => r.candidate_id === activeCandidateId && r.phase === currentPhase && r.jury_id === juryId
     );
 
     if (rating) {
@@ -335,6 +359,18 @@ export default function JuryDashboard() {
         is_approved_preselection: isApprovedPreselection,
         phase: systemControl.current_phase as any,
       });
+
+      // Si le juré a validé le candidat, mettre à jour le tag correspondant pour l'admin recap
+      if (isApprovedPreselection) {
+        let fieldToUpdate: 'is_top_40' | 'is_semifinalist' | 'is_finalist' | null = null;
+        if (systemControl.current_phase === 'PRESELECTION') fieldToUpdate = 'is_top_40';
+        else if (systemControl.current_phase === 'VOTES_TOP_40') fieldToUpdate = 'is_semifinalist';
+        else if (systemControl.current_phase === 'SEMIFINAL') fieldToUpdate = 'is_finalist';
+
+        if (fieldToUpdate) {
+          await db.updateCandidateSelection(activeCandidate.id, fieldToUpdate, true);
+        }
+      }
 
       console.log('[Jury Dashboard] Save successful! Result:', result);
 
@@ -526,60 +562,97 @@ export default function JuryDashboard() {
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <span className="flex items-center gap-1.5 text-xs font-bold text-[#e5c47f] uppercase tracking-widest mb-1">
-                      <Check className="w-3.5 h-3.5" />
-                      Sélection Top 40
+                      <Trophy className="w-3.5 h-3.5" />
+                      {systemControl?.current_phase === 'PRESELECTION' ? 'Sélection Top 40' : 
+                       systemControl?.current_phase === 'VOTES_TOP_40' ? 'Sélection Demi-Finale' : 
+                       'Sélection Finale'}
                     </span>
-                    <h2 className="font-heading font-black text-lg sm:text-xl text-white uppercase tracking-tight">Candidats Confirmés</h2>
-                    <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">Sélectionnez les candidats pour le Top 40.</p>
+                    <h2 className="font-heading font-black text-lg sm:text-xl text-white uppercase tracking-tight">Récapitulatif de la Sélection</h2>
+                    <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">
+                      Voici la liste des talents actuellement qualifiés pour la phase suivante.
+                    </p>
                   </div>
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2">
-                    <span className="text-xs font-bold text-white">{selectedCandidateIds.size}</span>
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 flex items-center gap-3">
+                    <div className="text-right">
+                      <span className="text-[9px] text-zinc-500 uppercase block">Qualifiés</span>
+                      <span className="text-xs font-bold text-white">
+                        {(() => {
+                          const phase = systemControl?.current_phase;
+                          if (phase === 'PRESELECTION') return candidates.filter(c => c.is_top_40).length;
+                          if (phase === 'VOTES_TOP_40') return candidates.filter(c => c.is_semifinalist).length;
+                          if (phase === 'SEMIFINAL') return candidates.filter(c => c.is_finalist).length;
+                          return 0;
+                        })()}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
-                  {candidates.filter(c => c.is_confirmed_by_admin).map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => handleToggleSelection(c.id)}
-                      className={`w-full text-left p-3.5 rounded-xl border flex items-center justify-between transition-all ${
-                        selectedCandidateIds.has(c.id)
-                          ? 'bg-zinc-900 text-white border-[#e5c47f]'
-                          : 'bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:border-zinc-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded border flex items-center justify-center ${
-                          selectedCandidateIds.has(c.id) ? 'bg-[#e5c47f] border-[#e5c47f]' : 'border-zinc-600'
-                        }`}>
-                          {selectedCandidateIds.has(c.id) && <Check className="w-3 h-3 text-zinc-900" />}
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-heading font-bold text-sm text-white">{c.stage_name}</span>
-                            {renderCandidatureBadge(c)}
-                          </div>
-                          <span className="text-[10px] text-zinc-500 block">
-                            {c.discipline} • {c.region}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                <div className="bg-zinc-900/30 border border-zinc-800 rounded-xl overflow-hidden">
+                  <div className="max-h-[500px] overflow-y-auto">
+                    <table className="w-full text-left">
+                      <thead className="bg-zinc-950/50 sticky top-0 border-b border-zinc-800">
+                        <tr className="text-[8px] font-mono text-zinc-500 uppercase tracking-tighter">
+                          <th className="p-3">Artiste</th>
+                          <th className="p-3">Discipline</th>
+                          <th className="p-3 text-right">Votre Note</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800/50">
+                        {(() => {
+                          const phase = systemControl?.current_phase;
+                          const qualified = candidates.filter(c => {
+                            if (phase === 'PRESELECTION') return c.is_top_40;
+                            if (phase === 'VOTES_TOP_40') return c.is_semifinalist;
+                            if (phase === 'SEMIFINAL') return c.is_finalist;
+                            return false;
+                          });
+
+                          if (qualified.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan={3} className="p-12 text-center">
+                                  <div className="flex flex-col items-center gap-3 opacity-30">
+                                    <CheckCircle2 className="w-8 h-8" />
+                                    <span className="text-[10px] font-mono uppercase tracking-widest">Aucun candidat qualifié pour le moment</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          return qualified.map((c) => {
+                            const rating = existingRatings.find(r => r.candidate_id === c.id && r.jury_id === juryId && r.phase === phase);
+                            const avg = rating ? (Number(rating.score_technique) + Number(rating.score_originalite) + Number(rating.score_presence)) / 3 : null;
+                            
+                            return (
+                              <tr key={c.id} className="text-[10px] hover:bg-zinc-900/50 transition-colors">
+                                <td className="p-3">
+                                  <div className="font-bold text-white uppercase">{c.stage_name}</div>
+                                  <div className="text-[8px] text-zinc-600">{c.region}</div>
+                                </td>
+                                <td className="p-3 text-zinc-500 uppercase">{c.discipline}</td>
+                                <td className="p-3 text-right">
+                                  {avg ? (
+                                    <span className="font-mono font-black text-[#e5c47f]">{avg.toFixed(1)}</span>
+                                  ) : (
+                                    <span className="text-zinc-700">--</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
-                <div className="mt-6 pt-6 border-t border-zinc-800">
-                  <button
-                    onClick={handleConfirmSelection}
-                    disabled={selectedCandidateIds.size === 0}
-                    className={`w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
-                      selectedCandidateIds.size > 0
-                        ? 'bg-[#e5c47f] text-zinc-900 hover:bg-[#d4b36f]'
-                        : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {selectedCandidateIds.size > 0 ? `Confirmer la Sélection (${selectedCandidateIds.size})` : 'Sélectionnez au moins un candidat'}
-                  </button>
+                <div className="mt-6 p-4 bg-[#e5c47f]/5 border border-[#e5c47f]/20 rounded-xl">
+                  <p className="text-[9px] text-[#e5c47f]/70 leading-relaxed uppercase font-medium">
+                    Note : Cette liste est synchronisée en temps réel avec le tableau de bord administratif. 
+                    Elle regroupe tous les talents ayant reçu une validation de passage pour l'étape suivante.
+                  </p>
                 </div>
               </div>
             </div>
@@ -865,6 +938,31 @@ export default function JuryDashboard() {
                                 </div>
                               </div>
                               <input type="range" min="0" max="20" step="0.5" value={scorePresence} onChange={(e) => setScorePresence(parseFloat(e.target.value))} className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-[#e5c47f]" />
+                            </div>
+
+                            {/* Validation Switch */}
+                            <div className="pt-4 pb-2">
+                              <label className="flex items-center gap-3 p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl cursor-pointer group hover:border-[#e5c47f]/30 transition-all">
+                                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                                  isApprovedPreselection 
+                                    ? 'bg-emerald-500 border-emerald-500 text-zinc-900' 
+                                    : 'border-zinc-700 text-transparent'
+                                }`}>
+                                  <Check className="w-4 h-4" />
+                                </div>
+                                <input 
+                                  type="checkbox" 
+                                  className="hidden" 
+                                  checked={isApprovedPreselection}
+                                  onChange={(e) => setIsApprovedPreselection(e.target.checked)}
+                                />
+                                <div className="flex-1">
+                                  <span className={`text-xs font-black uppercase tracking-widest block ${isApprovedPreselection ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                                    Valider ce talent pour la suite
+                                  </span>
+                                  <span className="text-[9px] text-zinc-600 uppercase font-bold">Confirmer l'aptitude du candidat pour l'étape suivante</span>
+                                </div>
+                              </label>
                             </div>
                           </div>
 

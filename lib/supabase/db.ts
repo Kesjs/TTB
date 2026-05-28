@@ -228,6 +228,36 @@ export const db = {
     return true;
   },
 
+  updateCandidateSelection: async (id: string, field: 'is_top_40' | 'is_semifinalist' | 'is_finalist', value: boolean): Promise<Candidate | null> => {
+    if (supabase) {
+      console.log(`updateCandidateSelection - Updating ${field} for candidate ${id} to ${value}`);
+      const { data, error } = await supabase
+        .from('candidates')
+        .update({ [field]: value })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error(`updateCandidateSelection - Error:`, error);
+        return null;
+      }
+      return data;
+    }
+
+    initLocalStorage();
+    const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
+    const index = candidates.findIndex((candidate) => candidate.id === id);
+
+    if (index !== -1) {
+      (candidates[index] as any)[field] = value;
+      localStorage.setItem('ttb_candidates', JSON.stringify(candidates));
+      return candidates[index];
+    }
+
+    return null;
+  },
+
   getVotes: async (): Promise<Vote[]> => {
     if (supabase) {
       const { data, error } = await supabase.from('votes').select('*');

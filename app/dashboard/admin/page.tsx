@@ -225,6 +225,15 @@ export default function AdminDashboard() {
           .subscribe();
         channels.push(systemChannel);
 
+        const candidatesChannel = supabaseClient
+          .channel('candidates_admin')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'candidates' }, (payload) => {
+            console.log('Candidate updated:', payload);
+            db.getCandidates().then(allCandidates => setCandidates(allCandidates || []));
+          })
+          .subscribe();
+        channels.push(candidatesChannel);
+
         const ratingsChannel = supabaseClient
           .channel('jury_ratings_admin')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'jury_ratings' }, (payload) => {
@@ -491,6 +500,18 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       addToast('error', 'Erreur lors de la confirmation');
+    }
+  };
+
+  const handleToggleSelection = async (id: string, field: 'is_top_40' | 'is_semifinalist' | 'is_finalist', currentValue: boolean) => {
+    try {
+      const updated = await db.updateCandidateSelection(id, field, !currentValue);
+      if (updated) {
+        setCandidates(prev => prev.map(c => c.id === id ? updated : c));
+        addToast('success', `Statut ${field} mis à jour`);
+      }
+    } catch (err) {
+      addToast('error', 'Erreur lors de la mise à jour de la sélection');
     }
   };
 
@@ -983,15 +1004,41 @@ export default function AdminDashboard() {
                           })()}
                         </td>
                         <td className="p-4">
-                          <span className={`text-[10px] px-2 py-1 rounded font-mono uppercase ${
-                            candidate.status === 'approved' 
-                              ? 'bg-emerald-900/30 text-emerald-400' 
-                              : candidate.status === 'rejected'
-                              ? 'bg-red-900/30 text-red-400'
-                              : 'bg-zinc-800 text-zinc-400'
-                          }`}>
-                            {candidate.status === 'approved' ? 'Approuvé' : candidate.status === 'rejected' ? 'Rejeté' : 'En attente'}
-                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            <button
+                              onClick={() => handleToggleSelection(candidate.id, 'is_top_40', !!candidate.is_top_40)}
+                              className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase transition-all ${
+                                candidate.is_top_40 
+                                  ? 'bg-[#e5c47f] text-zinc-950' 
+                                  : 'bg-zinc-900 text-zinc-600 hover:text-zinc-400'
+                              }`}
+                              title="Qualifier pour le Top 40"
+                            >
+                              T40
+                            </button>
+                            <button
+                              onClick={() => handleToggleSelection(candidate.id, 'is_semifinalist', !!candidate.is_semifinalist)}
+                              className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase transition-all ${
+                                candidate.is_semifinalist 
+                                  ? 'bg-emerald-500 text-zinc-950' 
+                                  : 'bg-zinc-900 text-zinc-600 hover:text-zinc-400'
+                              }`}
+                              title="Qualifier pour la Demi-finale"
+                            >
+                              SF
+                            </button>
+                            <button
+                              onClick={() => handleToggleSelection(candidate.id, 'is_finalist', !!candidate.is_finalist)}
+                              className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase transition-all ${
+                                candidate.is_finalist 
+                                  ? 'bg-purple-500 text-zinc-950' 
+                                  : 'bg-zinc-900 text-zinc-600 hover:text-zinc-400'
+                              }`}
+                              title="Qualifier pour la Finale"
+                            >
+                              F
+                            </button>
+                          </div>
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
