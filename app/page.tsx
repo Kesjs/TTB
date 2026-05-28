@@ -308,9 +308,9 @@ function HomeContent() {
   // Filter candidates based on phase
 
   const filteredCandidates = useMemo(() => {
-    // En présélection, on montre tous les candidats approuvés
+    // En présélection, aucun candidat n'est visible publiquement (uniquement pour le jury en coulisses)
     if (systemControl.current_phase === 'PRESELECTION') {
-      return rankedCandidates;
+      return [];
     }
 
     if (systemControl.current_phase === 'VOTES_TOP_40')
