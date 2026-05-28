@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle2, Clock, Share2, User, Award, MapPin, LogOut, TrendingUp, Sparkles, XCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase';
+import { auth } from '@/lib/supabase/auth';
 import type { Candidate } from '@/lib/supabase';
 
 export default function CandidateDashboard() {
