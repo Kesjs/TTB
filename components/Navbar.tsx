@@ -86,7 +86,16 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
 
         {/* ZONE LOGO (CLIQUABLE) + TEXTE (STATIQUE) */}
         <div className="flex items-center gap-2 sm:gap-3 select-none">
-          <Link href="/" className="transition-opacity hover:opacity-80 active:scale-95 flex-shrink-0">
+          <Link 
+            href="/" 
+            className="transition-opacity hover:opacity-80 active:scale-95 flex-shrink-0"
+            onClick={(e) => {
+              if (pathname === '/') {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+          >
             <img 
               src="/logo_ttb.jfif" 
               alt="Top Talent du Bénin" 

@@ -21,7 +21,7 @@ export default function RootLayout({
       className="h-full"
     >
       <body className="min-h-full bg-background text-foreground font-sans antialiased">
-        <NextTopLoader color="#e5c47f" />
+        <NextTopLoader color="#e5c47f" showSpinner={false} />
         {children}
       </body>
     </html>
