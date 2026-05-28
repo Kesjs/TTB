@@ -26,7 +26,7 @@ export default function CandidaturePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // --- NEW PRODUCTION STATES ---
+  // --- PRODUCTION STATES ---
   const [isSubmittingSuccess, setIsSubmittingSuccess] = useState(false);
   const [stageNameStatus, setStageNameStatus] = useState<'available' | 'taken' | 'checking' | null>(null);
   const [emailStatus, setEmailStatus] = useState<'available' | 'taken' | 'checking' | null>(null);
@@ -34,6 +34,7 @@ export default function CandidaturePage() {
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [profile, setProfile] = useState<{ role: string } | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Password criteria validation state
   const [passwordCriteria, setPasswordCriteria] = useState({
@@ -42,9 +43,10 @@ export default function CandidaturePage() {
     hasNumber: false,
     hasSpecialChar: false
   });
-  const [signInState, signInFormAction] = useFormState(signIn, null);
-  const [signInStaffState, signInStaffFormAction] = useFormState(signInStaff, null);
+
   const [currentPhase, setCurrentPhase] = useState<string>('PRESELECTION');
+
+  // Form states matching table definitions
   const [formData, setFormData] = useState({
     stageName: '',
     discipline: '',
@@ -63,30 +65,28 @@ export default function CandidaturePage() {
   // Handle initial hydration and session check
   useEffect(() => {
     setIsHydrated(true);
+    
+    // Check if URL has view=login parameter
     const params = new URLSearchParams(window.location.search);
     if (params.get('view') === 'login') {
       setViewState('login');
     }
 
-    // Check if user is already logged in as candidate
     const checkSession = async () => {
       if (!supabase) return;
       const { data } = await supabase.auth.getSession();
       if (data.session) {
+        // Fetch role
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', data.session.user.id)
           .single();
         
-        // Store profile in state for UI context
         setProfile(profile);
         
         if (profile?.role === 'candidate') {
           router.push('/dashboard/candidate');
-        } else if (profile?.role === 'admin' || profile?.role === 'jury') {
-          // Staff can access candidature page for inspection - no redirection
-          console.log(`Staff ${profile.role} accessing candidature page in preview mode`);
         }
       }
     };
@@ -102,15 +102,18 @@ export default function CandidaturePage() {
       hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password)
     });
 
-    // Re-validate confirm password if it's already been touched
     if (touchedFields.confirmPassword) {
-      const confirmError = formData.confirmPassword !== formData.password ? 'Les mots de passe ne correspondent pas' : '';
+      const confirmError = formData.confirmPassword !== formData.password 
+        ? 'Les mots de passe ne correspondent pas' 
+        : '';
       setFieldErrors(prev => ({ ...prev, confirmPassword: confirmError }));
     }
   }, [formData.password, formData.confirmPassword, touchedFields.confirmPassword]);
 
+  // References and previews for media elements
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [videoPreview, setVideoPreview] = useState<File | null>(null);
+  
   const coverImageInputRef = useRef<HTMLInputElement>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<File | null>(null);
 
@@ -121,13 +124,9 @@ export default function CandidaturePage() {
   const [zoom, setZoom] = useState(1);
   const [croppedImage, setCroppedImage] = useState<File | null>(null);
 
-  // Clear sensitive data when switching views
+  // Clear sensitive data when switching views to avoid leakages
   useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      password: '',
-      confirmPassword: ''
-    }));
+    setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
     setFieldErrors({});
     setTouchedFields({});
     setError('');
@@ -140,11 +139,12 @@ export default function CandidaturePage() {
         const systemControl = await db.getSystemControl();
         if (systemControl) {
           setCurrentPhase(systemControl.current_phase);
-          // Redirect to home if maintenance mode is ON or phase is not PRESELECTION
-          // BUT allow access if viewState is 'login' (to allow admin/candidates to log in)
+          
+          // Access fields safely with type assertion or fallback
           const isMaintenance = (systemControl as any).is_maintenance_mode;
           const isNotPreselection = systemControl.current_phase !== 'PRESELECTION';
 
+          // Force redirect away if maintenance or phase changed, UNLESS it's the login view
           if ((isMaintenance || isNotPreselection) && viewState !== 'login') {
             window.location.href = '/';
           }
@@ -157,36 +157,43 @@ export default function CandidaturePage() {
   }, [viewState]);
 
   // --- AUTO-SAVE LOGIC ---
+  // Restore form draft on mount
   useEffect(() => {
     if (typeof window !== 'undefined' && !draftLoaded) {
       const savedDraft = localStorage.getItem('ttb_candidature_draft');
       if (savedDraft) {
         try {
           const parsed = JSON.parse(savedDraft);
+          // Restore everything except passwords
           setFormData(prev => ({
             ...prev,
             ...parsed,
             password: '',
             confirmPassword: ''
           }));
-          setCandidatureType(parsed.candidatureType || 'solo');
-          setCurrentStep(parsed.currentStep || 1);
+          if (parsed.candidatureType) setCandidatureType(parsed.candidatureType);
+          if (parsed.currentStep) setCurrentStep(parsed.currentStep);
+          console.log('📝 Brouillon de candidature restauré avec succès');
         } catch (e) {
-          console.error('Draft restoration failed', e);
+          console.error('Failed to parse saved draft', e);
         }
       }
       setDraftLoaded(true);
     }
   }, [draftLoaded]);
 
+  // Save form draft on change
   useEffect(() => {
     if (draftLoaded && !isSubmittingSuccess) {
       const draftData = {
-        ...formData,
+        stageName: formData.stageName,
+        discipline: formData.discipline,
+        region: formData.region,
+        bio: formData.bio,
+        memberCount: formData.memberCount,
+        email: formData.email,
         candidatureType,
-        currentStep,
-        password: '',
-        confirmPassword: ''
+        currentStep
       };
       localStorage.setItem('ttb_candidature_draft', JSON.stringify(draftData));
     }
@@ -197,10 +204,16 @@ export default function CandidaturePage() {
     if (!name || name.length < 2 || !supabase) return;
     setStageNameStatus('checking');
     try {
-      const { data } = await supabase.from('candidates').select('id').eq('stage_name', name.trim()).maybeSingle();
+      const { data, error } = await supabase
+        .from('candidates')
+        .select('id')
+        .eq('stage_name', name.trim())
+        .maybeSingle();
+
       if (data) {
         setStageNameStatus('taken');
-        generateSuggestions(name, formData.discipline);
+        // Trigger smart suggestions generator
+        void generateSuggestions(name, formData.discipline);
       } else {
         setStageNameStatus('available');
         setSuggestions([]);
@@ -211,14 +224,18 @@ export default function CandidaturePage() {
   };
 
   const generateSuggestions = async (name: string, category: string) => {
-    /* EDGE FUNCTION PROMPT: ["Pseudo1", "Pseudo2", "Pseudo3"] */
     if (!supabase) return;
     setIsGeneratingSuggestions(true);
     try {
-      const { data } = await supabase.functions.invoke('generate-stage-names', { body: { name, category } });
-      if (data?.suggestions) setSuggestions(data.suggestions);
-      else setSuggestions([`${name} Officiel`, `${name} 229`, `The ${name}`]);
-    } catch {
+      const { data, error } = await supabase.functions.invoke('generate-stage-names', {
+        body: { name, category }
+      });
+      if (data?.suggestions) {
+        setSuggestions(data.suggestions);
+      } else {
+        setSuggestions([`${name} Officiel`, `${name} 229`, `The ${name}`]);
+      }
+    } catch (err) {
       setSuggestions([`${name} Officiel`, `${name} 229`, `The ${name}`]);
     } finally {
       setIsGeneratingSuggestions(false);
@@ -229,7 +246,12 @@ export default function CandidaturePage() {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !supabase) return;
     setEmailStatus('checking');
     try {
-      const { data } = await supabase.from('candidates').select('id').eq('email', email.trim()).maybeSingle();
+      const { data } = await supabase
+        .from('candidates')
+        .select('id')
+        .eq('email', email.trim())
+        .maybeSingle();
+
       if (data) {
         setEmailStatus('taken');
         setFieldErrors(prev => ({ ...prev, email: "Ce compte existe déjà, connectez-vous plutôt" }));
@@ -237,7 +259,7 @@ export default function CandidaturePage() {
         setEmailStatus('available');
         setFieldErrors(prev => ({ ...prev, email: "" }));
       }
-    } catch {
+    } catch (err) {
       setEmailStatus(null);
     }
   };
@@ -246,52 +268,138 @@ export default function CandidaturePage() {
     let error = '';
     switch (fieldName) {
       case 'stageName':
-        if (value.length < 2) error = 'Minimum 2 caractères requis';
+        if (!value.trim()) error = 'Le nom de scène/groupe est requis';
+        else if (value.length < 2) error = 'Minimum 2 caractères requis';
         break;
       case 'discipline':
-        if (!value) error = 'Veuillez sélectionner une discipline';
+        if (!value) error = 'Veuillez sélectionner votre univers artistique';
         break;
       case 'region':
-        if (!value) error = 'Veuillez sélectionner un département';
+        if (!value) error = 'Veuillez sélectionner votre département';
         break;
       case 'email':
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(value)) error = 'Format email invalide';
+        if (!value) error = 'L\'adresse e-mail est requise';
+        else if (!emailRegex.test(value)) error = 'Format e-mail invalide';
         break;
       case 'password':
-        if (value.length > 0 && value.length < 8) return 'Minimum 8 caractères requis';
-        if (value.length >= 8) {
-          if (!/[A-Z]/.test(value)) return 'Au moins une majuscule requise';
-          if (!/[0-9]/.test(value)) return 'Au moins un chiffre requis';
-          if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) return 'Au moins un caractère spécial requis';
-        }
+        if (!value) error = 'Le mot de passe est requis';
+        else if (value.length < 8) error = 'Minimum 8 caractères requis';
+        else if (!/[A-Z]/.test(value)) error = 'Au moins une majuscule requise';
+        else if (!/[0-9]/.test(value)) error = 'Au moins un chiffre requis';
+        else if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) error = 'Au moins un caractère spécial requis';
         break;
       case 'confirmPassword':
-        if (value && value !== formData.password) return 'Les mots de passe ne correspondent pas';
+        if (!value) error = 'Veuillez confirmer votre mot de passe';
+        else if (value !== formData.password) error = 'Les mots de passe ne correspondent pas';
         break;
-      case 'specialite':
-        if (!value) error = 'Veuillez préciser votre spécialité';
-        break;
-      case 'coverImage':
-        if (!coverImagePreview) error = 'Veuillez sélectionner une image de couverture';
+      case 'bio':
+        if (!value.trim()) error = 'Veuillez préciser votre activité de manière synthétique';
+        else if (value.length > 250) error = 'La description ne doit pas dépasser 250 caractères';
         break;
     }
     return error;
   };
 
-  // Categories data
+  const handleFieldBlur = (fieldName: string, value: string) => {
+    setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+    const fieldError = validateField(fieldName, value);
+    setFieldErrors(prev => ({ ...prev, [fieldName]: fieldError }));
+  };
+
+  // --- GESTION AMÉLIORÉE DU LOGIN CANDIDAT SANS CRASH NI ACCÈS RESTREINT ---
+  const handleCandidateLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
+    setError('');
+
+    try {
+      const loginFormData = new FormData();
+      loginFormData.append('email', formData.email);
+      loginFormData.append('password', formData.password);
+
+      // Appel synchrone direct de l'action serveur signIn
+      const result = await signIn(null, loginFormData);
+
+      if (result && result.error) {
+        setError(result.error);
+      } else {
+        console.log('✅ Connexion candidat réussie. Rafraîchissement global des cookies...');
+        router.refresh();
+        // Léger délai pour s'assurer que le thread du navigateur enregistre bien les en-têtes avant la navigation
+        setTimeout(() => {
+          router.push('/dashboard/candidate');
+        }, 100);
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Une erreur est survenue lors de la connexion. Veuillez réessayer.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  // Static items array inside component context
   const categories = [
-    { id: 'Musique', title: 'CHANT & MUSIQUE', subtitle: 'Rap, Han, Afrobeat, Gospel, Traditionnel...', icon: Mic, placeholder: 'Ex: Je chante du Rap/Afrobeat, je joue du piano, je fais du beatmaking...' },
-    { id: 'Danse', title: 'DANSE & CHORÉGRAPHIE', subtitle: 'Danses urbaines, Traditionnelles, Afro, Breakdance...', icon: Music, placeholder: 'Ex: Je danse le Zinli, je fais du Afro, du Breakdance, des danses traditionnelles...' },
-    { id: 'Humour', title: 'HUMOUR & COMÉDIE', subtitle: 'Stand-up, Blagues, Imitation, Éwé, Théâtre...', icon: Clapperboard, placeholder: 'Ex: Je fais du stand-up, des imitations, des sketchs comiques...' },
-    { id: 'Art_Oratoire', title: 'SLAM & CONTE', subtitle: 'Slam, Poésie, Éloquence, Parole, Conte...', icon: MessageSquare, placeholder: 'Ex: Je fais du slam, de la poésie, du conte, de léloquence...' },
-    { id: 'Digital', title: 'VIDÉO & DIGITAL', subtitle: 'TikTok, Vidéastes, Humour en vidéo, Créateurs de contenu, Beatmaking, Cinéma...', icon: Video, placeholder: 'Ex: Je crée du contenu sur TikTok, je fais des vidéos, du montage, du beatmaking...' },
-    { id: 'Cirque', title: 'ACROBATIE & CIRQUE', subtitle: 'Magie, Jonglage, Cracheurs de feu, Gymnastique...', icon: Sparkles, placeholder: 'Ex: Je fais de la magie, du jonglage, des acrobaties, de la gymnastique...' },
-    { id: 'Sport', title: 'FOOT FREESTYLE & ROLLER', subtitle: 'Sports acrobatiques, Skate, Street-workout...', icon: Trophy, placeholder: 'Ex: Je fais du foot freestyle, du skate, du street-workout, des sports acrobatiques...' },
-    { id: 'Arts_Visuels', title: 'DESSIN, PEINTURE & MODE', subtitle: 'Stylisme, Maquillage artistique, Tableaux, Coiffure...', icon: Palette, placeholder: 'Ex: Je fais du stylisme, du maquillage artistique, des tableaux, de la coiffure...' },
+    {
+      id: 'Musique',
+      title: 'CHANT & MUSIQUE',
+      subtitle: 'Rap, Han, Afrobeat, Gospel, Traditionnel...',
+      icon: Mic,
+      placeholder: 'Ex: Je chante du Rap/Afrobeat, je joue du piano, je fais du beatmaking...'
+    },
+    {
+      id: 'Danse',
+      title: 'DANSE & CHORÉGRAPHIE',
+      subtitle: 'Danses urbaines, Traditionnelles, Afro, Breakdance...',
+      icon: Music,
+      placeholder: 'Ex: Je danse le Zinli, je fais du Afro, du Breakdance, des danses traditionnelles...'
+    },
+    {
+      id: 'Humour',
+      title: 'HUMOUR & COMÉDIE',
+      subtitle: 'Stand-up, Blagues, Imitation, Éwé, Théâtre...',
+      icon: Clapperboard,
+      placeholder: 'Ex: Je fais du stand-up, des imitations, des sketchs comiques...'
+    },
+    {
+      id: 'Art_Oratoire',
+      title: 'SLAM & CONTE',
+      subtitle: 'Slam, Poésie, Éloquence, Parole, Conte...',
+      icon: MessageSquare,
+      placeholder: 'Ex: Je fais du slam, de la poésie, du conte, de l\'éloquence...'
+    },
+    {
+      id: 'Digital',
+      title: 'VIDÉO & DIGITAL',
+      subtitle: 'TikTok, Vidéastes, Humour en vidéo, Créateurs de contenu, Beatmaking, Cinéma...',
+      icon: Video,
+      placeholder: 'Ex: Je crée du contenu sur TikTok, je fais des vidéos, du montage, du beatmaking...'
+    },
+    {
+      id: 'Cirque',
+      title: 'ACROBATIE & CIRQUE',
+      subtitle: 'Magie, Jonglage, Cracheurs de feu, Gymnastique...',
+      icon: Sparkles,
+      placeholder: 'Ex: Je fais de la magie, du jonglage, des acrobaties, de la gymnastique...'
+    },
+    {
+      id: 'Sport',
+      title: 'FOOT FREESTYLE & ROLLER',
+      subtitle: 'Sports acrobatiques, Skate, Street-workout...',
+      icon: Trophy,
+      placeholder: 'Ex: Je fais du foot freestyle, du skate, du street-workout, des sports acrobatiques...'
+    },
+    {
+      id: 'Arts_Visuels',
+      title: 'DESSIN, PEINTURE & MODE',
+      subtitle: 'Stylisme, Maquillage artistique, Tableaux, Coiffure...',
+      icon: Palette,
+      placeholder: 'Ex: Je fais du stylisme, du maquillage artistique, des tableaux, de la coiffure...'
+    },
   ];
 
-  // Departments data
   const departments = [
     { value: 'Alibori', label: 'ALIBORI (KANDI)' },
     { value: 'Atacora', label: 'ATACORA (NATITINGOU)' },
@@ -307,47 +415,150 @@ export default function CandidaturePage() {
     { value: 'Zou', label: 'ZOU (ABOMEY)' },
   ];
 
-  const handleFieldBlur = (fieldName: string, value: string) => {
-    setTouchedFields({ ...touchedFields, [fieldName]: true });
-    const error = validateField(fieldName, value);
-    setFieldErrors({ ...fieldErrors, [fieldName]: error });
+  const handleNextStep = () => {
+    // Validate current step fields before passing
+    const errors: Record<string, string> = {};
+    if (currentStep === 1) {
+      errors.stageName = validateField('stageName', formData.stageName);
+      errors.discipline = validateField('discipline', formData.discipline);
+      errors.bio = validateField('bio', formData.bio);
+      
+      setFieldErrors(prev => ({ ...prev, ...errors }));
+      setTouchedFields(prev => ({ ...prev, stageName: true, discipline: true, bio: true }));
+      
+      const hasErrors = errors.stageName || errors.discipline || errors.bio;
+      if (hasErrors || stageNameStatus === 'taken') return;
+    } else if (currentStep === 2) {
+      errors.region = validateField('region', formData.region);
+      errors.email = validateField('email', formData.email);
+      errors.password = validateField('password', formData.password);
+      errors.confirmPassword = validateField('confirmPassword', formData.confirmPassword);
+      
+      setFieldErrors(prev => ({ ...prev, ...errors }));
+      setTouchedFields(prev => ({ ...prev, region: true, email: true, password: true, confirmPassword: true }));
+      
+      const hasErrors = errors.region || errors.email || errors.password || errors.confirmPassword;
+      if (hasErrors || emailStatus === 'taken') return;
+    }
+
+    setCurrentStep(prev => prev + 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePrevStep = () => {
+    setCurrentStep(prev => Math.max(1, prev - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleVideoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file size (50MB maximum for performance)
+      const maxSize = 50 * 1024 * 1024;
+      if (file.size > maxSize) {
+        setFieldErrors(prev => ({ ...prev, video: 'Le fichier dépasse la limite autorisée de 50 Mo.' }));
+        return;
+      }
+      if (!file.type.startsWith('video/')) {
+        setFieldErrors(prev => ({ ...prev, video: 'Le fichier sélectionné doit être une vidéo valide (MP4, MOV).' }));
+        return;
+      }
+      setFieldErrors(prev => ({ ...prev, video: '' }));
+      setVideoPreview(file);
+    }
+  };
+
+  const handleCoverImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file size (5MB max)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        setFieldErrors(prev => ({ ...prev, coverImage: 'L\'image dépasse la limite autorisée de 5 Mo.' }));
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        setFieldErrors(prev => ({ ...prev, coverImage: 'Le fichier sélectionné doit être une image valide (JPG, PNG).' }));
+        return;
+      }
+
+      setFieldErrors(prev => ({ ...prev, coverImage: '' }));
+      
+      // Initialize Cropper workflow
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageToCrop(reader.result as string);
+        setShowCropper(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCropComplete = async (croppedArea: any, croppedAreaPixels: any) => {
+    // Generate cropped image file using canvas context APIs
+    try {
+      const image = new Image();
+      image.src = imageToCrop;
+      await new Promise((resolve) => { image.onload = resolve; });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = croppedAreaPixels.width;
+      canvas.height = croppedAreaPixels.height;
+      const ctx = canvas.getContext('2d');
+
+      if (ctx) {
+        ctx.drawImage(
+          image,
+          croppedAreaPixels.x,
+          croppedAreaPixels.y,
+          croppedAreaPixels.width,
+          croppedAreaPixels.height,
+          0,
+          0,
+          croppedAreaPixels.width,
+          croppedAreaPixels.height
+        );
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const croppedFile = new File([blob], 'cover-image.jpg', { type: 'image/jpeg' });
+            setCroppedImage(croppedFile);
+            setCoverImagePreview(croppedFile);
+          }
+        }, 'image/jpeg', 0.9);
+      }
+    } catch (e) {
+      console.error('Cropping pipeline error:', e);
+    }
+  };
+
+  const handleCancelCrop = () => {
+    setShowCropper(false);
+    setImageToCrop('');
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    // Reset inputs if canceled
+    if (coverImageInputRef.current) coverImageInputRef.current.value = '';
+  };
+
+  const handleConfirmCrop = () => {
+    setShowCropper(false);
+    setImageToCrop('');
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
   };
 
   const handleSubmitCandidature = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    // Validate all fields
+    // Final checks before transaction block
     const errors: Record<string, string> = {};
-    errors.stageName = validateField('stageName', formData.stageName);
-    errors.discipline = validateField('discipline', formData.discipline);
-    errors.bio = formData.bio ? '' : 'Veuillez préciser ce que vous faites';
-    errors.region = validateField('region', formData.region);
-    errors.email = validateField('email', formData.email);
-    errors.password = validateField('password', formData.password);
-    errors.confirmPassword = validateField('confirmPassword', formData.confirmPassword);
-    if (!videoPreview) errors.video = 'Veuillez télécharger votre vidéo';
+    if (!videoPreview) errors.video = 'Veuillez télécharger votre vidéo de performance';
+    if (!coverImagePreview) errors.coverImage = 'Veuillez sélectionner une photo de couverture';
 
-    setFieldErrors(errors);
-    setTouchedFields({
-      stageName: true,
-      discipline: true,
-      bio: true,
-      region: true,
-      email: true,
-      password: true,
-      confirmPassword: true,
-      video: true,
-      coverImage: true,
-    });
-
-    // Validate cover image
-    if (!coverImagePreview) {
-      errors.coverImage = 'Veuillez sélectionner une image de couverture';
-    }
-
-    const hasErrors = Object.values(errors).some(error => error);
-    if (hasErrors) {
-      setError('Veuillez corriger les erreurs dans le formulaire.');
+    if (errors.video || errors.coverImage) {
+      setFieldErrors(prev => ({ ...prev, ...errors }));
+      setError('Des éléments obligatoires sont manquants dans votre dossier média.');
       return;
     }
 
@@ -359,13 +570,16 @@ export default function CandidaturePage() {
     setIsUploading(true);
     setError('');
 
-    // Simulate upload progress
+    // Fake upload progression indicators for optimal client visual cues
     let progress = 0;
     const progressInterval = setInterval(() => {
-      progress += 10;
-      setUploadProgress(progress);
-      if (progress >= 100) clearInterval(progressInterval);
-    }, 200);
+      progress += 8;
+      if (progress >= 100) {
+        setUploadProgress(98); // Lock till server finishes storage writes
+      } else {
+        setUploadProgress(progress);
+      }
+    }, 250);
 
     try {
       const result = await auth.signUpCandidate({
@@ -376,155 +590,41 @@ export default function CandidaturePage() {
         region: formData.region as any,
         videoFile: videoPreview!,
         coverImageFile: coverImagePreview!,
-        fullName: formData.stageName,
+        fullName: formData.stageName, // Map stageName to profile fullName constraint
         candidatureType,
         memberCount: formData.memberCount,
         bio: formData.bio,
       });
 
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      // Expunge draft storage safely on success transaction
       localStorage.removeItem('ttb_candidature_draft');
       setIsSubmittingSuccess(true);
       
-      // Artificial delay for immersive transition
+      // ✅ SÉCURISATION DU TIMING DES COOKIES À L'INSCRIPTION
       setTimeout(() => {
-        localStorage.setItem('user_id', result.user.id);
-        localStorage.setItem('user_role', 'candidate');
         const cookieOptions = 'path=/; max-age=604800; SameSite=Lax; Secure';
         document.cookie = `user_id=${result.user.id}; ${cookieOptions}`;
         document.cookie = `user_role=candidate; ${cookieOptions}`;
-        router.push('/dashboard/candidate');
-      }, 2000);
+        
+        // Notification système au routeur de Next.js pour aligner instantanément le middleware
+        router.refresh();
+        setTimeout(() => {
+          router.push('/dashboard/candidate');
+        }, 150);
+      }, 1500);
 
     } catch (err: any) {
-      console.error('Erreur inscription:', err);
+      console.error('Candidate registration transaction error:', err);
       clearInterval(progressInterval);
-      setError(err.message || 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.');
+      setError(err.message || 'Une erreur système s\'est produite lors de l\'enregistrement de votre candidature. Veuillez réessayer.');
     } finally {
       setIsUploading(false);
-      setUploadProgress(0);
     }
   };
 
-
-  const handleVideoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Size check: Max 50MB
-      const maxSize = 50 * 1024 * 1024;
-      if (file.size > maxSize) {
-        setFieldErrors({ ...fieldErrors, video: 'Le fichier dépasse la limite autorisée de 50 Mo.' });
-        if (videoInputRef.current) {
-          videoInputRef.current.value = '';
-        }
-        setVideoPreview(null);
-        return;
-      }
-
-      // Type check: Must be video
-      if (!file.type.startsWith('video/')) {
-        setFieldErrors({ ...fieldErrors, video: 'Le fichier doit être une vidéo (MP4, MOV, etc.)' });
-        if (videoInputRef.current) {
-          videoInputRef.current.value = '';
-        }
-        setVideoPreview(null);
-        return;
-      }
-
-      // Clear any existing video error
-      setFieldErrors(prev => ({ ...prev, video: '' }));
-      setTouchedFields(prev => ({ ...prev, video: true }));
-      setVideoPreview(file);
-    }
-  };
-
-  const handleCoverImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Size check: Max 5MB
-      const maxSize = 5 * 1024 * 1024;
-      if (file.size > maxSize) {
-        setFieldErrors({ ...fieldErrors, coverImage: 'L\'image dépasse la limite autorisée de 5 Mo.' });
-        if (coverImageInputRef.current) {
-          coverImageInputRef.current.value = '';
-        }
-        setCoverImagePreview(null);
-        return;
-      }
-
-      // Type check: Must be image
-      if (!file.type.startsWith('image/')) {
-        setFieldErrors({ ...fieldErrors, coverImage: 'Le fichier doit être une image (JPG, PNG, etc.)' });
-        if (coverImageInputRef.current) {
-          coverImageInputRef.current.value = '';
-        }
-        setCoverImagePreview(null);
-        return;
-      }
-
-      setFieldErrors({ ...fieldErrors, coverImage: '' });
-      // Open cropper instead of directly setting preview
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImageToCrop(reader.result as string);
-        setShowCropper(true);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleCropComplete = async (croppedArea: any, croppedAreaPixels: any) => {
-    const image = new Image();
-    image.src = imageToCrop;
-    await new Promise((resolve) => {
-      image.onload = resolve;
-    });
-
-    const canvas = document.createElement('canvas');
-    canvas.width = croppedAreaPixels.width;
-    canvas.height = croppedAreaPixels.height;
-    const ctx = canvas.getContext('2d');
-
-    if (ctx) {
-      ctx.drawImage(
-        image,
-        croppedAreaPixels.x,
-        croppedAreaPixels.y,
-        croppedAreaPixels.width,
-        croppedAreaPixels.height,
-        0,
-        0,
-        croppedAreaPixels.width,
-        croppedAreaPixels.height
-      );
-
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const croppedFile = new File([blob], 'cover-image.jpg', { type: 'image/jpeg' });
-          setCroppedImage(croppedFile);
-          setCoverImagePreview(croppedFile);
-        }
-      }, 'image/jpeg', 0.9);
-    }
-  };
-
-  const handleCancelCrop = () => {
-    setShowCropper(false);
-    setImageToCrop('');
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
-    if (coverImageInputRef.current) {
-      coverImageInputRef.current.value = '';
-    }
-  };
-
-  const handleConfirmCrop = () => {
-    setShowCropper(false);
-    setImageToCrop('');
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
-  };
-
-  // Prevent hydration mismatch by showing a loading state or nothing until hydrated
   if (!isHydrated) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -535,16 +635,20 @@ export default function CandidaturePage() {
 
   if (isSubmittingSuccess) {
     return (
-      <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center animate-in fade-in duration-700">
-        <div className="fixed top-0 left-0 w-full h-[2px] bg-[#e5c47f]/20 overflow-hidden">
-          <div className="h-full bg-[#e5c47f] animate-progress-fast shadow-[0_0_15px_rgba(229,196,127,0.5)]" />
-        </div>
-        <div className="max-w-md w-full px-6 text-center animate-in zoom-in-95 duration-1000">
-          <h2 className="text-2xl sm:text-3xl font-light tracking-tight text-white mb-3">Dossier enregistré.</h2>
-          <p className="text-zinc-500 text-sm font-body">Préparation de votre espace candidat...</p>
-          <div className="mt-12 flex justify-center">
+      <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center">
+        <div className="max-w-md w-full px-6 text-center animate-in zoom-in-95 duration-700">
+          <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-heading font-black text-white uppercase tracking-tight mb-3">
+            Dossier enregistré !
+          </h2>
+          <p className="text-zinc-500 text-sm font-body leading-relaxed mb-8">
+            Félicitations, votre candidature pour Top Talent Bénin 2026 a été envoyée avec succès. Préparation de votre espace candidat sécurisé...
+          </p>
+          <div className="flex justify-center">
             <div className="w-12 h-12 rounded-full border border-white/5 flex items-center justify-center">
-              <div className="w-1 h-1 bg-[#e5c47f] rounded-full animate-ping" />
+              <div className="w-1.5 h-1.5 bg-[#e5c47f] rounded-full animate-ping" />
             </div>
           </div>
         </div>
@@ -555,819 +659,833 @@ export default function CandidaturePage() {
   return (
     <div className="min-h-screen bg-white text-[#050505] pt-24 sm:pt-32 pb-12 sm:pb-16 selection:bg-[#e5c47f] selection:text-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-8">
-        {/* Back to home button */}
-        <Link href="/" className="inline-flex items-center gap-2 text-xs font-heading uppercase tracking-[0.15em] text-slate-500 hover:text-[#050505] transition-colors mb-6">
-          ← Retour à l'accueil
+        
+        {/* Navigation Breadcrumbs back home */}
+        <Link 
+          href="/" 
+          className="inline-flex items-center gap-2 text-xs font-heading uppercase tracking-[0.15em] text-slate-500 hover:text-[#050505] transition-colors mb-6 sm:mb-8"
+        >
+          ← Retour à l&apos;accueil
         </Link>
-        {viewState === 'dashboard' ? (
-          <div className="max-w-4xl mx-auto bg-white border border-zinc-100 rounded-xl p-6 sm:p-8 lg:p-12 shadow-[0_30px_60px_rgba(0,0,0,0.02)] space-y-6 sm:space-y-10 animate-fadeIn">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 border-b border-zinc-100 pb-4 sm:pb-6">
-              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 w-fit">
-                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <div>
-                <h2 className="text-lg sm:text-xl font-heading font-black uppercase tracking-tight text-[#050505]">Espace de suivi activé — {formData.stageName}</h2>
-                <p className="text-zinc-500 text-xs font-body">Votre dossier technique et votre flux vidéo ont été sécurisés.</p>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-              <div className="bg-zinc-50 border border-zinc-100 p-4 sm:p-5 rounded-lg space-y-1">
-                <span className="text-[9px] uppercase tracking-widest text-zinc-400 font-bold">Statut Capsule</span>
-                <div className="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-wider pt-1">
-                  <Clock className="w-3.5 h-3.5 animate-pulse" /> En cours de revue
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-16 items-start">
+          
+          {/* Left Column - Informational Branding Canvas */}
+          <div className="lg:col-span-4 space-y-4 sm:space-y-6 lg:sticky lg:top-28">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#e5c47f]/10 border border-[#e5c47f]/30 rounded-full mb-2">
+              <div className="w-2 h-2 bg-[#e5c47f] rounded-full animate-pulse"></div>
+              <span className="text-[10px] font-heading font-bold uppercase tracking-[0.2em] text-[#e5c47f]">
+                Candidatures Ouvertes
+              </span>
+            </div>
+            
+            <h1 className="font-heading font-black text-2xl sm:text-3xl lg:text-4xl uppercase tracking-tight leading-[1.1] text-[#050505]">
+              Deviens la <span className="text-[#e5c47f]">Prochaine Icône</span> du Bénin.
+            </h1>
+            
+            <p className="text-zinc-600 text-sm sm:text-base leading-relaxed font-body max-w-md">
+              Ta performance artistique peut te propulser au sommet nationale. Dépose ta capsule vidéo, fais-toi valider par nos jurés experts, et mobilise le public pour récolter un maximum de votes !
+            </p>
+
+            <div className="pt-4 space-y-3 border-t border-zinc-100 max-w-sm">
+              <div className="flex items-start gap-3.5 text-xs sm:text-sm text-zinc-700 font-body">
+                <div className="w-8 h-8 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center shrink-0 mt-0.5">
+                  <Clock className="w-4 h-4 text-zinc-600" />
+                </div>
+                <div>
+                  <p className="font-bold text-black uppercase tracking-wide text-[10px] font-heading mt-0.5">Vidéo 1 minute max</p>
+                  <p className="text-zinc-500 text-xs">Montre ton talent à l&apos;état brut, sans filtres ni montages complexes.</p>
                 </div>
               </div>
-              <div className="bg-zinc-50 border border-zinc-100 p-4 sm:p-5 rounded-lg space-y-1">
-                <span className="text-[9px] uppercase tracking-widest text-zinc-400 font-bold">Votes Certifiés</span>
-                <p className="text-xl sm:text-2xl font-black font-mono text-[#050505]">0</p>
-              </div>
-              <div className="bg-zinc-50 border border-zinc-100 p-4 sm:p-5 rounded-lg space-y-1">
-                <span className="text-[9px] uppercase tracking-widest text-zinc-400 font-bold">Compteur National</span>
-                <p className="text-xs font-bold uppercase text-zinc-400 pt-1.5">Verrouillé</p>
-              </div>
-            </div>
 
-            <div className="space-y-4 pt-4 border-t border-zinc-100">
-              <h3 className="text-[10px] uppercase tracking-[0.25em] text-zinc-400 font-bold">Récapitulatif de votre fiche</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-body">
-                <div className="flex items-center gap-3 text-zinc-600"><User className="w-4 h-4 text-zinc-400" /> <span>{candidatureType === 'solo' ? 'Artiste' : 'Groupe'} : <strong className="text-black uppercase">{formData.stageName}</strong></span></div>
-                <div className="flex items-center gap-3 text-zinc-600"><Award className="w-4 h-4 text-zinc-400" /> <span>Catégorie : <strong className="text-black uppercase">{formData.discipline}</strong></span></div>
-                <div className="flex items-center gap-3 text-zinc-600"><MapPin className="w-4 h-4 text-zinc-400" /> <span>Département : <strong className="text-black uppercase">{formData.region}</strong></span></div>
-                {candidatureType === 'group' && (
-                  <div className="flex items-center gap-3 text-zinc-600"><Users className="w-4 h-4 text-zinc-400" /> <span>Membres : <strong className="text-black">{formData.memberCount}</strong></span></div>
-                )}
-                <div className="flex items-center gap-3 text-zinc-600"><Share2 className="w-4 h-4 text-zinc-400" /> <span>Lien de vote : <span className="text-zinc-400 italic">Disponible après validation</span></span></div>
+              <div className="flex items-start gap-3.5 text-xs sm:text-sm text-zinc-700 font-body">
+                <div className="w-8 h-8 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center shrink-0 mt-0.5">
+                  <MapPin className="w-4 h-4 text-zinc-600" />
+                </div>
+                <div>
+                  <p className="font-bold text-black uppercase tracking-wide text-[10px] font-heading mt-0.5">Fierté Départementale</p>
+                  <p className="text-zinc-500 text-xs">Représente fièrement ta localité et deviens l&apos;ambassadeur de ton terroir.</p>
+                </div>
               </div>
-            </div>
 
-            <div className="p-4 bg-[#e5c47f]/5 rounded border border-[#e5c47f]/10 text-center">
-             
+              <div className="flex items-start gap-3.5 text-xs sm:text-sm text-zinc-700 font-body">
+                <div className="w-8 h-8 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center shrink-0 mt-0.5">
+                  <Award className="w-4 h-4 text-zinc-600" />
+                </div>
+                <div>
+                  <p className="font-bold text-black uppercase tracking-wide text-[10px] font-heading mt-0.5">Évaluation du Jury</p>
+                  <p className="text-zinc-500 text-xs">Une note technique sera attribuée par un comité académique d&apos;experts.</p>
+                </div>
+              </div>
             </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-16 items-start">
-            {/* Left Sidebar - Hero */}
-            <div className="lg:col-span-4 space-y-4 sm:space-y-6 relative">
-              {/* Decorative background pattern */}
-              <div className="absolute -top-10 -left-10 w-64 h-64 bg-[#e5c47f]/5 rounded-full blur-3xl -z-10"></div>
-              <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-[#050505]/5 rounded-full blur-3xl -z-10"></div>
 
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#e5c47f]/10 border border-[#e5c47f]/30 rounded-full mb-4">
-                <div className="w-2 h-2 bg-[#e5c47f] rounded-full animate-pulse"></div>
-                <span className="text-[10px] font-heading font-bold uppercase tracking-[0.2em] text-[#e5c47f]">Candidatures Ouvertes</span>
-              </div>
-              <h1 className="font-heading font-black text-2xl sm:text-3xl lg:text-4xl uppercase tracking-tight leading-[1.1] text-[#050505] mb-6">
-                Deviens la <span className="text-[#e5c47f]">Prochaine Icône</span> du Bénin.
-              </h1>
-              <p className="text-zinc-600 text-sm sm:text-base leading-relaxed font-body mb-8 max-w-md">
-                Ta talentueuse performance peut te propulser au sommet. Dépose ta vidéo, fais-toi valider par nos experts, et laisse le public béninois voter pour toi.
-              </p>
-
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-xs sm:text-sm text-zinc-700 font-body">
-                  <div className="w-8 h-8 bg-[#050505] rounded-full flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-white" />
-                  </div>
-                  <span><strong>Vidéo 1 minute max</strong> — brute et authentique</span>
-                </div>
-                <div className="flex items-center gap-3 text-xs sm:text-sm text-zinc-700 font-body">
-                  <div className="w-8 h-8 bg-[#050505] rounded-full flex items-center justify-center">
-                    <MapPin className="w-4 h-4 text-white" />
-                  </div>
-                  <span><strong>Représente ton département</strong> — fierté locale</span>
-                </div>
-                <div className="flex items-center gap-3 text-xs sm:text-sm text-zinc-700 font-body">
-                  <div className="w-8 h-8 bg-[#050505] rounded-full flex items-center justify-center">
-                    <Award className="w-4 h-4 text-white" />
-                  </div>
-                  <span><strong>Validation par experts</strong> — qualité garantie</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Main Form */}
-            <div className="lg:col-span-8 bg-white border border-zinc-100 p-6 sm:p-8 lg:p-10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.01)]">
-              <div className="flex border-b border-zinc-100 pb-4 mb-6 gap-3 sm:gap-6 overflow-x-auto">
-                {currentPhase === 'PRESELECTION' && (
-                  <button
-                    type="button"
-                    onClick={() => setViewState('form')}
-                    className={`font-heading text-[10px] sm:text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.2em] pb-2 border-b-2 transition-all whitespace-nowrap flex-shrink-0 ${
-                      viewState === 'form' ? 'border-black text-black font-bold' : 'border-transparent text-zinc-400 hover:text-black'
-                    }`}
-                  >
-                    <span className="hidden sm:inline">Déposer une candidature</span>
-                    <span className="sm:hidden">Candidature</span>
-                  </button>
-                )}
+          {/* Right Column - State Driven Dynamic Form Shell */}
+          <div className="lg:col-span-8 bg-white border border-zinc-100 p-5 sm:p-8 lg:p-10 rounded-none shadow-[0_20px_50px_rgba(0,0,0,0.01)]">
+            
+            {/* Form Mode View Switch Tabs */}
+            <div className="flex border-b border-zinc-100 pb-4 mb-6 sm:mb-8 gap-4 sm:gap-8 overflow-x-auto scrollbar-none">
+              {currentPhase === 'PRESELECTION' && (
                 <button
                   type="button"
-                  onClick={() => setViewState('login')}
-                  className={`font-heading text-[10px] sm:text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.2em] pb-2 border-b-2 transition-all whitespace-nowrap flex-shrink-0 ${
-                    viewState === 'login' ? 'border-black text-black font-bold' : 'border-transparent text-zinc-400 hover:text-black'
+                  onClick={() => setViewState('form')}
+                  className={`font-heading text-[10px] uppercase tracking-[0.2em] pb-2 border-b-2 transition-all whitespace-nowrap ${
+                    viewState === 'form' 
+                      ? 'border-black text-black font-black' 
+                      : 'border-transparent text-zinc-400 hover:text-black font-medium'
                   }`}
                 >
-                  <span className="hidden sm:inline">Se connecter</span>
-                  <span className="sm:hidden">Connexion</span>
+                  Déposer une candidature
                 </button>
-              </div>
+              )}
+              
+              <button
+                type="button"
+                onClick={() => setViewState('login')}
+                className={`font-heading text-[10px] uppercase tracking-[0.2em] pb-2 border-b-2 transition-all whitespace-nowrap ${
+                  viewState === 'login' 
+                    ? 'border-black text-black font-black' 
+                    : 'border-transparent text-zinc-400 hover:text-black font-medium'
+                }`}
+              >
+                Espace Candidat (Connexion)
+              </button>
+            </div>
 
-              {viewState === 'form' && (
-                <form onSubmit={handleSubmitCandidature} className="space-y-4 sm:space-y-6 animate-fadeIn">
-                  {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-                      {error}
+            {/* --- VIEW MODE: DISPATCH REGISTER FLOW --- */}
+            {viewState === 'form' && (
+              <form onSubmit={handleSubmitCandidature} className="space-y-6 sm:space-y-8 animate-fadeIn">
+                
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-800 text-sm p-4 rounded-none font-body">
+                    {error}
+                  </div>
+                )}
+
+                {/* Progress Step Nodes Bar */}
+                <div className="flex items-center justify-between max-w-xs mx-auto mb-8 sm:mb-12 relative">
+                  <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-zinc-100 -translate-y-1/2 z-0" />
+                  
+                  {[1, 2, 3].map((stepNumber) => (
+                    <div 
+                      key={stepNumber}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-mono font-bold z-10 transition-all ${
+                        currentStep === stepNumber
+                          ? 'bg-black text-white ring-4 ring-zinc-100'
+                          : currentStep > stepNumber
+                            ? 'bg-zinc-900 text-[#e5c47f]'
+                            : 'bg-zinc-50 border border-zinc-100 text-zinc-400'
+                      }`}
+                    >
+                      {currentStep > stepNumber ? '✓' : stepNumber}
                     </div>
-                  )}
+                  ))}
+                </div>
 
-                  {/* Progress Indicator */}
-                  <div className="flex items-center justify-center gap-8 mb-4">
-                    {[1, 2, 3].map((step) => (
-                      <div key={step} className="flex flex-col items-center">
-                        <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-bold transition-all ${
-                          currentStep >= step
-                            ? 'bg-zinc-800 text-white'
-                            : 'bg-zinc-100 text-zinc-400'
-                        }`}>
-                          {currentStep > step ? '✓' : step}
+                {/* STEP 1 SECTION: IDENTITY CORNER */}
+                <AnimatePresence mode="wait">
+                  {currentStep === 1 && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-6"
+                    >
+                      {/* Grid of Disciplines / Categories */}
+                      <div className="space-y-3">
+                        <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                          1. Sélectionne ton domaine artistique *
+                        </label>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {categories.map((cat) => {
+                            const IconComponent = cat.icon;
+                            const isSelected = formData.discipline === cat.id;
+                            
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, discipline: cat.id }));
+                                  setFieldErrors(prev => ({ ...prev, discipline: '' }));
+                                }}
+                                className={`p-4 border text-left transition-all relative flex flex-col justify-between min-h-[120px] rounded-none ${
+                                  isSelected
+                                    ? 'border-black bg-zinc-950 text-white shadow-md'
+                                    : 'border-zinc-200 bg-white text-black hover:border-zinc-400'
+                                }`}
+                              >
+                                <IconComponent className={`w-5 h-5 ${isSelected ? 'text-[#e5c47f]' : 'text-zinc-400'}`} />
+                                <div className="mt-4">
+                                  <h3 className="text-[10px] font-heading font-black uppercase tracking-wider mb-0.5">
+                                    {cat.title}
+                                  </h3>
+                                  <p className={`text-[9px] font-body line-clamp-2 ${isSelected ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                                    {cat.subtitle}
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {touchedFields.discipline && fieldErrors.discipline && (
+                          <p className="text-xs text-red-500 font-body">{fieldErrors.discipline}</p>
+                        )}
+                      </div>
+
+                      {/* Candidature Type Selector */}
+                      <div className="space-y-3 pt-2">
+                        <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                          2. Type de présentation *
+                        </label>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCandidatureType('solo');
+                              setFormData(prev => ({ ...prev, memberCount: 1 }));
+                            }}
+                            className={`flex-1 py-3 text-center text-[10px] font-heading font-bold uppercase tracking-widest border rounded-none transition-all ${
+                              candidatureType === 'solo'
+                                ? 'bg-black border-black text-white'
+                                : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-400'
+                            }`}
+                          >
+                            Artiste Solo
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCandidatureType('group');
+                              setFormData(prev => ({ ...prev, memberCount: 2 }));
+                            }}
+                            className={`flex-1 py-3 text-center text-[10px] font-heading font-bold uppercase tracking-widest border rounded-none transition-all ${
+                              candidatureType === 'group'
+                                ? 'bg-black border-black text-white'
+                                : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-400'
+                            }`}
+                          >
+                            Collectif / Groupe
+                          </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
 
-                  {/* Step Labels */}
-                  <div className="flex items-center justify-center gap-8 mb-6 text-[8px] uppercase tracking-wider font-bold">
-                    <span className={currentStep >= 1 ? 'text-zinc-800' : 'text-zinc-400'}>Identité</span>
-                    <span className={currentStep >= 2 ? 'text-zinc-800' : 'text-zinc-400'}>Contact</span>
-                    <span className={currentStep >= 3 ? 'text-zinc-800' : 'text-zinc-400'}>Média</span>
-                  </div>
-
-                  {/* Step 1: Identity */}
-                  <AnimatePresence mode="wait">
-                    {currentStep === 1 && (
-                      <motion.div
-                        key="step1"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-4 sm:space-y-6"
-                      >
-                        {/* Context-aware UI feedback for staff */}
-                        {profile && (profile.role === 'admin' || profile.role === 'jury') && (
-                          <div className="bg-zinc-800/80 border border-zinc-700/60 p-3 rounded-xl text-xs text-zinc-300 mb-4 flex items-center gap-2 animate-fade-in">
-                            <span>💡 <strong>Mode Aperçu Staff :</strong> Vous êtes connecté en tant que {profile.role.toUpperCase()}. Vous pouvez visualiser et tester l'interface du formulaire librement.</span>
-                          </div>
-                        )}
-                        <div className="mb-8">
-                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-4">CHOISIS TA CATÉGORIE</label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {categories.map((category) => {
-                              const Icon = category.icon;
-                              const isSelected = formData.discipline === category.id;
-                              return (
-                                <button
-                                  key={category.id}
-                                  type="button"
-                                  onClick={() => !isUploading && setFormData({ ...formData, discipline: category.id })}
-                                  disabled={isUploading}
-                                  className={`p-4 border transition-all duration-300 text-left group hover:scale-[1.02] active:scale-[0.98] ${
-                                    isSelected
-                                      ? 'bg-zinc-800 border-[#e5c47f] ring-1 ring-[#e5c47f] text-white shadow-lg shadow-[#e5c47f]/10'
-                                      : 'bg-white border-zinc-200 text-[#050505] hover:border-zinc-400'
-                                  } ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isSelected ? 'text-[#e5c47f]' : 'text-zinc-400 group-hover:text-zinc-600'}`} />
-                                    <div className="flex-1">
-                                      <h3 className="text-[10px] font-black uppercase tracking-wider mb-1 leading-tight">{category.title}</h3>
-                                      <p className={`text-[9px] leading-relaxed transition-colors ${isSelected ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                                        {category.subtitle}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {touchedFields.discipline && fieldErrors.discipline && (
-                            <p className="font-mono text-[9px] uppercase text-red-500 mt-2">{fieldErrors.discipline}</p>
-                          )}
-                        </div>
-
-                        <div className="mb-8">
-                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-3">Type de candidature</label>
-                          <div className="flex gap-3">
-                            <button
-                              type="button"
-                              onClick={() => { setCandidatureType('solo'); setFormData({ ...formData, memberCount: 1 }); }}
-                              className={`flex-1 py-3 px-4 border transition-all text-[10px] uppercase tracking-[0.2em] font-bold ${
-                                candidatureType === 'solo'
-                                  ? 'border-[#050505] bg-[#050505] text-white shadow-inner'
-                                  : 'border-zinc-200 bg-white text-zinc-600 hover:border-[#050505]'
-                              }`}
-                            >
-                              Solo
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => { setCandidatureType('group'); setFormData({ ...formData, memberCount: 2 }); }}
-                              className={`flex-1 py-3 px-4 border transition-all text-[10px] uppercase tracking-[0.2em] font-bold ${
-                                candidatureType === 'group'
-                                  ? 'border-[#050505] bg-[#050505] text-white shadow-inner'
-                                  : 'border-zinc-200 bg-white text-zinc-600 hover:border-[#050505]'
-                              }`}
-                            >
-                              Groupe
-                            </button>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">
-                            {candidatureType === 'solo' ? 'Nom de scène' : 'Nom du groupe'}
+                      {/* Stage Name and Bio Row */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                        <div className="space-y-2">
+                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                            {candidatureType === 'solo' ? 'Nom de scène *' : 'Nom du groupe / collectif *'}
                           </label>
                           <div className="relative">
                             <input
                               type="text"
                               required
                               value={formData.stageName}
-                              onChange={(event) => setFormData({ ...formData, stageName: event.target.value })}
-                              onBlur={(event) => {
-                                handleFieldBlur('stageName', event.target.value);
-                                checkStageNameUniqueness(event.target.value);
+                              onChange={(e) => setFormData(prev => ({ ...prev, stageName: e.target.value }))}
+                              onBlur={(e) => {
+                                handleFieldBlur('stageName', e.target.value);
+                                void checkStageNameUniqueness(e.target.value);
                               }}
-                              placeholder={candidatureType === 'solo' ? "EX: SIKA VOICE" : "EX: LES ÉLÉVATEURS"}
-                              className={`w-full bg-zinc-50 border p-3 sm:p-4 text-sm font-heading tracking-wide focus:outline-none transition-all duration-300 ${
-                                stageNameStatus === 'taken'
-                                  ? 'border-red-500 bg-red-50/30'
-                                  : stageNameStatus === 'available'
-                                  ? 'border-emerald-500 bg-emerald-50/30'
-                                  : 'border-zinc-200 focus:border-black'
+                              placeholder="Ex: SIKA VOICE, D-CREW"
+                              className={`w-full bg-zinc-50 border p-3 text-sm font-heading tracking-wide rounded-none focus:outline-none transition-all ${
+                                touchedFields.stageName && fieldErrors.stageName
+                                  ? 'border-red-400 focus:border-red-500'
+                                  : stageNameStatus === 'taken'
+                                    ? 'border-amber-400 focus:border-amber-500'
+                                    : stageNameStatus === 'available'
+                                      ? 'border-emerald-400 focus:border-emerald-500'
+                                      : 'border-zinc-200 focus:border-black'
                               }`}
-                              disabled={isUploading}
                             />
                             {stageNameStatus === 'checking' && (
-                              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                                <span className="text-[10px] text-zinc-400 animate-pulse font-mono uppercase">Vérification...</span>
-                                <Loader2 className="w-3 h-3 animate-spin text-zinc-400" />
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
                               </div>
                             )}
                           </div>
-
-                          {/* Availability Banners */}
+                          
                           {stageNameStatus === 'available' && (
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 p-2.5 rounded-lg text-[10px] font-bold mt-2 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
-                              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                               {formData.stageName}  est disponible pour l&apos;Édition 2026 !
-                            </div>
+                            <p className="text-[10px] text-emerald-600 font-body font-bold animate-fadeIn">
+                              ✓ Ce nom de scène est disponible !
+                            </p>
                           )}
-
+                          
                           {stageNameStatus === 'taken' && (
-                            <div className="space-y-3">
-                              <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 p-2.5 rounded-lg text-[10px] font-bold mt-2 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
-                                <X className="w-3.5 h-3.5 text-amber-500" />
-                                 {formData.stageName} est déjà réservé par un autre artiste.
-                              </div>
-                              
-                              {/* IA Suggestions */}
-                              {suggestions.length > 0 && (
-                                <div className="animate-in fade-in slide-in-from-top-2 duration-500">
-                                  <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold mb-2 ml-1">Suggestions de l&apos;IA :</p>
-                                  <div className="flex flex-wrap gap-2">
-                                    {suggestions.map((suggestion, idx) => (
-                                      <button
-                                        key={idx}
-                                        type="button"
-                                        onClick={() => {
-                                          setFormData({ ...formData, stageName: suggestion });
-                                          setStageNameStatus('available');
-                                          setSuggestions([]);
-                                        }}
-                                        className="px-3 py-1.5 bg-white border border-zinc-200 text-zinc-800 text-[10px] font-bold rounded-full hover:border-[#e5c47f] hover:text-[#e5c47f] transition-all"
-                                      >
-                                        {suggestion}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              {isGeneratingSuggestions && (
-                                <div className="flex items-center gap-2 ml-1">
-                                  <Loader2 className="w-3 h-3 animate-spin text-[#e5c47f]" />
-                                  <span className="text-[10px] text-zinc-400 font-mono italic">L&apos;IA affine de nouvelles idées...</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {touchedFields.stageName && fieldErrors.stageName && !stageNameStatus && (
-                            <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.stageName}</p>
-                          )}
-                        </div>
-
-                        <AnimatePresence>
-                          {formData.discipline && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.3, ease: 'easeInOut' }}
-                            >
-                              <div>
-                                <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">
-                                  PRÉCISE EN QUELQUES MOTS CE QUE TU FAIS EXACTEMENT
-                                </label>
-                                <input
-                                  type="text"
-                                  required
-                                  value={formData.bio}
-                                  onChange={(event) => setFormData({ ...formData, bio: event.target.value })}
-                                  onBlur={() => handleFieldBlur('bio', formData.bio)}
-                                  placeholder={categories.find(c => c.id === formData.discipline)?.placeholder || "Ex: Je fais des sketchs sur TikTok, je danse le Zinli, je fais du beatbox, je crée des vêtements..."}
-                                  className={`w-full bg-zinc-50 border p-3 sm:p-4 text-sm font-body tracking-wide focus:outline-none transition-colors ${
-                                    touchedFields.bio && fieldErrors.bio
-                                      ? 'border-red-500'
-                                      : 'border-zinc-200 focus:border-black'
-                                  }`}
-                                  disabled={isUploading}
-                                />
-                                {touchedFields.bio && fieldErrors.bio && (
-                                  <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.bio}</p>
+                            <div className="space-y-2 animate-fadeIn">
+                              <p className="text-[10px] text-amber-600 font-body font-bold">
+                                ✕ Ce nom est déjà pris par un autre candidat. Suggestions :
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {suggestions.map((suggestedName, idx) => (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                      setFormData(prev => ({ ...prev, stageName: suggestedName }));
+                                      setStageNameStatus('available');
+                                      setFieldErrors(prev => ({ ...prev, stageName: '' }));
+                                    }}
+                                    className="px-2 py-1 bg-zinc-50 border border-zinc-200 hover:border-black text-[9px] font-mono rounded-none transition-all"
+                                  >
+                                    {suggestedName}
+                                  </button>
+                                ))}
+                                {isGeneratingSuggestions && (
+                                  <span className="text-[9px] text-zinc-400 italic flex items-center gap-1">
+                                    <Loader2 className="w-2 h-2 animate-spin" /> Génération...
+                                  </span>
                                 )}
                               </div>
-                            </motion.div>
+                            </div>
                           )}
-                        </AnimatePresence>
 
-                        {candidatureType === 'group' && (
-                          <div>
-                            <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">Nombre de membres</label>
-                            <div className="w-full bg-zinc-50 border border-zinc-200 p-3 sm:p-4">
-                              <div className="flex justify-between items-center">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (formData.memberCount > 2) {
-                                      setFormData({ ...formData, memberCount: formData.memberCount - 1 });
-                                    }
-                                  }}
-                                  disabled={formData.memberCount <= 2 || isUploading}
-                                  className={`w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-none transition-all active:scale-95 ${
-                                    formData.memberCount <= 2 || isUploading
-                                      ? 'opacity-30 pointer-events-none cursor-not-allowed border-zinc-900 bg-zinc-950 text-zinc-600'
-                                      : 'bg-zinc-900 border border-zinc-800 text-zinc-100 hover:bg-zinc-850'
-                                  }`}
-                                >
-                                  <Minus className="w-5 h-5 sm:w-6 sm:h-6" />
-                                </button>
-                                <span className="text-base sm:text-lg font-mono font-bold text-black min-w-[40px] text-center">
-                                  {formData.memberCount}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (formData.memberCount < 12) {
-                                      setFormData({ ...formData, memberCount: formData.memberCount + 1 });
-                                    }
-                                  }}
-                                  disabled={formData.memberCount >= 12 || isUploading}
-                                  className={`w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-none transition-all active:scale-95 ${
-                                    formData.memberCount >= 12 || isUploading
-                                      ? 'opacity-30 pointer-events-none cursor-not-allowed border-zinc-900 bg-zinc-950 text-zinc-600'
-                                      : 'bg-zinc-900 border border-zinc-800 text-zinc-100 hover:bg-zinc-850'
-                                  }`}
-                                >
-                                  <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
-                                </button>
-                              </div>
-                            </div>
-                            <p className="text-[10px] text-zinc-400 mt-1">Entre 2 et 12 membres</p>
-                          </div>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => setCurrentStep(2)}
-                          disabled={!formData.stageName || !formData.discipline || !formData.bio}
-                          className="w-full py-3 sm:py-4 bg-[#050505] text-white text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] hover:text-black transition-all flex items-center justify-center gap-2 sm:gap-3 rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          SUIVANT <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Step 2: Contact */}
-                  <AnimatePresence mode="wait">
-                    {currentStep === 2 && (
-                      <motion.div
-                        key="step2"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-4 sm:space-y-6"
-                      >
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                          <div>
-                            <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">Département d&apos;origine</label>
-                            <CustomSelect
-                              value={formData.region}
-                              onChange={(value) => {
-                                setFormData({ ...formData, region: value });
-                                handleFieldBlur('region', value);
-                              }}
-                              options={departments}
-                              placeholder="SÉLECTIONNER"
-                              disabled={isUploading}
-                            />
-                            {touchedFields.region && fieldErrors.region && (
-                              <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.region}</p>
-                            )}
-                          </div>
-                          <div>
-                            <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">Adresse E-mail</label>
-                            <div className="relative">
-                              <input 
-                                type="email" 
-                                required 
-                                value={formData.email} 
-                                onChange={(event) => setFormData({ ...formData, email: event.target.value })}
-                                onBlur={(event) => {
-                                  handleFieldBlur('email', event.target.value);
-                                  checkEmailUniqueness(event.target.value);
-                                }}
-                                placeholder="ARTISTE@GMAIL.COM" 
-                                className={`w-full bg-zinc-50 border p-3 sm:p-4 text-sm font-heading tracking-wide focus:outline-none transition-all duration-300 ${
-                                  emailStatus === 'taken'
-                                    ? 'border-red-500 bg-red-50/30'
-                                    : emailStatus === 'available'
-                                    ? 'border-emerald-500 bg-emerald-50/30'
-                                    : 'border-zinc-200 focus:border-black'
-                                }`}
-                                disabled={isUploading}
-                              />
-                              {emailStatus === 'checking' && (
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-400" />
-                                </div>
-                              )}
-                            </div>
-                            {emailStatus === 'taken' && (
-                              <p className="font-mono text-[9px] uppercase text-red-500 mt-1.5 flex items-center gap-1">
-                                <X className="w-3 h-3" /> Ce compte existe déjà, connectez-vous plutôt
-                              </p>
-                            )}
-                            {touchedFields.email && fieldErrors.email && !emailStatus && (
-                              <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.email}</p>
-                            )}
-                          </div>
+                          {touchedFields.stageName && fieldErrors.stageName && (
+                            <p className="text-xs text-red-500 font-body">{fieldErrors.stageName}</p>
+                          )}
                         </div>
 
-                        <div className="border-t border-zinc-100 pt-4 sm:pt-5">
-                          <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold mb-2">Créez votre mot de passe d&apos;accès</label>
+                        {/* Interactive Member Count for Group types */}
+                        {candidatureType === 'group' && (
+                          <div className="space-y-2 animate-fadeIn">
+                            <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                              Nombre de membres du groupe (2 à 12) *
+                            </label>
+                            <div className="flex items-center gap-4 bg-zinc-50 border border-zinc-200 p-1.5 w-fit rounded-none">
+                              <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, memberCount: Math.max(2, prev.memberCount - 1) }))}
+                                className="p-2 bg-white border border-zinc-100 text-zinc-600 hover:bg-zinc-100 transition-all rounded-none"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <span className="font-mono font-bold text-sm w-8 text-center">
+                                {formData.memberCount}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, memberCount: Math.min(12, prev.memberCount + 1) }))}
+                                className="p-2 bg-white border border-zinc-100 text-zinc-600 hover:bg-zinc-100 transition-all rounded-none"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bio Field depending on Category select state */}
+                      {formData.discipline && (
+                        <div className="space-y-2 pt-2 animate-fadeIn">
+                          <div className="flex justify-between items-center">
+                            <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                              Précise ton univers artistique (250 car. max) *
+                            </label>
+                            <span className="text-[10px] font-mono text-zinc-400">
+                              {formData.bio.length}/250
+                            </span>
+                          </div>
+                          <textarea
+                            required
+                            maxLength={250}
+                            value={formData.bio}
+                            onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                            onBlur={(e) => handleFieldBlur('bio', e.target.value)}
+                            placeholder={categories.find(c => c.id === formData.discipline)?.placeholder || "Décris en quelques mots ta performance..."}
+                            rows={3}
+                            className={`w-full bg-zinc-50 border p-3 text-sm font-body rounded-none focus:outline-none transition-all resize-none ${
+                              touchedFields.bio && fieldErrors.bio
+                                ? 'border-red-400 focus:border-red-500'
+                                : 'border-zinc-200 focus:border-black'
+                            }`}
+                          />
+                          {touchedFields.bio && fieldErrors.bio && (
+                            <p className="text-xs text-red-500 font-body">{fieldErrors.bio}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Step Action Submit */}
+                      <div className="pt-4 border-t border-zinc-100 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleNextStep}
+                          disabled={!formData.stageName || !formData.discipline || !formData.bio || stageNameStatus === 'taken'}
+                          className="px-8 py-3.5 bg-black text-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-[#e5c47f] hover:text-black transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 rounded-none"
+                        >
+                          Étape Suivante <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* STEP 2 SECTION: LOCATION & SECURE ACCOUNT AUTH */}
+                <AnimatePresence mode="wait">
+                  {currentStep === 2 && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-6"
+                    >
+                      {/* Region and Email inputs */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="space-y-2">
+                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                            Département représenté *
+                          </label>
+                          <CustomSelect
+                            value={formData.region}
+                            onChange={(value) => {
+                              setFormData(prev => ({ ...prev, region: value }));
+                              setFieldErrors(prev => ({ ...prev, region: '' }));
+                            }}
+                            options={departments}
+                            placeholder="SÉLECTIONNER TON DÉPARTEMENT"
+                          />
+                          {touchedFields.region && fieldErrors.region && (
+                            <p className="text-xs text-red-500 font-body">{fieldErrors.region}</p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                            Adresse E-mail du candidat *
+                          </label>
                           <div className="relative">
                             <input
-                              type={showPassword ? "text" : "password"}
+                              type="email"
                               required
-                              value={formData.password}
-                              onChange={(event) => setFormData({ ...formData, password: event.target.value })}
-                              onBlur={() => handleFieldBlur('password', formData.password)}
-                              placeholder="••••••••"
-                              className={`w-full bg-zinc-50 border p-3 sm:p-4 pr-10 text-sm font-sans focus:outline-none transition-all duration-300 ${
-                                touchedFields.password && fieldErrors.password
-                                  ? 'border-red-500 bg-red-50/30'
-                                  : formData.password.length >= 8 && !fieldErrors.password
-                                  ? 'border-emerald-500 bg-emerald-50/30'
+                              value={formData.email}
+                              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                              onBlur={(e) => {
+                                handleFieldBlur('email', e.target.value);
+                                void checkEmailUniqueness(e.target.value);
+                              }}
+                              placeholder="artiste@exemple.com"
+                              className={`w-full bg-zinc-50 border p-3 text-sm font-heading tracking-wide rounded-none focus:outline-none transition-all ${
+                                (touchedFields.email && fieldErrors.email) || emailStatus === 'taken'
+                                  ? 'border-red-400 focus:border-red-500'
                                   : 'border-zinc-200 focus:border-black'
                               }`}
-                              disabled={isUploading}
+                            />
+                            {emailStatus === 'checking' && (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
+                              </div>
+                            )}
+                          </div>
+                          {touchedFields.email && fieldErrors.email && (
+                            <p className="text-xs text-red-500 font-body">{fieldErrors.email}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Password setup box */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                        <div className="space-y-2">
+                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                            Créer un mot de passe sécurisé *
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showPassword ? 'text' : 'password'}
+                              required
+                              value={formData.password}
+                              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                              onBlur={(e) => handleFieldBlur('password', e.target.value)}
+                              placeholder="••••••••••••"
+                              className={`w-full bg-zinc-50 border p-3 text-sm font-heading tracking-wide rounded-none focus:outline-none transition-all pr-10 ${
+                                touchedFields.password && fieldErrors.password
+                                  ? 'border-red-400 focus:border-red-500'
+                                  : 'border-zinc-200 focus:border-black'
+                              }`}
                             />
                             <button
                               type="button"
                               onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-1"
-                              disabled={isUploading}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
                             >
                               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                           </div>
                           
-                          {/* Modern Dynamic Password Criteria Grid */}
-                          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 bg-zinc-50/50 p-3 rounded-lg border border-zinc-100">
-                            <div className="flex items-center gap-2 transition-all duration-300">
-                              {passwordCriteria.minLength ? (
-                                <div className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 scale-110">
-                                  <CheckCircle2 className="w-3 h-3" />
-                                </div>
-                              ) : (
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-300" />
-                              )}
-                              <span className={`text-[10px] font-medium tracking-tight ${passwordCriteria.minLength ? 'text-emerald-700' : 'text-zinc-400'}`}>8+ caractères</span>
+                          {/* Live Password Criteria Grid Checklist */}
+                          <div className="mt-3 grid grid-cols-2 gap-2 bg-zinc-50 border border-zinc-100 p-3 text-[10px] font-mono">
+                            <div className="flex items-center gap-1.5">
+                              <div className={`w-1.5 h-1.5 rounded-full ${passwordCriteria.minLength ? 'bg-emerald-500' : 'bg-zinc-300'}`} />
+                              <span className={passwordCriteria.minLength ? 'text-emerald-700 font-bold' : 'text-zinc-500'}>Au moins 8 caractères</span>
                             </div>
-                            
-                            <div className="flex items-center gap-2 transition-all duration-300">
-                              {passwordCriteria.hasUpperCase ? (
-                                <div className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 scale-110">
-                                  <CheckCircle2 className="w-3" />
-                                </div>
-                              ) : (
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-300" />
-                              )}
-                              <span className={`text-[10px] font-medium tracking-tight ${passwordCriteria.hasUpperCase ? 'text-emerald-700' : 'text-zinc-400'}`}>1 Majuscule</span>
+                            <div className="flex items-center gap-1.5">
+                              <div className={`w-1.5 h-1.5 rounded-full ${passwordCriteria.hasUpperCase ? 'bg-emerald-500' : 'bg-zinc-300'}`} />
+                              <span className={passwordCriteria.hasUpperCase ? 'text-emerald-700 font-bold' : 'text-zinc-500'}>1 Majuscule (A-Z)</span>
                             </div>
-
-                            <div className="flex items-center gap-2 transition-all duration-300">
-                              {passwordCriteria.hasNumber ? (
-                                <div className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 scale-110">
-                                  <CheckCircle2 className="w-3 h-3" />
-                                </div>
-                              ) : (
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-300" />
-                              )}
-                              <span className={`text-[10px] font-medium tracking-tight ${passwordCriteria.hasNumber ? 'text-emerald-700' : 'text-zinc-400'}`}>1 Chiffre</span>
+                            <div className="flex items-center gap-1.5">
+                              <div className={`w-1.5 h-1.5 rounded-full ${passwordCriteria.hasNumber ? 'bg-emerald-500' : 'bg-zinc-300'}`} />
+                              <span className={passwordCriteria.hasNumber ? 'text-emerald-700 font-bold' : 'text-zinc-500'}>1 Chiffre (0-9)</span>
                             </div>
-
-                            <div className="flex items-center gap-2 transition-all duration-300">
-                              {passwordCriteria.hasSpecialChar ? (
-                                <div className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 scale-110">
-                                  <CheckCircle2 className="w-3 h-3" />
-                                </div>
-                              ) : (
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-300" />
-                              )}
-                              <span className={`text-[10px] font-medium tracking-tight ${passwordCriteria.hasSpecialChar ? 'text-emerald-700' : 'text-zinc-400'}`}>1 Spécial (!@#)</span>
+                            <div className="flex items-center gap-1.5">
+                              <div className={`w-1.5 h-1.5 rounded-full ${passwordCriteria.hasSpecialChar ? 'bg-emerald-500' : 'bg-zinc-300'}`} />
+                              <span className={passwordCriteria.hasSpecialChar ? 'text-emerald-700 font-bold' : 'text-zinc-500'}>1 Caractère spécial (!@#...)</span>
                             </div>
                           </div>
+                          
+                          {touchedFields.password && fieldErrors.password && (
+                            <p className="text-xs text-red-500 font-body">{fieldErrors.password}</p>
+                          )}
                         </div>
 
-                        <div className="border-t border-zinc-100 pt-4 sm:pt-5">
-                          <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold mb-2">Répétez le mot de passe</label>
+                        {/* Confirmation Password input */}
+                        <div className="space-y-2">
+                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                            Confirmer le mot de passe *
+                          </label>
                           <div className="relative">
                             <input
-                              type={showConfirmPassword ? "text" : "password"}
+                              type={showConfirmPassword ? 'text' : 'password'}
                               required
                               value={formData.confirmPassword}
-                              onChange={(event) => setFormData({ ...formData, confirmPassword: event.target.value })}
-                              onBlur={() => handleFieldBlur('confirmPassword', formData.confirmPassword)}
-                              placeholder="••••••••"
-                              className={`w-full bg-zinc-50 border p-3 sm:p-4 pr-10 text-sm font-sans focus:outline-none transition-all duration-300 ${
-                                touchedFields.confirmPassword && formData.confirmPassword !== formData.password
-                                  ? 'border-red-500 bg-red-50/30'
-                                  : formData.confirmPassword && formData.confirmPassword === formData.password && !fieldErrors.password
-                                  ? 'border-emerald-500 bg-emerald-50/30'
+                              onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                              onBlur={(e) => handleFieldBlur('confirmPassword', e.target.value)}
+                              placeholder="••••••••••••"
+                              className={`w-full bg-zinc-50 border p-3 text-sm font-heading tracking-wide rounded-none focus:outline-none transition-all pr-10 ${
+                                touchedFields.confirmPassword && fieldErrors.confirmPassword
+                                  ? 'border-red-400 focus:border-red-500'
                                   : 'border-zinc-200 focus:border-black'
                               }`}
-                              disabled={isUploading}
                             />
                             <button
                               type="button"
                               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-1"
-                              disabled={isUploading}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
                             >
                               {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                           </div>
-                          {touchedFields.confirmPassword && formData.confirmPassword !== formData.password && (
-                            <p className="font-mono text-[9px] uppercase text-red-500 mt-2 ml-1 animate-in fade-in slide-in-from-top-1">
-                              Les mots de passe ne correspondent pas
-                            </p>
-                          )}
-                          {formData.confirmPassword && formData.confirmPassword === formData.password && !fieldErrors.password && (
-                            <p className="font-mono text-[9px] uppercase text-emerald-600 mt-2 ml-1 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
-                              <CheckCircle2 className="w-3 h-3" /> Correspondance parfaite
-                            </p>
+                          {touchedFields.confirmPassword && fieldErrors.confirmPassword && (
+                            <p className="text-xs text-red-500 font-body">{fieldErrors.confirmPassword}</p>
                           )}
                         </div>
+                      </div>
 
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(1)}
-                            disabled={isUploading}
-                            className="flex-1 py-3 sm:py-4 border border-zinc-200 text-zinc-600 text-xs uppercase tracking-[0.2em] font-bold hover:border-[#050505] hover:text-[#050505] transition-all rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            PRÉCÉDENT
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(3)}
-                            disabled={
-                              !formData.region || 
-                              !formData.email || 
-                              emailStatus === 'taken' ||
-                              !formData.password || 
-                              !formData.confirmPassword || 
-                              !!fieldErrors.password || 
-                              !!fieldErrors.confirmPassword
-                            }
-                            className="flex-1 py-3 sm:py-4 bg-[#050505] text-white text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] hover:text-black transition-all flex items-center justify-center gap-2 rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            SUIVANT <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
+                      {/* Flow navigations */}
+                      <div className="pt-4 border-t border-zinc-100 flex justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={handlePrevStep}
+                          className="px-6 py-3.5 border border-zinc-200 text-zinc-600 text-xs font-heading font-bold uppercase tracking-widest hover:border-black hover:text-black transition-all rounded-none"
+                        >
+                          Retour
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={handleNextStep}
+                          disabled={
+                            !formData.region || 
+                            !formData.email || 
+                            emailStatus === 'taken' ||
+                            !passwordCriteria.minLength || 
+                            !passwordCriteria.hasUpperCase || 
+                            !passwordCriteria.hasNumber || 
+                            !passwordCriteria.hasSpecialChar ||
+                            formData.password !== formData.confirmPassword
+                          }
+                          className="px-8 py-3.5 bg-black text-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-[#e5c47f] hover:text-black transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 rounded-none"
+                        >
+                          Continuer <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* STEP 3 SECTION: MULTIMEDIA DOSSIER UPLOAD PIPELINES */}
+                <AnimatePresence mode="wait">
+                  {currentStep === 3 && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-6"
+                    >
+                      {/* Box for video asset upload */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-baseline">
+                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                            Capsule Vidéo de démonstration (1 Min Max) *
+                          </label>
+                          <span className="text-[10px] font-mono text-zinc-400">Format MP4, MOV - Max 50 Mo</span>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Step 3: Media & Security */}
-                  <AnimatePresence mode="wait">
-                    {currentStep === 3 && (
-                      <motion.div
-                        key="step3"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-4 sm:space-y-6"
-                      >
-                        <div>
-                          <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold mb-2">Capsule Vidéo (1 Min Max)</label>
-                          <div
-                            onClick={() => !isUploading && videoInputRef.current?.click()}
-                            className={`border-2 border-dashed transition-colors p-6 sm:p-8 text-center cursor-pointer flex flex-col items-center justify-center space-y-2 group ${
-                              fieldErrors.video ? 'border-red-500 bg-red-50' : 'border-zinc-200 hover:border-black bg-zinc-50'
-                            } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
-                          >
-                            <input type="file" ref={videoInputRef} onChange={handleVideoChange} accept="video/*" className="hidden" disabled={isUploading} />
-                            {videoPreview ? (
-                              <div className="w-full space-y-3">
-                                <div className="flex items-center gap-2 text-emerald-600 text-sm font-bold uppercase tracking-wider">
-                                  <Film className="w-4 h-4" /> {videoPreview.name}
-                                </div>
-                                <video
-                                  src={URL.createObjectURL(videoPreview)}
-                                  controls
-                                  className="w-full max-h-48 object-cover rounded-lg"
+                        
+                        <div 
+                          onClick={() => !isUploading && videoInputRef.current?.click()}
+                          className={`border-2 border-dashed rounded-none p-6 text-center cursor-pointer transition-colors ${
+                            videoPreview 
+                              ? 'border-emerald-300 bg-emerald-50/10' 
+                              : 'border-zinc-200 bg-zinc-50/50 hover:border-zinc-400'
+                          }`}
+                        >
+                          <input 
+                            type="file" 
+                            ref={videoInputRef}
+                            onChange={handleVideoChange}
+                            accept="video/mp4,video/quicktime,video/x-matroska"
+                            className="hidden" 
+                          />
+                          
+                          {videoPreview ? (
+                            <div className="w-full space-y-3" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-center gap-2 text-emerald-600 font-heading text-[10px] font-bold uppercase tracking-wider">
+                                <Film className="w-4 h-4" /> Capsule Sélectionnée avec succès
+                              </div>
+                              <p className="text-xs text-zinc-500 font-mono line-clamp-1 max-w-md mx-auto">
+                                {videoPreview.name} ({(videoPreview.size / (1024 * 1024)).toFixed(2)} Mo)
+                              </p>
+                              <div className="max-w-xs mx-auto overflow-hidden border border-zinc-100 shadow-sm">
+                                <video 
+                                  src={URL.createObjectURL(videoPreview)} 
+                                  controls 
+                                  className="w-full h-36 object-cover bg-black"
                                 />
                               </div>
-                            ) : (
-                              <>
-                                <Upload className="w-5 h-5 text-zinc-400 group-hover:text-black transition-colors" />
-                                <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Sélectionner le fichier</span>
-                                <span className="text-xs text-zinc-400 font-body">MP4 ou MOV (Max 50 Mo)</span>
-                              </>
-                            )}
-                          </div>
-                          {fieldErrors.video && (
-                            <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.video}</p>
-                          )}
-                          {isUploading && (
-                            <div className="w-full bg-zinc-200 h-[2px] mt-2 rounded-none overflow-hidden">
-                              <div 
-                                className="bg-black h-full transition-all duration-300" 
-                                style={{ width: `${uploadProgress}%` }}
-                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setVideoPreview(null);
+                                  if (videoInputRef.current) videoInputRef.current.value = '';
+                                }}
+                                className="text-[9px] font-heading font-bold text-red-500 uppercase tracking-widest hover:underline"
+                              >
+                                Changer la vidéo
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center py-4">
+                              <Upload className="w-6 h-6 text-zinc-400 mb-2" />
+                              <span className="text-xs font-heading font-bold uppercase tracking-wider text-black mb-1">
+                                Choisir ou Glisser le fichier vidéo
+                              </span>
+                              <span className="text-[11px] font-body text-zinc-500">
+                                Enregistre une performance claire et face caméra de 60 secondes maximum.
+                              </span>
                             </div>
                           )}
                         </div>
+                        {fieldErrors.video && (
+                          <p className="text-xs text-red-500 font-body mt-1">{fieldErrors.video}</p>
+                        )}
+                      </div>
 
-                        <div className="border-t border-zinc-100 pt-4 sm:pt-5">
-                          <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold mb-2">Image de couverture (Photo de profil)</label>
-                          <div
-                            onClick={() => !isUploading && coverImageInputRef.current?.click()}
-                            className={`border-2 border-dashed transition-colors p-6 sm:p-8 text-center cursor-pointer flex flex-col items-center justify-center space-y-2 group ${
-                              fieldErrors.coverImage ? 'border-red-500 bg-red-50' : 'border-zinc-200 hover:border-black bg-zinc-50'
-                            } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
-                          >
-                            <input type="file" ref={coverImageInputRef} onChange={handleCoverImageChange} accept="image/*" className="hidden" disabled={isUploading} />
-                            {coverImagePreview ? (
-                              <div className="w-full space-y-3">
-                                <div className="flex items-center gap-2 text-emerald-600 text-sm font-bold uppercase tracking-wider">
-                                  <CheckCircle2 className="w-4 h-4" /> {coverImagePreview.name}
-                                </div>
-                                <img
-                                  src={URL.createObjectURL(coverImagePreview)}
-                                  alt="Preview"
-                                  className="w-full max-h-48 object-cover rounded-lg"
+                      {/* Box for image asset profile photo cover */}
+                      <div className="space-y-2 pt-2">
+                        <div className="flex justify-between items-baseline">
+                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                            Photo officielle de couverture / Profil *
+                          </label>
+                          <span className="text-[10px] font-mono text-zinc-400">Format JPG, PNG - Max 5 Mo</span>
+                        </div>
+                        
+                        <div 
+                          onClick={() => !isUploading && coverImageInputRef.current?.click()}
+                          className={`border-2 border-dashed rounded-none p-6 text-center cursor-pointer transition-colors ${
+                            coverImagePreview 
+                              ? 'border-emerald-300 bg-emerald-50/10' 
+                              : 'border-zinc-200 bg-zinc-50/50 hover:border-zinc-400'
+                          }`}
+                        >
+                          <input 
+                            type="file" 
+                            ref={coverImageInputRef}
+                            onChange={handleCoverImageChange}
+                            accept="image/jpeg,image/png,image/webp"
+                            className="hidden" 
+                          />
+                          
+                          {coverImagePreview ? (
+                            <div className="w-full space-y-3" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-center gap-2 text-emerald-600 font-heading text-[10px] font-bold uppercase tracking-wider">
+                                <CheckCircle2 className="w-4 h-4" /> Photo Recadrée Prête
+                              </div>
+                              <div className="w-24 h-24 mx-auto overflow-hidden rounded-full border-2 border-white shadow-md bg-zinc-100">
+                                <img 
+                                  src={URL.createObjectURL(coverImagePreview)} 
+                                  alt="Cover Profile Preview" 
+                                  className="w-full h-full object-cover"
                                 />
                               </div>
-                            ) : (
-                              <>
-                                <Upload className="w-5 h-5 text-zinc-400 group-hover:text-black transition-colors" />
-                                <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Sélectionner l'image</span>
-                                <span className="text-xs text-zinc-400 font-body">JPG ou PNG (Max 5 Mo)</span>
-                              </>
-                            )}
-                          </div>
-                          {fieldErrors.coverImage && (
-                            <p className="font-mono text-[9px] uppercase text-red-500 mt-1">{fieldErrors.coverImage}</p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCoverImagePreview(null);
+                                  if (coverImageInputRef.current) coverImageInputRef.current.value = '';
+                                }}
+                                className="text-[9px] font-heading font-bold text-red-500 uppercase tracking-widest hover:underline"
+                              >
+                                Remplacer la photo
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center py-4">
+                              <Upload className="w-6 h-6 text-zinc-400 mb-2" />
+                              <span className="text-xs font-heading font-bold uppercase tracking-wider text-black mb-1">
+                                Sélectionner ton portrait de profil
+                              </span>
+                              <span className="text-[11px] font-body text-zinc-500">
+                                Une photo nette, de haute qualité, servant de vignette pour le vote du public.
+                              </span>
+                            </div>
                           )}
                         </div>
+                        {fieldErrors.coverImage && (
+                          <p className="text-xs text-red-500 font-body mt-1">{fieldErrors.coverImage}</p>
+                        )}
+                      </div>
 
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(2)}
-                            disabled={isUploading}
-                            className="flex-1 py-3 sm:py-4 border border-zinc-200 text-zinc-600 text-xs uppercase tracking-[0.2em] font-bold hover:border-[#050505] hover:text-[#050505] transition-all rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            PRÉCÉDENT
-                          </button>
-                          <button
-                            type="submit"
-                            disabled={isUploading}
-                            className="flex-1 py-3 sm:py-4 bg-[#050509] text-white text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] hover:text-black transition-colors flex items-center justify-center gap-2 sm:gap-3 rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isUploading ? (
-                              <>
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" /> TRANSMISSION... {uploadProgress}%
-                              </>
-                            ) : (
-                              <>VALIDER <ArrowRight className="w-3.5 h-3.5" /></>
-                            )}
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </form>
-              )}
+                      {/* Global transactional layout trigger */}
+                      <div className="pt-6 border-t border-zinc-100 flex justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={handlePrevStep}
+                          disabled={isUploading}
+                          className="px-6 py-3.5 border border-zinc-200 text-zinc-600 text-xs font-heading font-bold uppercase tracking-widest hover:border-black hover:text-black transition-all rounded-none disabled:opacity-30"
+                        >
+                          Retour
+                        </button>
+                        
+                        <button
+                          type="submit"
+                          disabled={isUploading || !videoPreview || !coverImagePreview}
+                          className="flex-1 py-3.5 bg-zinc-950 text-white text-xs font-heading font-black uppercase tracking-widest hover:bg-[#e5c47f] hover:text-black transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 rounded-none shadow-md"
+                        >
+                          {isUploading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin text-[#e5c47f]" /> 
+                              TRANSMISSION DES FICHIERS... {uploadProgress}%
+                            </>
+                          ) : (
+                            <>
+                              VALIDER ET SOUMETTRE MON DOSSIER
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </form>
+            )}
 
-              {viewState === 'login' && (
-                <form action={signInFormAction} className="space-y-4 sm:space-y-5 animate-fadeIn py-4">
-                  {/* Context-aware UI feedback for staff */}
-                  {profile && (profile.role === 'admin' || profile.role === 'jury') && (
-                    <div className="bg-zinc-800/80 border border-zinc-700/60 p-3 rounded-xl text-xs text-zinc-300 mb-4 flex items-center gap-2 animate-fade-in">
-                      <span>💡 <strong>Mode Aperçu Staff :</strong> Vous êtes connecté en tant que {profile.role.toUpperCase()}. Vous pouvez visualiser et tester l'interface du formulaire librement.</span>
-                    </div>
-                  )}
-                  {signInState?.error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-                      {signInState.error}
-                    </div>
-                  )}
-                  <div>
-                    <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">Adresse E-mail</label>
+            {/* --- VIEW MODE: SECURE CANDIDATE LOGIN (SANS USEFORMSTATE CRASH) --- */}
+            {viewState === 'login' && (
+              <form onSubmit={handleCandidateLogin} className="space-y-5 animate-fadeIn py-4">
+                
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-4 rounded-none font-body">
+                    {error}
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                    Adresse E-mail du candidat
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="artiste@exemple.com"
+                    className="w-full bg-zinc-50 border border-zinc-200 p-3.5 text-sm font-heading tracking-wide focus:outline-none focus:border-black rounded-none transition-all"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                      Mot de passe
+                    </label>
+                    <button 
+                      type="button" 
+                      onClick={() => window.open('mailto:kenkenbabatounde@gmail.com?subject=Identifiants oubliés - Top Talent Bénin', '_blank')}
+                      className="text-[10px] text-[#e5c47f] hover:underline uppercase tracking-widest font-heading font-bold transition-all"
+                    >
+                      Identifiants oubliés ?
+                    </button>
+                  </div>
+                  
+                  <div className="relative">
                     <input
-                      type="email"
-                      name="email"
+                      type={showPassword ? 'text' : 'password'}
                       required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="VOTRE@EMAIL.COM"
-                      className="w-full bg-zinc-50 border border-zinc-200 p-3 sm:p-4 text-sm font-sans focus:outline-none focus:border-black"
+                      value={formData.password}
+                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                      placeholder="••••••••••••"
+                      className="w-full bg-zinc-50 border border-zinc-200 p-3.5 pr-10 text-sm font-heading tracking-wide focus:outline-none focus:border-black rounded-none transition-all"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold">Mot de passe</label>
-                      <button 
-                        type="button" 
-                        onClick={() => window.open('mailto:kenkenbabatounde@gmail.com?subject=Identifiants oubliés - Top Talent Bénin', '_blank')}
-                        className="text-[10px] text-[#e5c47f] hover:underline uppercase tracking-wider font-bold"
-                      >
-                        Identifiants oubliés ?
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        required
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        placeholder="••••••••"
-                        className="w-full bg-zinc-50 border border-zinc-200 p-3 sm:p-4 pr-10 text-sm font-sans focus:outline-none focus:border-black"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
+                </div>
+
+                <div className="pt-3">
                   <button
                     type="submit"
-                    className="w-full py-3 sm:py-4 bg-[#050505] text-white text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] hover:text-black transition-all flex items-center justify-center gap-2 rounded shadow-sm"
+                    disabled={isLoggingIn}
+                    className="w-full py-4 bg-black text-white text-xs font-heading font-black uppercase tracking-widest hover:bg-[#e5c47f] hover:text-black transition-all flex items-center justify-center gap-2 rounded-none shadow-sm disabled:opacity-40"
                   >
-                    <Lock className="w-3 h-3" /> ACCÉDER À MON ESPACE
+                    {isLoggingIn ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-[#e5c47f]" /> 
+                        VÉRIFICATION DE L&apos;ACCÈS...
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-3 h-3" /> ACCÉDER À MON ESPACE CANDIDAT
+                      </>
+                    )}
                   </button>
-                </form>
-              )}
+                </div>
+              </form>
+            )}
+
+            {/* Microbranding bottom card sign */}
+            <div className="mt-8 pt-4 border-t border-zinc-50 text-center">
+              <p className="text-[10px] uppercase font-heading font-medium tracking-widest text-zinc-400">
+                Portail officiel d&apos;inscription • Top Talent Bénin 2026
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Image Cropper Modal */}
+        {/* --- GLOBAL EASY CROP OVERLAY MODAL --- */}
         {showCropper && (
-          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-              <div className="p-4 border-b border-zinc-200 flex items-center justify-between">
-                <h3 className="text-sm font-bold uppercase tracking-wider">Recadrer l'image</h3>
-                <button
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col rounded-none shadow-2xl">
+              
+              <div className="p-4 border-b border-zinc-100 flex items-center justify-between">
+                <h3 className="text-xs font-heading font-black uppercase tracking-wider text-black">
+                  Recadrer l&apos;image de couverture (Ratio 16:9)
+                </h3>
+                <button 
+                  type="button"
                   onClick={handleCancelCrop}
-                  className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
+                  className="p-1.5 hover:bg-zinc-100 rounded-none text-zinc-400 hover:text-black transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex-1 bg-zinc-900 relative min-h-[400px]">
+              
+              <div className="flex-1 bg-zinc-950 relative min-h-[350px] sm:min-h-[400px]">
                 <Cropper
                   image={imageToCrop}
                   crop={crop}
@@ -1380,6 +1498,7 @@ export default function CandidaturePage() {
                   showGrid={true}
                 />
               </div>
+              
               <div className="p-4 border-t border-zinc-200 space-y-4">
                 <div>
                   <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">Zoom</label>
@@ -1390,27 +1509,32 @@ export default function CandidaturePage() {
                     step={0.1}
                     value={zoom}
                     onChange={(e) => setZoom(Number(e.target.value))}
-                    className="w-full"
+                    className="w-full accent-black"
                   />
                 </div>
+                
                 <div className="flex gap-3">
                   <button
+                    type="button"
                     onClick={handleCancelCrop}
-                    className="flex-1 py-3 border border-zinc-200 text-zinc-600 text-xs uppercase tracking-[0.2em] font-bold hover:border-[#050505] hover:text-[#050505] transition-all rounded-none"
+                    className="flex-1 py-3 border border-zinc-200 text-zinc-600 text-xs font-heading uppercase tracking-[0.2em] font-bold hover:border-[#050505] hover:text-[#050505] transition-all rounded-none"
                   >
                     Annuler
                   </button>
                   <button
+                    type="button"
                     onClick={handleConfirmCrop}
-                    className="flex-1 py-3 bg-[#050505] text-white text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] transition-all rounded-none"
+                    className="flex-1 py-3 bg-[#050505] text-white text-xs font-heading uppercase tracking-[0.2em] font-bold hover:bg-[#e5c47f] hover:text-black transition-all rounded-none"
                   >
                     Confirmer
                   </button>
                 </div>
               </div>
+
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
