@@ -77,16 +77,31 @@ export const db = {
     if (supabase) {
       let query = supabase.from('candidates').select('*');
       if (options?.status) query = query.eq('status', options.status);
-      if (options?.profileId) query = query.eq('profile_id', options.profileId);
+      if (options?.profileId) {
+        console.log('[DB] Filtering candidates by profile_id:', options.profileId);
+        query = query.eq('profile_id', options.profileId);
+      }
       
       const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) {
         console.error('[DB] Error fetching candidates from Supabase:', error);
+        console.error('[DB] Query details:', {
+          status: options?.status,
+          profileId: options?.profileId,
+          errorMessage: error.message,
+          errorDetails: error.details
+        });
         // Don't fallback to local storage if there's a real database error 
         // to avoid showing empty results when the DB is just busy/restricted
         throw error;
       }
+      
+      console.log('[DB] Candidates query success:', {
+        resultsCount: data?.length || 0,
+        status: options?.status,
+        profileId: options?.profileId
+      });
       
       if (data) return data;
     }

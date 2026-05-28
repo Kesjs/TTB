@@ -102,23 +102,43 @@ export default function CandidateDashboard() {
         return;
       }
 
-      // Sync local session info
+      // Sync local session info IMMEDIATELY after validation
       localStorage.setItem('user_id', sessionUserId);
       localStorage.setItem('user_role', profile.role);
       const cookieOptions = 'path=/; max-age=604800; SameSite=Lax; Secure';
       document.cookie = `user_id=${sessionUserId}; ${cookieOptions}`;
       document.cookie = `user_role=${profile.role}; ${cookieOptions}`;
 
+      console.log('[CandidateDashboard] Session synced, waiting for cookie propagation...');
+      
+      // Wait for cookies to be properly set before querying database
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Get system control
       const sc = await db.getSystemControl();
       setSystemControl(sc);
       console.log('[CandidateDashboard] Current phase:', sc?.current_phase);
 
-      // Get candidate data
+      // Get candidate data with proper field mapping
       console.log('[CandidateDashboard] Fetching candidate record for profile:', sessionUserId);
+      console.log('[CandidateDashboard] Available cookies:', {
+        user_id: document.cookie.split(';').find(c => c.trim().startsWith('user_id='))?.split('=')[1],
+        user_role: document.cookie.split(';').find(c => c.trim().startsWith('user_role='))?.split('=')[1]
+      });
+      
       const candidates = await db.getCandidates({ profileId: sessionUserId });
       const userCandidate = candidates[0];
       console.log('[CandidateDashboard] Candidate record found:', userCandidate?.stage_name || 'NONE');
+      console.log('[CandidateDashboard] Total candidates returned:', candidates.length);
+      
+      if (candidates.length > 0) {
+        console.log('[CandidateDashboard] First candidate details:', {
+          id: candidates[0].id,
+          profile_id: candidates[0].profile_id,
+          stage_name: candidates[0].stage_name,
+          status: candidates[0].status
+        });
+      }
 
       if (!userCandidate) {
         console.warn('[CandidateDashboard] No candidate record found for this profile');
