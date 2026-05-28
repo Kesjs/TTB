@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Star, Award, UserCheck, Flame, Loader2, Sparkles, Check, Plus, Minus,
   LogOut, AlertCircle, ExternalLink, History, ClipboardList, BarChart3,
