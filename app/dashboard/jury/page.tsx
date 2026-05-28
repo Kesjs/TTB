@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Star, Award, UserCheck, Flame, Loader2, Sparkles, Check, Plus, Minus,
   LogOut, AlertCircle, ExternalLink, History, ClipboardList, BarChart3,
-  User, Layout, ChevronRight, CheckCircle2, TrendingUp, Flag
+  User, Layout, ChevronRight, CheckCircle2, TrendingUp, Flag, Trophy
 } from 'lucide-react';
 import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile } from '@/lib/supabase/types';
@@ -30,6 +30,7 @@ export default function JuryDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('evaluation');
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [juryProfile, setJuryProfile] = useState<Profile | null>(null);
+  const [existingRatings, setExistingRatings] = useState<any[]>([]);
 
   const roadmapSteps = [
     { id: 'PRESELECTION', label: 'Sélection', icon: Flag },
@@ -71,8 +72,6 @@ export default function JuryDashboard() {
 
   const [success, setSuccess] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-
-  const [existingRatings, setExistingRatings] = useState<any[]>([]);
 
   const addToast = (type: 'success' | 'error', message: string) => {
     const id = Date.now().toString();
