@@ -292,6 +292,11 @@ function HomeContent() {
 
   }, [voteCountMap, juryAverages, maxVotes]);
 
+  const getJuryScore = useCallback((candidateId: string): number => {
+    const juryData = juryAverages[candidateId];
+    return juryData ? juryData.total_jury_average : 0;
+  }, [juryAverages]);
+
 
 
   const handleSelectVideo = useCallback((candidateId: string | null) => {
@@ -430,6 +435,7 @@ function HomeContent() {
                 isVotingOpen={systemControl.is_voting_open || false}
                 currentPhase={systemControl.current_phase}
                 calculateHybridScore={calculateHybridScore}
+                getJuryScore={getJuryScore}
                 onSelectVideo={handleSelectVideo}
               />
 

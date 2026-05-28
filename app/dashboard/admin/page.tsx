@@ -40,6 +40,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('jury');
   const [candidateStatusFilter, setCandidateStatusFilter] = useState<CandidateStatusFilter>('pending');
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [existingRatings, setExistingRatings] = useState<any[]>([]);
 
   // Admin Profile State
   const [adminProfile, setAdminProfile] = useState({
@@ -133,7 +134,7 @@ export default function AdminDashboard() {
         console.log('[Admin Dashboard] Loading data (middleware handles auth)');
 
         // Load data with individual error handling
-        const [allCandidates, sc, juryData, userProfile] = await Promise.all([
+        const [allCandidates, sc, juryData, userProfile, ratings] = await Promise.all([
           db.getCandidates().catch(err => {
             console.error('[Admin Dashboard] Error loading candidates:', err);
             return [];
@@ -150,11 +151,16 @@ export default function AdminDashboard() {
             console.error('[Admin Dashboard] Error loading user profile:', err);
             return null;
           }),
+          db.getJuryRatings().catch(err => {
+            console.error('[Admin Dashboard] Error loading jury ratings:', err);
+            return [];
+          }),
         ]);
 
         setCandidates(allCandidates || []);
         setSystemControl(sc || null);
         setJuryProfiles(juryData || []);
+        setExistingRatings(ratings || []);
 
         if (userProfile) {
           setAdminProfile({
@@ -183,30 +189,37 @@ export default function AdminDashboard() {
 
     loadData();
 
-    // Realtime subscription
-    if (supabase) {
-      const channel = supabase
-        .channel('system_control_admin')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_control' }, (payload) => {
-          const newControl = payload.new as SystemControl;
-          setSystemControl(newControl);
-          setPhase(newControl.current_phase);
-          setIsVotingOpen(newControl.is_voting_open);
-          setLiveCandidateId(newControl.live_voting_candidate_id || '');
-          setIsMaintenanceMode((newControl as any).is_maintenance_mode || false);
-        })
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            console.log('Connected to realtime');
-          }
-        });
+      // Realtime subscription
+      const channels: any[] = [];
 
-      return () => {
-        if (supabase) {
-          supabase.removeChannel(channel);
-        }
-      };
-    }
+      if (supabase) {
+        const systemChannel = supabase
+          .channel('system_control_admin')
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_control' }, (payload) => {
+            const newControl = payload.new as SystemControl;
+            setSystemControl(newControl);
+            setPhase(newControl.current_phase);
+            setIsVotingOpen(newControl.is_voting_open);
+            setLiveCandidateId(newControl.live_voting_candidate_id || '');
+            setIsMaintenanceMode((newControl as any).is_maintenance_mode || false);
+          })
+          .subscribe();
+        channels.push(systemChannel);
+
+        const ratingsChannel = supabase
+          .channel('jury_ratings_admin')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'jury_ratings' }, (payload) => {
+            console.log('Jury rating updated:', payload);
+            // Refresh ratings from database to ensure sync
+            db.getJuryRatings().then(ratings => setExistingRatings(ratings || []));
+          })
+          .subscribe();
+        channels.push(ratingsChannel);
+
+        return () => {
+          channels.forEach(channel => supabase.removeChannel(channel));
+        };
+      }
   }, []);
 
   // Master Switchboard Handlers
@@ -776,6 +789,7 @@ export default function AdminDashboard() {
                       <th className="p-4">Département</th>
                       <th className="p-4">Vidéo</th>
                       <th className="p-4">Votes</th>
+                      <th className="p-4">Jury (Suivi)</th>
                       <th className="p-4">Statut</th>
                       <th className="p-4 text-right">Actions</th>
                     </tr>
@@ -798,6 +812,42 @@ export default function AdminDashboard() {
                           )}
                         </td>
                         <td className="p-4 text-zinc-400">0</td>
+                        <td className="p-4">
+                          {(() => {
+                            // Map system phase to rating phase
+                            const phaseMapping: Record<string, string> = {
+                              'PRESELECTION': 'preselection',
+                              'VOTES_TOP_40': 'preselection', // Use preselection ratings for Top 40 selection
+                              'SEMIFINAL': 'semifinal',
+                              'FINAL': 'final'
+                            };
+                            const ratingPhase = phaseMapping[phase] || 'preselection';
+
+                            // Get ratings for this candidate in the current phase
+                            const ratingsForCandidate = (existingRatings || []).filter(
+                              (r: any) => r.candidate_id === candidate.id && r.phase === ratingPhase
+                            );
+                            const juryCount = juryProfiles.length;
+                            const ratedCount = ratingsForCandidate.length;
+                            
+                            return (
+                              <div className="flex flex-col gap-1">
+                                <span className={`text-[10px] font-bold font-mono ${
+                                  ratedCount === juryCount ? 'text-emerald-400' : 'text-zinc-500'
+                                }`}>
+                                  {ratedCount} / {juryCount} jurés
+                                </span>
+                                {ratedCount > 0 && (
+                                  <div className="flex gap-0.5">
+                                    {Array.from({ length: juryCount }).map((_, i) => (
+                                      <div key={i} className={`h-1 w-2 rounded-full ${i < ratedCount ? 'bg-emerald-500' : 'bg-zinc-800'}`} />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </td>
                         <td className="p-4">
                           <span className={`text-[10px] px-2 py-1 rounded font-mono uppercase ${
                             candidate.status === 'approved' 

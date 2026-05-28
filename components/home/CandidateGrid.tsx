@@ -15,6 +15,7 @@ interface CandidateGridProps {
   isVotingOpen?: boolean;
   currentPhase?: string;
   calculateHybridScore?: (candidateId: string) => number;
+  getJuryScore?: (candidateId: string) => number;
   getCandidateVoteCount?: (candidateId: string) => number;
   onSelectVideo?: (candidateId: string | null) => void;
   onVote?: (candidate: Candidate) => void;
@@ -29,6 +30,7 @@ export default function CandidateGrid({
   isVotingOpen = false,
   currentPhase,
   calculateHybridScore,
+  getJuryScore,
   getCandidateVoteCount,
   onSelectVideo,
   onVote
@@ -211,6 +213,7 @@ export default function CandidateGrid({
                 liveCandidateId={liveCandidateId}
                 isVotingOpen={isVotingOpen}
                 hybridScore={calculateHybridScore?.(candidate.id)}
+                juryScore={getJuryScore?.(candidate.id)}
                 onSelectVideo={onSelectVideo}
                 onVote={onVote}
               />

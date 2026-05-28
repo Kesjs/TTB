@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { 
   Star, Award, UserCheck, Flame, Loader2, Sparkles, Check, Plus, Minus,
   LogOut, AlertCircle, ExternalLink, History, ClipboardList, BarChart3,
-  User, Layout, ChevronRight, CheckCircle2, TrendingUp, Flag, Trophy
+  User, Layout, ChevronRight, CheckCircle2, TrendingUp, Flag, Trophy,
+  Eye, X, ChevronLeft
 } from 'lucide-react';
 import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile } from '@/lib/supabase/types';
@@ -32,6 +33,11 @@ export default function JuryDashboard() {
   const [juryProfile, setJuryProfile] = useState<Profile | null>(null);
   const [existingRatings, setExistingRatings] = useState<any[]>([]);
 
+  // Modals & Confirmation states
+  const [showCandidateModal, setShowCandidateModal] = useState<boolean>(false);
+  const [candidateForModal, setCandidateForModal] = useState<Candidate | null>(null);
+  const [confirmRatingMode, setConfirmRatingMode] = useState<boolean>(false);
+
   const roadmapSteps = [
     { id: 'PRESELECTION', label: 'Sélection', icon: Flag },
     { id: 'VOTES_TOP_40', label: 'Top 40', icon: Award },
@@ -48,10 +54,13 @@ export default function JuryDashboard() {
     const phase = systemControl?.current_phase;
     if (!phase) return { evaluated: 0, total: 0 };
     
-    let filtered = candidates;
-    if (phase === 'VOTES_TOP_40') filtered = candidates.filter(c => c.is_top_40);
-    else if (phase === 'SEMIFINAL') filtered = candidates.filter(c => c.is_semifinalist);
-    else if (phase === 'FINAL') filtered = candidates.filter(c => c.is_finalist);
+    const filtered = candidates.filter(c => {
+      if (c.status !== 'approved') return false;
+      if (phase === 'VOTES_TOP_40') return c.is_top_40;
+      if (phase === 'SEMIFINAL') return c.is_semifinalist;
+      if (phase === 'FINAL') return c.is_finalist;
+      return true;
+    });
     
     const evaluatedCount = filtered.filter(c => 
       existingRatings.some(r => r.candidate_id === c.id && r.phase === phase)
@@ -59,6 +68,32 @@ export default function JuryDashboard() {
     
     return { evaluated: evaluatedCount, total: filtered.length };
   }, [candidates, existingRatings, systemControl]);
+
+  const filteredCandidates = useMemo(() => {
+    const phase = systemControl?.current_phase;
+    if (!phase) return [];
+
+    return candidates.filter(c => {
+      // Le jury ne voit que les candidats approuvés par l'admin
+      if (c.status !== 'approved') return false;
+
+      // Filtrage selon la phase
+      if (phase === 'VOTES_TOP_40') return c.is_top_40;
+      if (phase === 'SEMIFINAL') return c.is_semifinalist;
+      if (phase === 'FINAL') return c.is_finalist;
+      
+      // En phase PRESELECTION, il voit tout ce qui est approuvé
+      return true;
+    });
+  }, [candidates, systemControl]);
+
+  const getCandidateRating = (candidateId: string) => {
+    const rating = existingRatings.find(
+      r => r.candidate_id === candidateId && r.phase === systemControl?.current_phase
+    );
+    if (!rating) return null;
+    return (Number(rating.score_technique) + Number(rating.score_originalite) + Number(rating.score_presence)) / 3;
+  };
 
   // Selection state for PRESELECTION phase
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
@@ -278,6 +313,9 @@ export default function JuryDashboard() {
       });
 
       setSuccess(true);
+      setConfirmRatingMode(false);
+      setShowCandidateModal(false);
+      addToast('success', `Note enregistrée pour ${activeCandidate.stage_name}`);
       setTimeout(() => setSuccess(false), 3000);
       await loadData();
     } catch (err) {
@@ -535,43 +573,44 @@ export default function JuryDashboard() {
                   </span>
                 </div>
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-                  {(() => {
-                    let filteredCandidates = candidates;
-                    if (systemControl?.current_phase === 'VOTES_TOP_40') filteredCandidates = candidates.filter(c => c.is_top_40);
-                    else if (systemControl?.current_phase === 'SEMIFINAL') filteredCandidates = candidates.filter(c => c.is_semifinalist);
-                    else if (systemControl?.current_phase === 'FINAL') filteredCandidates = candidates.filter(c => c.is_finalist);
+                  {filteredCandidates.map((c) => {
+                    const isLive = systemControl?.live_voting_candidate_id === c.id;
+                    const rating = getCandidateRating(c.id);
+                    const isActive = activeCandidateId === c.id;
 
-                    return filteredCandidates.map((c) => {
-                      const isLive = systemControl?.live_voting_candidate_id === c.id;
-                      const isRated = existingRatings.some(r => r.candidate_id === c.id && r.phase === systemControl?.current_phase);
-                      const isActive = activeCandidateId === c.id;
-
-                      return (
-                        <button
-                          key={c.id}
-                          onClick={() => setActiveCandidateId(c.id)}
-                          className={`flex-shrink-0 min-w-[140px] p-3 rounded-xl border transition-all relative ${
-                            isActive ? 'bg-zinc-900 border-[#e5c47f] ring-1 ring-[#e5c47f]/50' : 'bg-zinc-900/40 border-zinc-800'
-                          }`}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className={`text-[10px] font-bold uppercase truncate ${isActive ? 'text-white' : 'text-zinc-400'}`}>
-                                {c.stage_name}
-                              </span>
-                              {isLive && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
-                            </div>
-                            <span className="text-[8px] text-zinc-500 uppercase tracking-tighter truncate">{c.discipline}</span>
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => {
+                          setActiveCandidateId(c.id);
+                          setCandidateForModal(c);
+                          setShowCandidateModal(true);
+                        }}
+                        className={`flex-shrink-0 min-w-[140px] p-3 rounded-xl border transition-all relative ${
+                          isActive ? 'bg-zinc-900 border-[#e5c47f] ring-1 ring-[#e5c47f]/50' : 
+                          isLive ? 'bg-red-900/10 border-red-500/50' : 'bg-zinc-900/40 border-zinc-800'
+                        }`}
+                      >
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`text-[10px] font-bold uppercase truncate ${isActive ? 'text-white' : 'text-zinc-400'}`}>
+                              {c.stage_name}
+                            </span>
+                            {isLive && <span className="flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                              <span className="text-[7px] text-red-500 font-bold uppercase">LIVE</span>
+                            </span>}
                           </div>
-                          {isRated && (
-                            <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white rounded-full p-0.5 shadow-lg border border-emerald-400">
-                              <Check className="w-2.5 h-2.5" />
-                            </div>
-                          )}
-                        </button>
-                      );
-                    });
-                  })()}
+                          <span className="text-[8px] text-zinc-500 uppercase tracking-tighter truncate">{c.discipline}</span>
+                        </div>
+                        {rating !== null && (
+                          <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white rounded-full px-1.5 py-0.5 shadow-lg border border-emerald-400 text-[8px] font-black font-mono">
+                            {rating.toFixed(1)}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -589,38 +628,48 @@ export default function JuryDashboard() {
                   </div>
 
                   <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-                    {(() => {
-                      let filteredCandidates = candidates;
-                      if (systemControl?.current_phase === 'VOTES_TOP_40') filteredCandidates = candidates.filter(c => c.is_top_40);
-                      else if (systemControl?.current_phase === 'SEMIFINAL') filteredCandidates = candidates.filter(c => c.is_semifinalist);
-                      else if (systemControl?.current_phase === 'FINAL') filteredCandidates = candidates.filter(c => c.is_finalist);
+                    {filteredCandidates.map((c) => {
+                      const isLive = systemControl?.live_voting_candidate_id === c.id;
+                      const rating = getCandidateRating(c.id);
 
-                      return filteredCandidates.map((c) => {
-                        const isLive = systemControl?.live_voting_candidate_id === c.id;
-                        const isRated = existingRatings.some(r => r.candidate_id === c.id && r.phase === systemControl?.current_phase);
-
-                        return (
-                          <button
-                            key={c.id}
-                            onClick={() => setActiveCandidateId(c.id)}
-                            className={`w-full text-left p-3.5 rounded-xl border flex items-center justify-between transition-all ${
-                              activeCandidateId === c.id
-                                ? 'bg-zinc-900 text-white border-[#e5c47f]'
-                                : 'bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:border-zinc-700'
-                            }`}
-                          >
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-heading font-bold text-sm text-white">{c.stage_name}</span>
-                                {isLive && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
-                              </div>
-                              <span className="text-[10px] text-zinc-500 block">{c.discipline} • {c.region}</span>
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => {
+                            setActiveCandidateId(c.id);
+                            setCandidateForModal(c);
+                            setShowCandidateModal(true);
+                          }}
+                          className={`w-full text-left p-3.5 rounded-xl border flex items-center justify-between transition-all ${
+                            activeCandidateId === c.id
+                              ? 'bg-zinc-900 text-white border-[#e5c47f]'
+                              : isLive 
+                              ? 'bg-red-900/10 border-red-500/50'
+                              : 'bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:border-zinc-700'
+                          }`}
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-heading font-bold text-sm text-white">{c.stage_name}</span>
+                              {isLive && (
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-red-500 rounded text-[7px] font-black text-white animate-pulse">
+                                  SUR SCÈNE
+                                </span>
+                              )}
                             </div>
-                            {isRated && <Check className="w-3.5 h-3.5 text-emerald-500" />}
-                          </button>
-                        );
-                      });
-                    })()}
+                            <span className="text-[10px] text-zinc-500 block">{c.discipline} • {c.region}</span>
+                          </div>
+                          {rating !== null ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-black font-mono text-emerald-400">{rating.toFixed(1)}</span>
+                              <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            </div>
+                          ) : (
+                            <ChevronRight className="w-3.5 h-3.5 text-zinc-700" />
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -934,13 +983,238 @@ export default function JuryDashboard() {
       {toasts.map(toast => (
         <div
           key={toast.id}
-          className={`fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${
+          className={`fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg text-sm font-medium z-[100] ${
             toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
           }`}
         >
           {toast.message}
         </div>
       ))}
+
+      {/* MODALE D'ÉVALUATION COMPLÈTE */}
+      <AnimatePresence>
+        {showCandidateModal && candidateForModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]"
+            >
+              {/* Header de la modale */}
+              <div className="p-4 border-b border-zinc-900 flex items-center justify-between sticky top-0 bg-zinc-950 z-10">
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => setShowCandidateModal(false)}
+                    className="p-2 hover:bg-zinc-900 rounded-full transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-zinc-400" />
+                  </button>
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-tight">{candidateForModal.stage_name}</h3>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest">{candidateForModal.discipline} • {candidateForModal.region}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowCandidateModal(false)}
+                  className="p-2 hover:bg-zinc-900 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-zinc-400" />
+                </button>
+              </div>
+
+              {/* Corps de la modale */}
+              <div className="flex flex-col lg:flex-row overflow-y-auto">
+                {/* Gauche : Vidéo et Infos */}
+                <div className="lg:w-3/5 p-6 border-r border-zinc-900 space-y-6">
+                  <div className="aspect-video bg-black rounded-xl overflow-hidden border border-zinc-800 shadow-inner">
+                    {candidateForModal.video_url ? (
+                      <video 
+                        src={candidateForModal.video_url} 
+                        poster={candidateForModal.cover_image_url}
+                        controls 
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-zinc-700 font-mono text-xs">
+                        FLUX VIDÉO INDISPONIBLE
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black text-[#e5c47f] uppercase tracking-[0.2em] border-b border-zinc-900 pb-2">Détails Artistiques</h4>
+                    <p className="text-xs text-zinc-400 leading-relaxed italic">
+                      {candidateForModal.stage_name} représente fièrement le département du {candidateForModal.region} dans la catégorie {candidateForModal.discipline}.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800">
+                        <span className="text-[8px] text-zinc-500 uppercase block mb-1">Candidature</span>
+                        <span className="text-[10px] font-bold text-white uppercase">
+                          {candidateForModal.candidature_type === 'group' ? `Groupe (${candidateForModal.member_count} membres)` : 'Artiste Solo'}
+                        </span>
+                      </div>
+                      <div className="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800">
+                        <span className="text-[8px] text-zinc-500 uppercase block mb-1">Inscrit le</span>
+                        <span className="text-[10px] font-bold text-white uppercase">
+                          {new Date(candidateForModal.created_at).toLocaleDateString('fr-FR')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Droite : Notation */}
+                <div className="lg:w-2/5 p-6 bg-zinc-900/20 space-y-8">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Star className="w-4 h-4 text-[#e5c47f]" />
+                    <h3 className="text-xs font-black text-white uppercase tracking-widest">Grille de Notation</h3>
+                  </div>
+
+                  {confirmRatingMode ? (
+                    <div className="h-full flex flex-col justify-center items-center text-center space-y-6 py-10 animate-fadeIn">
+                      <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center border-4 border-emerald-500/20">
+                        <Check className="w-10 h-10 text-emerald-500" />
+                      </div>
+                      <div>
+                        <h4 className="text-white font-bold uppercase tracking-tight mb-2">Note prête à être certifiée</h4>
+                        <p className="text-xs text-zinc-500">
+                          Moyenne calculée : <span className="text-emerald-400 font-black font-mono text-lg">
+                            {((scoreTechnique + scoreOriginalite + scorePresence) / 3).toFixed(1)}/20
+                          </span>
+                        </p>
+                      </div>
+                      <div className="flex flex-col w-full gap-3">
+                        <button 
+                          onClick={handleSaveScore}
+                          className="w-full py-4 bg-emerald-500 text-black font-black uppercase text-xs tracking-widest rounded-xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+                        >
+                          CONFIRMER ET ENREGISTRER
+                        </button>
+                        <button 
+                          onClick={() => setConfirmRatingMode(false)}
+                          className="w-full py-3 text-zinc-500 font-bold uppercase text-[10px] hover:text-white transition-all"
+                        >
+                          MODIFIER LES SCORES
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-8">
+                        {/* Technique */}
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Technique</label>
+                            <span className="text-lg font-black font-mono text-[#e5c47f]">{scoreTechnique}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button 
+                              type="button"
+                              onClick={() => adjustScore(setScoreTechnique, scoreTechnique, -0.5)}
+                              className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <input 
+                              type="range" min="0" max="20" step="0.5" 
+                              value={scoreTechnique} 
+                              onChange={(e) => setScoreTechnique(parseFloat(e.target.value))}
+                              className="flex-1 h-1.5 bg-zinc-800 rounded-full appearance-none accent-[#e5c47f]" 
+                            />
+                            <button 
+                              type="button"
+                              onClick={() => adjustScore(setScoreTechnique, scoreTechnique, 0.5)}
+                              className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Originalité */}
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Originalité</label>
+                            <span className="text-lg font-black font-mono text-[#e5c47f]">{scoreOriginalite}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button 
+                              type="button"
+                              onClick={() => adjustScore(setScoreOriginalite, scoreOriginalite, -0.5)}
+                              className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <input 
+                              type="range" min="0" max="20" step="0.5" 
+                              value={scoreOriginalite} 
+                              onChange={(e) => setScoreOriginalite(parseFloat(e.target.value))}
+                              className="flex-1 h-1.5 bg-zinc-800 rounded-full appearance-none accent-[#e5c47f]" 
+                            />
+                            <button 
+                              type="button"
+                              onClick={() => adjustScore(setScoreOriginalite, scoreOriginalite, 0.5)}
+                              className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Présence */}
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Présence</label>
+                            <span className="text-lg font-black font-mono text-[#e5c47f]">{scorePresence}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button 
+                              type="button"
+                              onClick={() => adjustScore(setScorePresence, scorePresence, -0.5)}
+                              className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <input 
+                              type="range" min="0" max="20" step="0.5" 
+                              value={scorePresence} 
+                              onChange={(e) => setScorePresence(parseFloat(e.target.value))}
+                              className="flex-1 h-1.5 bg-zinc-800 rounded-full appearance-none accent-[#e5c47f]" 
+                            />
+                            <button 
+                              type="button"
+                              onClick={() => adjustScore(setScorePresence, scorePresence, 0.5)}
+                              className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-6 border-t border-zinc-900">
+                        <div className="flex justify-between items-center mb-6 p-4 bg-zinc-900 rounded-xl border border-zinc-800">
+                          <span className="text-[10px] font-bold text-zinc-500 uppercase">Moyenne Globale</span>
+                          <span className="text-2xl font-black font-mono text-white">
+                            {((scoreTechnique + scoreOriginalite + scorePresence) / 3).toFixed(1)}
+                          </span>
+                        </div>
+                        <button 
+                          onClick={() => setConfirmRatingMode(true)}
+                          className="w-full py-4 bg-[#e5c47f] text-black font-black uppercase text-xs tracking-widest rounded-xl hover:bg-[#d4b36f] transition-all shadow-lg shadow-[#e5c47f]/20"
+                        >
+                          VALIDER CETTE NOTE
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -14,6 +14,7 @@ interface CandidateCardProps {
   liveCandidateId?: string | null;
   isVotingOpen?: boolean;
   hybridScore?: number;
+  juryScore?: number;
   onSelectVideo?: (candidateId: string | null) => void;
   onVote?: (candidate: Candidate) => void;
   onViewIncrement?: (candidateId: string) => void;
@@ -28,6 +29,7 @@ export default function CandidateCard({
   liveCandidateId = null,
   isVotingOpen = false,
   hybridScore,
+  juryScore,
   onSelectVideo,
   onVote,
   onViewIncrement
@@ -174,10 +176,14 @@ export default function CandidateCard({
               </div>
 
               {/* Jury Score */}
-              {hybridScore !== undefined && (
-                <div className="flex items-center gap-1.5 mt-2">
-                  <Star className="w-3.5 h-3.5 text-[#e5c47f]" />
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-white/90">{hybridScore.toFixed(1)} / 20</span>
+              {juryScore !== undefined && juryScore > 0 && (
+                <div className="flex flex-col gap-1 mt-2">
+                  <div className="flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 text-[#e5c47f] fill-[#e5c47f]/20" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#e5c47f]">
+                      Note Jury : {juryScore.toFixed(1)}/20
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
