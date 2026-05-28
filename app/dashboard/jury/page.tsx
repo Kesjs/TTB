@@ -213,10 +213,15 @@ export default function JuryDashboard() {
       }
 
       // Si l'admin a défini un candidat actif sur scène, le sélectionner par défaut
+      // Sinon, sélectionner le premier candidat filtré (approuvé pour la phase actuelle)
       if (sc?.live_voting_candidate_id) {
         setActiveCandidateId(sc.live_voting_candidate_id);
-      } else if (allCandidates.length > 0 && !activeCandidateId) {
-        setActiveCandidateId(allCandidates[0].id);
+      } else if (!activeCandidateId) {
+        // Find first candidate approved by admin
+        const firstApproved = allCandidates.find(c => c.status === 'approved');
+        if (firstApproved) {
+          setActiveCandidateId(firstApproved.id);
+        }
       }
 
       // Filtrer les évaluations de ce jury

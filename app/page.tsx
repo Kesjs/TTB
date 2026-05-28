@@ -308,9 +308,9 @@ function HomeContent() {
   // Filter candidates based on phase
 
   const filteredCandidates = useMemo(() => {
-    // En présélection, on ne montre que ceux déjà qualifiés pour le Top 40 par le jury
+    // En présélection, on montre tous les candidats approuvés
     if (systemControl.current_phase === 'PRESELECTION') {
-      return rankedCandidates.filter(c => c.is_top_40);
+      return rankedCandidates;
     }
 
     if (systemControl.current_phase === 'VOTES_TOP_40')
