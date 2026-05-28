@@ -9,7 +9,8 @@ export async function proxy(request: NextRequest) {
 
   console.log('[Proxy] Path:', pathname, 'userId:', userId, 'userRole:', userRole)
 
-  // Redirect logged-in users away from login page
+  // Redirect logged-in users away from login page - DISABLED to allow account switching
+  /*
   if (pathname === '/login' && userId && userRole) {
     console.log('[Proxy] User already logged in, redirecting to dashboard')
     const dashboardUrl = userRole === 'admin'
@@ -19,6 +20,7 @@ export async function proxy(request: NextRequest) {
         : new URL('/dashboard/candidate', request.url)
     return NextResponse.redirect(dashboardUrl)
   }
+  */
 
   // Protection de la route /candidature - vérifier la phase actuelle
   // Note: Phase check moved to client-side in candidature page for simplicity

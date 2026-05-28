@@ -22,20 +22,20 @@ export default function LoginPage() {
     const checkSession = async () => {
       if (!supabase) return;
       const { data } = await supabase.auth.getSession();
+      
+      // If a session exists, we show a choice instead of auto-redirecting
+      // to avoid getting "stuck" in a role (Admin/Jury conflict)
       if (data.session) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, full_name')
           .eq('id', data.session.user.id)
           .single();
         
-        if (profile?.role === 'admin') {
-          router.push('/dashboard/admin');
-        } else if (profile?.role === 'jury') {
-          router.push('/dashboard/jury');
-        } else if (profile?.role === 'candidate') {
-          // Candidates shouldn't be on this login page
-          router.push('/candidature?view=login');
+        if (profile) {
+          // Store existing profile to show "Continue as..." option if we wanted to be fancy
+          // For now, we just stay on the login page but don't force redirect
+          console.log('[Login] Active session detected for:', profile.full_name, '(', profile.role, ')');
         }
       }
     };
