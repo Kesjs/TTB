@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Lock, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { signInStaff } from '@/app/actions/staff-auth';
 
@@ -13,91 +13,80 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isChecking, setIsChecking] = useState(true); // Bloque le rendu pendant la vérification
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Soumission directe et asynchrone de l'action serveur
+  // Fonction de connexion corrigée
   const handleCleanLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (isSubmitting) return;
     setIsSubmitting(true);
     setError(null);
 
     try {
-      console.log('🔑 Soumission du formulaire avec email:', email);
-      
-      // Construction manuelle du FormData à partir du state React
       const formData = new FormData();
       formData.append('email', email);
       formData.append('password', password);
       
-      // Appel direct de l'action serveur (on passe null pour le prevState)
       const result = await signInStaff(null, formData);
       
-      if (result && result.error) {
-        console.error('❌ Échec de la connexion:', result.error);
+      if (result?.error) {
         setError(result.error);
-      } else {
-        console.log('✅ Connexion validée par le serveur, redirection en cours...');
-        // Redirection immédiate et rafraîchissement du routeur pour le middleware
-        router.push('/dashboard/admin');
+      } else if (result?.success) {
+        // Redirection basée sur le rôle retourné
+        if (result.role === 'admin') router.push('/dashboard/admin');
+        else if (result.role === 'jury') router.push('/dashboard/jury');
+        
         router.refresh();
       }
-      
     } catch (err) {
-      console.error('Erreur inattendue lors de la soumission:', err);
       setError("Une erreur système est survenue. Veuillez réessayer.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Nettoyage complet et forcé de la session UNIQUEMENT au chargement initial
+  // Effet de nettoyage et de vérification de session
   useEffect(() => {
-    setIsHydrated(true);
-    
-    const cleanupSession = async () => {
-      try {
-        if (supabase) {
-          try {
-            await supabase.auth.signOut({ scope: 'local' });
-          } catch (signOutError) {
-            console.warn("Échec du signOut serveur, nettoyage forcé du stockage local...", signOutError);
-          }
+    const initSession = async () => {
+      setIsHydrated(true);
+
+      // 1. Vérification de session existante pour éviter le flash
+      if (supabase) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.session.user.id)
+            .maybeSingle();
+
+          if (profile?.role === 'admin') { router.push('/dashboard/admin'); return; }
+          if (profile?.role === 'jury') { router.push('/dashboard/jury'); return; }
         }
-        
-        if (typeof window !== 'undefined') {
-          localStorage.clear();
-          sessionStorage.clear();
-          
-          Object.keys(localStorage).forEach((key) => {
-            if (key.startsWith('sb-')) localStorage.removeItem(key);
-          });
-        }
-        
-        document.cookie = "user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        document.cookie = "user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        
-        document.cookie.split(";").forEach((c) => {
-          const cookie = c.trim();
-          if (cookie.startsWith('sb-') || cookie.includes('supabase')) {
-            const cookieName = cookie.split("=")[0];
-            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`;
-          }
-        });
-        
-        console.log('🧹 Session nettoyée au chargement de la page login');
-      } catch (error) {
-        console.error('Erreur lors du nettoyage de session au chargement:', error);
       }
+
+      // 2. Nettoyage de l'environnement local pour éviter les restes de sessions corrompues
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+        // Suppression propre des cookies
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+      } catch (e) {
+        console.warn("Cleanup warning", e);
+      }
+      
+      setIsChecking(false);
     };
     
-    cleanupSession();
-  }, []);
+    void initSession();
+  }, [router]);
 
-  if (!isHydrated) {
+  // Si on attend l'hydratation ou la vérification de session, on affiche le loader
+  if (!isHydrated || isChecking) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e5c47f]"></div>
@@ -105,15 +94,14 @@ export default function LoginPage() {
     );
   }
 
+  // Rendu de la page de connexion
   return (
     <div className="min-h-screen bg-[#050505] text-[#050505] flex items-center justify-center selection:bg-[#e5c47f] selection:text-black">
       <div className="w-full max-w-md px-4">
-        {/* Bouton Retour */}
         <Link href="/" className="inline-flex items-center gap-2 text-xs font-heading uppercase tracking-[0.15em] text-zinc-500 hover:text-white transition-colors mb-6">
           ← Retour à l'accueil
         </Link>
 
-        {/* Carte de Connexion */}
         <div className="bg-[#0c0c0e] border border-zinc-900 p-8 sm:p-10 rounded-none space-y-6">
           <div className="text-center space-y-4">
             <div className="flex justify-center">
@@ -138,7 +126,6 @@ export default function LoginPage() {
               <label className="block text-xs uppercase tracking-widest text-zinc-500 font-bold mb-2">Email</label>
               <input
                 type="email"
-                name="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -152,7 +139,6 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  name="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -177,7 +163,7 @@ export default function LoginPage() {
               {isSubmitting ? (
                 <>
                   Connexion en cours...
-                  <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                  <Loader2 className="w-3 h-3 animate-spin" />
                 </>
               ) : (
                 <>
