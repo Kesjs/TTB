@@ -111,10 +111,12 @@ export default function CandidateGrid({
                       <h3 className="font-heading font-black text-lg uppercase text-zinc-950 truncate">{candidate.stage_name}</h3>
                       <p className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">{candidate.discipline} • {candidate.region}</p>
                     </div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-zinc-200 rounded-full">
-                      <Trophy className="w-3.5 h-3.5 text-[#e5c47f]" />
-                      <span className="font-mono text-xs font-black text-zinc-900">{calculateHybridScore?.(candidate.id)?.toFixed(1) ?? '0.0'} / 20</span>
-                    </div>
+                    {currentPhase !== 'ARCHIVED' && (
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-zinc-200 rounded-full">
+                        <Trophy className="w-3.5 h-3.5 text-[#e5c47f]" />
+                        <span className="font-mono text-xs font-black text-zinc-900">{calculateHybridScore?.(candidate.id)?.toFixed(1) ?? '0.0'} / 20</span>
+                      </div>
+                    )}
                   </div>
 
                   <button

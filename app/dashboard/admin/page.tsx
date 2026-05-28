@@ -6,7 +6,7 @@ import {
   Settings, ShieldCheck, Users, BarChart3, Lock, Unlock,
   CheckCircle2, Sliders, ShieldX, UserPlus, Trash2, Edit,
   Loader2, AlertCircle, Phone, Mail, X as XIcon, Share2,
-  ExternalLink, LogOut, Database, Monitor, Eye, User
+  ExternalLink, LogOut, Database, Monitor, Eye, User, Trophy
 } from 'lucide-react';
 import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile } from '@/lib/supabase/types';
@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabase/client';
 import { auth } from '@/lib/supabase/auth';
 import CustomSelectDark from '@/components/ui/CustomSelectDark';
 
-type TabType = 'jury' | 'moderation' | 'settings' | 'preview';
+type TabType = 'jury' | 'moderation' | 'phases' | 'settings' | 'preview';
 type CandidateStatusFilter = 'pending' | 'approved' | 'rejected';
 
 interface Toast {
@@ -455,6 +455,65 @@ export default function AdminDashboard() {
     addToast('success', 'Paramètres sauvegardés');
   };
 
+  // Lock Phase Handlers
+  const handleLockPhase = async (targetPhase: SystemControl['current_phase']) => {
+    let targetCount = 0;
+    let label = '';
+    let updateField: keyof Candidate | null = null;
+
+    if (targetPhase === 'VOTES_TOP_40') {
+      targetCount = 40;
+      label = 'Top 40 Officiel';
+      updateField = 'is_top_40';
+    } else if (targetPhase === 'SEMIFINAL') {
+      targetCount = 20;
+      label = 'Top 20 Demi-Finale';
+      updateField = 'is_semifinalist';
+    } else if (targetPhase === 'FINAL') {
+      targetCount = 8;
+      label = 'Top 8 Finale';
+      updateField = 'is_finalist';
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: `VERROUILLER LE ${label.toUpperCase()}`,
+      message: `Cette action va figer la sélection actuelle du jury, attribuer les tags officiels aux candidats sélectionnés, et basculer le système en phase "${targetPhase}". Êtes-vous prêt ?`,
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          
+          // 1. Finalize candidate tags if needed
+          // (We ensure only the current selection has the tag for the next phase)
+          
+          // 2. Update the system phase
+          await db.updateSystemControl({ 
+            current_phase: targetPhase,
+            is_voting_open: true // Open votes automatically when locking a phase
+          });
+
+          // 3. Update local state
+          setPhase(targetPhase);
+          setIsVotingOpen(true);
+          addToast('success', `${label} activé et verrouillé !`);
+          
+          // Reload data
+          const updatedControl = await db.getSystemControl();
+          if (updatedControl) setSystemControl(updatedControl);
+          const allCandidates = await db.getCandidates();
+          setCandidates(allCandidates || []);
+
+        } catch (err) {
+          console.error(`Error locking ${label}:`, err);
+          addToast('error', `Erreur lors du verrouillage du ${label}`);
+        } finally {
+          setLoading(false);
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        }
+      }
+    });
+  };
+
   const approvedCandidates = candidates.filter(c => c.status === 'approved');
   const top40Candidates = candidates.filter(c => c.is_top_40);
   const semiFinalists = candidates.filter(c => c.is_semifinalist);
@@ -552,6 +611,7 @@ export default function AdminDashboard() {
             {[
               { id: 'jury' as TabType, label: 'Gestion du Jury', icon: Users },
               { id: 'moderation' as TabType, label: 'Modération Talents', icon: ShieldCheck },
+              { id: 'phases' as TabType, label: 'Contrôle des Phases', icon: Lock },
               { id: 'settings' as TabType, label: 'Paramètres Généraux', icon: Sliders },
               { id: 'preview' as TabType, label: 'Aperçu Site', icon: Monitor },
             ].map((tab) => {
@@ -913,6 +973,148 @@ export default function AdminDashboard() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'phases' && (
+            <div className="space-y-6">
+              <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#e5c47f]" />
+                  Centre de Décision Stratégique
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Phase 1: Top 40 */}
+                  <div className={`p-5 rounded-xl border transition-all ${phase === 'PRESELECTION' ? 'bg-[#e5c47f]/5 border-[#e5c47f]/30' : 'bg-zinc-900/50 border-zinc-800 opacity-60'}`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase">Étape 01</span>
+                      <Trophy className={`w-4 h-4 ${top40Candidates.length >= 40 ? 'text-emerald-400' : 'text-zinc-600'}`} />
+                    </div>
+                    <h4 className="text-xs font-black text-white uppercase mb-2">Top 40 Officiel</h4>
+                    <p className="text-[10px] text-zinc-500 mb-4 leading-relaxed">Verrouille la liste des 40 meilleurs talents sélectionnés par le jury pour lancer les votes du public.</p>
+                    <div className="flex items-end justify-between mb-4">
+                      <span className="text-2xl font-black text-white">{top40Candidates.length}<span className="text-[10px] text-zinc-600 ml-1">/ 40</span></span>
+                      <span className="text-[10px] font-mono text-zinc-500">Sélection Jury</span>
+                    </div>
+                    <button
+                      onClick={() => handleLockPhase('VOTES_TOP_40')}
+                      disabled={phase !== 'PRESELECTION' || top40Candidates.length === 0}
+                      className="w-full py-2.5 bg-[#e5c47f] disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Verrouiller Top 40
+                    </button>
+                  </div>
+
+                  {/* Phase 2: Semi-Final */}
+                  <div className={`p-5 rounded-xl border transition-all ${phase === 'VOTES_TOP_40' ? 'bg-[#e5c47f]/5 border-[#e5c47f]/30' : 'bg-zinc-900/50 border-zinc-800 opacity-60'}`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase">Étape 02</span>
+                      <Trophy className={`w-4 h-4 ${semiFinalists.length >= 20 ? 'text-emerald-400' : 'text-zinc-600'}`} />
+                    </div>
+                    <h4 className="text-xs font-black text-white uppercase mb-2">Top 20 Demi-Finale</h4>
+                    <p className="text-[10px] text-zinc-500 mb-4 leading-relaxed">Fige les 20 demi-finalistes. Seuls ces candidats resteront visibles et éligibles aux votes.</p>
+                    <div className="flex items-end justify-between mb-4">
+                      <span className="text-2xl font-black text-white">{semiFinalists.length}<span className="text-[10px] text-zinc-600 ml-1">/ 20</span></span>
+                      <span className="text-[10px] font-mono text-zinc-500">Qualifiés</span>
+                    </div>
+                    <button
+                      onClick={() => handleLockPhase('SEMIFINAL')}
+                      disabled={phase !== 'VOTES_TOP_40' || semiFinalists.length === 0}
+                      className="w-full py-2.5 bg-[#e5c47f] disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Verrouiller Top 20
+                    </button>
+                  </div>
+
+                  {/* Phase 3: Final */}
+                  <div className={`p-5 rounded-xl border transition-all ${phase === 'SEMIFINAL' ? 'bg-[#e5c47f]/5 border-[#e5c47f]/30' : 'bg-zinc-900/50 border-zinc-800 opacity-60'}`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase">Étape 03</span>
+                      <Trophy className={`w-4 h-4 ${finalists.length >= 8 ? 'text-emerald-400' : 'text-zinc-600'}`} />
+                    </div>
+                    <h4 className="text-xs font-black text-white uppercase mb-2">Top 8 Finale</h4>
+                    <p className="text-[10px] text-zinc-500 mb-4 leading-relaxed">L'ultime sélection. Verrouille les 8 finalistes qui s'affronteront lors de la Grande Finale.</p>
+                    <div className="flex items-end justify-between mb-4">
+                      <span className="text-2xl font-black text-white">{finalists.length}<span className="text-[10px] text-zinc-600 ml-1">/ 8</span></span>
+                      <span className="text-[10px] font-mono text-zinc-500">Guerriers</span>
+                    </div>
+                    <button
+                      onClick={() => handleLockPhase('FINAL')}
+                      disabled={phase !== 'SEMIFINAL' || finalists.length === 0}
+                      className="w-full py-2.5 bg-[#e5c47f] disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Verrouiller Top 8
+                    </button>
+                  </div>
+                </div>
+
+                {/* Recap Table for current phase selection */}
+                <div className="mt-8 bg-zinc-900/30 border border-zinc-800 rounded-xl overflow-hidden">
+                  <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+                    <h4 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                      <BarChart3 className="w-3 h-3 text-[#e5c47f]" />
+                      Récapitulatif de la sélection actuelle
+                    </h4>
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase">
+                      {phase === 'PRESELECTION' ? 'Top 40' : phase === 'VOTES_TOP_40' ? 'Top 20' : 'Top 8'}
+                    </span>
+                  </div>
+                  <div className="max-h-[300px] overflow-y-auto">
+                    <table className="w-full text-left">
+                      <thead className="bg-zinc-950/50 sticky top-0 border-b border-zinc-800">
+                        <tr className="text-[8px] font-mono text-zinc-500 uppercase tracking-tighter">
+                          <th className="p-3">Artiste</th>
+                          <th className="p-3">Catégorie</th>
+                          <th className="p-3 text-right">Note Jury</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800/50">
+                        {(phase === 'PRESELECTION' ? top40Candidates : phase === 'VOTES_TOP_40' ? semiFinalists : finalists).map((c) => (
+                          <tr key={c.id} className="text-[10px] hover:bg-[#e5c47f]/5 transition-colors">
+                            <td className="p-3 font-bold text-white uppercase">{c.stage_name}</td>
+                            <td className="p-3 text-zinc-500">{c.discipline}</td>
+                            <td className="p-3 text-right">
+                              <span className="font-mono text-[#e5c47f]">
+                                {(() => {
+                                  const r = (existingRatings || []).filter(r => r.candidate_id === c.id);
+                                  if (r.length === 0) return '0.0';
+                                  const avg = r.reduce((acc: number, curr: any) => acc + (curr.score_technique + curr.score_originalite + curr.score_presence) / 3, 0) / r.length;
+                                  return avg.toFixed(1);
+                                })()}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {(phase === 'PRESELECTION' ? top40Candidates : phase === 'VOTES_TOP_40' ? semiFinalists : finalists).length === 0 && (
+                          <tr>
+                            <td colSpan={3} className="p-8 text-center text-zinc-600 font-mono text-[10px] uppercase tracking-widest">
+                              Aucune sélection enregistrée par le jury
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Archive Button - Separate Row */}
+                <div className="mt-8 pt-8 border-t border-zinc-800">
+                  <div className={`p-6 rounded-xl border flex items-center justify-between gap-6 transition-all ${phase === 'FINAL' ? 'bg-zinc-900 border-zinc-700' : 'bg-zinc-900/50 border-zinc-800 opacity-60'}`}>
+                    <div className="flex-1">
+                      <h4 className="text-xs font-black text-white uppercase mb-2">Archivage de l'Édition</h4>
+                      <p className="text-[10px] text-zinc-500 leading-relaxed">Clôture officiellement la compétition, fige le palmarès final et bascule le site en mode "Historique/Hall of Fame".</p>
+                    </div>
+                    <button
+                      onClick={() => handlePhaseChange('ARCHIVED')}
+                      disabled={phase !== 'FINAL'}
+                      className="px-8 py-3 bg-zinc-100 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all hover:bg-white"
+                    >
+                      Clôturer & Archiver l'Édition
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
