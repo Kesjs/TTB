@@ -322,10 +322,10 @@ export default function JuryDashboard() {
             </a>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 text-[10px] font-mono text-zinc-400 hover:text-red-400 transition-colors"
+              className="flex items-center gap-2 text-[10px] font-mono text-zinc-400 hover:text-red-400 transition-colors bg-zinc-900/50 sm:bg-transparent px-2 py-1 sm:p-0 rounded border border-zinc-800 sm:border-transparent"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Déconnexion</span>
+              <span className="inline">Déconnexion</span>
             </button>
           </div>
         </div>

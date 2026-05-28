@@ -140,7 +140,7 @@ export default function CandidateDashboard() {
           className="text-[9px] uppercase tracking-[0.2em] text-slate-500 hover:text-slate-950 border border-slate-200 px-3 py-1.5 rounded bg-white hover:bg-slate-50 transition-all flex items-center gap-2 font-semibold"
         >
           <LogOut className="w-3 h-3 text-[#e5c47f]" /> 
-          <span className="hidden sm:inline">Déconnexion</span>
+          <span className="inline">Déconnexion</span>
         </button>
       </header>
 
