@@ -283,7 +283,7 @@ export default function CandidateDashboard() {
         {/* TITRE DE BIENVENUE */}
         <div className="mb-8 border-l-2 border-[#e5c47f] pl-4 sm:pl-5">
           <h1 className="font-heading font-black text-2xl sm:text-3xl uppercase tracking-tight text-[#050505] mb-1.5">
-            Bienvenue, {candidate.stage_name}
+            Bienvenue, {candidate?.stage_name || 'Artiste'}
           </h1>
           <p className="text-slate-500 text-xs sm:text-sm">
             Suivez l&apos;évolution de votre performance, l&apos;état des votes de l&apos;audience et vos détails d&apos;inscription en temps réel.
@@ -295,19 +295,19 @@ export default function CandidateDashboard() {
           
           {/* STATUT CARD */}
           <div className={`p-5 rounded-xl border ${
-            candidate.status === 'approved' ? 'text-emerald-800 bg-emerald-50/40 border-emerald-100/80' : 
-            candidate.status === 'rejected' ? 'text-slate-700 bg-slate-50 border-slate-200/80' : 
+            candidate?.status === 'approved' ? 'text-emerald-800 bg-emerald-50/40 border-emerald-100/80' : 
+            candidate?.status === 'rejected' ? 'text-slate-700 bg-slate-50 border-slate-200/80' : 
             'text-amber-800 bg-amber-50/40 border-amber-100/80'
           }`}>
             <span className="text-[9px] uppercase tracking-widest font-bold mb-2.5 block opacity-70">État du Profil</span>
             <div className="flex items-center gap-2.5">
-              {candidate.status === 'approved' && <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
-              {candidate.status === 'rejected' && <XCircle className="w-5 h-5 text-slate-400" />}
-              {candidate.status === 'pending_review' && <Clock className="w-5 h-5 text-amber-600 animate-pulse" />}
+              {candidate?.status === 'approved' && <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+              {candidate?.status === 'rejected' && <XCircle className="w-5 h-5 text-slate-400" />}
+              {candidate?.status === 'pending_review' && <Clock className="w-5 h-5 text-amber-600 animate-pulse" />}
               
               <span className="text-sm sm:text-base font-bold uppercase tracking-wide">
-                {candidate.status === 'approved' ? 'Validé & En Scène' : 
-                 candidate.status === 'rejected' ? 'Session Clôturée' : 'En Coulisses'}
+                {candidate?.status === 'approved' ? 'Validé & En Scène' : 
+                 candidate?.status === 'rejected' ? 'Session Clôturée' : 'En Coulisses'}
               </span>
             </div>
           </div>
@@ -317,7 +317,7 @@ export default function CandidateDashboard() {
             <span className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-2.5 block">Soutiens Certifiés</span>
             <div className="flex items-center gap-2.5">
               <TrendingUp className="w-5 h-5 text-[#e5c47f]" />
-              <span className="text-xl font-black font-mono text-[#050505]">{candidate.votes_count || 0} <span className="text-xs font-sans text-slate-400 font-normal">votes</span></span>
+              <span className="text-xl font-black font-mono text-[#050505]">{candidate?.votes_count || 0} <span className="text-xs font-sans text-slate-400 font-normal">votes</span></span>
             </div>
           </div>
 
@@ -353,26 +353,26 @@ export default function CandidateDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-600">
             <div className="flex items-center gap-3 py-0.5">
               <User className="w-4 h-4 text-[#e5c47f]" />
-              <span>Nom de scène : <strong className="text-slate-900 uppercase tracking-wide">{candidate.stage_name}</strong></span>
+              <span>Nom de scène : <strong className="text-slate-900 uppercase tracking-wide">{candidate?.stage_name}</strong></span>
             </div>
             <div className="flex items-center gap-3 py-0.5">
               <Award className="w-4 h-4 text-[#e5c47f]" />
-              <span>Catégorie : <strong className="text-slate-900 uppercase tracking-wide">{candidate.discipline}</strong></span>
+              <span>Catégorie : <strong className="text-slate-900 uppercase tracking-wide">{candidate?.discipline}</strong></span>
             </div>
             <div className="flex items-center gap-3 py-0.5">
               <MapPin className="w-4 h-4 text-[#e5c47f]" />
-              <span>Zone / Département : <strong className="text-slate-900 uppercase tracking-wide">{candidate.region}</strong></span>
+              <span>Zone / Département : <strong className="text-slate-900 uppercase tracking-wide">{candidate?.region}</strong></span>
             </div>
             <div className="flex items-center gap-3 py-0.5">
               <Clock className="w-4 h-4 text-[#e5c47f]" />
               <span>Date d&apos;inscription : <strong className="text-slate-900">
-                {new Date(candidate.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {candidate?.created_at ? new Date(candidate.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '--'}
               </strong></span>
             </div>
           </div>
 
           {/* Bio display for candidate */}
-          {candidate.bio && (
+          {candidate?.bio && (
             <div className="mt-6 p-5 bg-slate-50/50 border border-slate-100 rounded-xl relative overflow-hidden">
               <div className="flex items-center gap-2 mb-3 relative z-10">
                 <Sparkles className="w-3.5 h-3.5 text-[#e5c47f]" />
@@ -386,7 +386,7 @@ export default function CandidateDashboard() {
           )}
 
           {/* DYNAMIQUE STATUT 1 : CANDIDATURE VALIDÉE (APPROVED) */}
-          {candidate.status === 'approved' && shareUrl && (
+          {candidate?.status === 'approved' && shareUrl && (
             <div className="mt-8 pt-6 border-t border-slate-100">
               <div className="mb-4">
                 <h3 className="font-heading font-bold text-[10px] uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-2">
@@ -423,7 +423,7 @@ export default function CandidateDashboard() {
           )}
 
           {/* DYNAMIQUE STATUT 2 : CANDIDATURE EN ATTENTE (PENDING) */}
-          {candidate.status === 'pending_review' && (
+          {candidate?.status === 'pending_review' && (
             <div className="mt-8 pt-6 border-t border-slate-100">
               <div className="bg-slate-50/80 border border-amber-100 rounded-xl p-5 flex flex-col sm:flex-row items-start gap-4">
                 <div className="p-2 bg-amber-50 rounded-lg text-amber-500 shrink-0">
@@ -442,7 +442,7 @@ export default function CandidateDashboard() {
           )}
 
           {/* DYNAMIQUE STATUT 3 : CANDIDATURE TERMINÉE (REJECTED) */}
-          {candidate.status === 'rejected' && (
+          {candidate?.status === 'rejected' && (
             <div className="mt-8 pt-6 border-t border-slate-100">
               <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 flex flex-col sm:flex-row items-start gap-4">
                 <div className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 shrink-0">
