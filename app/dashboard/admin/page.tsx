@@ -67,10 +67,22 @@ export default function AdminDashboard() {
   // Iframe ref for refreshing
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  const [siteUrl, setSiteUrl] = useState<string>('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setSiteUrl(window.location.origin);
+    }
+  }, []);
+
   // Refresh iframe function
   const refreshIframe = () => {
     if (iframeRef.current) {
-      iframeRef.current.src = iframeRef.current.src;
+      const currentSrc = iframeRef.current.src;
+      iframeRef.current.src = 'about:blank';
+      setTimeout(() => {
+        iframeRef.current!.src = currentSrc;
+      }, 10);
     }
   };
 
@@ -1283,20 +1295,25 @@ export default function AdminDashboard() {
                 </p>
 
                 {/* Real Site Iframe */}
-                <div className="bg-white rounded-lg overflow-hidden border border-zinc-200">
+                <div className="bg-white rounded-lg overflow-hidden border border-zinc-200 relative group">
                   <iframe
                     ref={iframeRef}
-                    src={`https://toptalentbenin.vercel.app/?preview_phase=${phase}`}
+                    src={`${siteUrl}/?preview_phase=${phase}`}
                     className="w-full h-[600px] border-0"
                     title="Aperçu du site Top Talent Bénin"
-                    sandbox="allow-scripts allow-popups allow-forms"
+                    sandbox="allow-scripts allow-popups allow-forms allow-same-origin"
                   />
+                  {!siteUrl && (
+                    <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-[#e5c47f]" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}
                 <div className="mt-4 flex gap-3">
                   <a
-                    href="https://toptalentbenin.vercel.app/"
+                    href={siteUrl || "https://toptalentbenin.vercel.app/"}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 py-2.5 bg-[#e5c47f] hover:bg-[#d4b36f] text-zinc-950 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2"

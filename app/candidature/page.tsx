@@ -99,22 +99,27 @@ export default function CandidaturePage() {
     setError('');
   }, [viewState]);
 
-  // Fetch current phase on mount and redirect if not PRESELECTION
+  // Fetch current phase and maintenance mode on mount
   useEffect(() => {
-    const fetchPhase = async () => {
+    const fetchSystemStatus = async () => {
       try {
         const systemControl = await db.getSystemControl();
         if (systemControl) {
           setCurrentPhase(systemControl.current_phase);
-          if (systemControl.current_phase !== 'PRESELECTION' && viewState !== 'login') {
+          // Redirect to home if maintenance mode is ON or phase is not PRESELECTION
+          // BUT allow access if viewState is 'login' (to allow admin/candidates to log in)
+          const isMaintenance = (systemControl as any).is_maintenance_mode;
+          const isNotPreselection = systemControl.current_phase !== 'PRESELECTION';
+
+          if ((isMaintenance || isNotPreselection) && viewState !== 'login') {
             window.location.href = '/';
           }
         }
       } catch (err) {
-        console.error('Error fetching phase:', err);
+        console.error('Error fetching system status:', err);
       }
     };
-    void fetchPhase();
+    void fetchSystemStatus();
   }, [viewState]);
 
   // --- AUTO-SAVE LOGIC ---

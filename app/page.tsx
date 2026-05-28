@@ -4,7 +4,11 @@
 
 import { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
 
+import Link from 'next/link';
+
 import { useSearchParams } from 'next/navigation';
+
+import { Database } from 'lucide-react';
 
 import Navbar from '@/components/Navbar';
 
@@ -340,7 +344,32 @@ function HomeContent() {
     return 'Les Talents du Bénin';
   }, [systemControl.current_phase]);
 
-
+  if (!loading && (systemControl as any).is_maintenance_mode) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 bg-zinc-950 rounded-full flex items-center justify-center mb-8 animate-pulse">
+          <Database className="w-8 h-8 text-[#e5c47f]" />
+        </div>
+        <h1 className="font-heading font-black text-3xl sm:text-4xl uppercase tracking-tighter text-[#050505] mb-4">
+          Maintenance en cours
+        </h1>
+        <p className="max-w-md text-zinc-500 text-sm sm:text-base leading-relaxed font-body mb-8">
+          Nous préparons la plateforme pour la prochaine étape de l&apos;aventure. 
+          Revenez très bientôt pour découvrir les nouveaux talents du Bénin.
+        </p>
+        <div className="flex items-center gap-3 px-4 py-2 bg-zinc-50 border border-zinc-100 rounded-full">
+          <div className="w-2 h-2 bg-[#e5c47f] rounded-full animate-pulse" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Édition 2026</span>
+        </div>
+        <Link 
+          href="/login" 
+          className="mt-12 text-[10px] uppercase tracking-[0.2em] text-zinc-300 hover:text-zinc-500 transition-colors"
+        >
+          Accès Admin
+        </Link>
+      </div>
+    );
+  }
 
   return (
 
