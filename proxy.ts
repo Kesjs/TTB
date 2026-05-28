@@ -1,71 +1,51 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
-  // Get cookies for authentication
-  const userId = request.cookies.get('user_id')?.value
-  const userRole = request.cookies.get('user_role')?.value
-
-  console.log('[Proxy] Path:', pathname, 'userId:', userId, 'userRole:', userRole)
-
-  // Redirect logged-in users away from login page - DISABLED to allow account switching
-  /*
-  if (pathname === '/login' && userId && userRole) {
-    console.log('[Proxy] User already logged in, redirecting to dashboard')
-    const dashboardUrl = userRole === 'admin'
-      ? new URL('/dashboard/admin', request.url)
-      : userRole === 'jury'
-        ? new URL('/dashboard/jury', request.url)
-        : new URL('/dashboard/candidate', request.url)
-    return NextResponse.redirect(dashboardUrl)
-  }
-  */
-
-  // Protection de la route /candidature - vérifier la phase actuelle
-  // Note: Phase check moved to client-side in candidature page for simplicity
-  // Keep this section for future server-side phase validation if needed
-
-  // Redirection propre de /admin vers le tableau de bord
-  if (pathname === '/admin') {
-    return NextResponse.redirect(new URL('/dashboard/admin', request.url))
-  }
-
-  // Protection des routes /dashboard/admin/*
-  if (pathname.startsWith('/dashboard/admin')) {
-    if (!userId || userRole !== 'admin') {
-      console.log('[Proxy] Unauthorized access to admin dashboard, redirecting to login')
-      return NextResponse.redirect(new URL('/login', request.url))
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          response.cookies.set({ name, value, ...options });
+        },
+        remove(name: string, options: any) {
+          response.cookies.set({ name, value: '', ...options });
+        },
+      },
     }
-    console.log('[Proxy] Admin access granted')
-  }
+  );
 
-  // Protection des routes /dashboard/jury/*
-  if (pathname.startsWith('/dashboard/jury')) {
-    if (!userId || userRole !== 'jury') {
-      console.log('[Proxy] Unauthorized access to jury dashboard, redirecting to login')
-      return NextResponse.redirect(new URL('/login', request.url))
+  const { data: { session } } = await supabase.auth.getSession();
+
+  // Protection des routes /dashboard
+  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+    if (!session) {
+      return NextResponse.redirect(new URL('/login', request.url));
     }
-    console.log('[Proxy] Jury access granted')
   }
 
-  if (pathname.startsWith('/dashboard/candidate')) {
-    if (!userId || userRole !== 'candidate') {
-      console.log('[Proxy] Unauthorized access to candidate dashboard, redirecting to candidature login')
-      return NextResponse.redirect(new URL('/candidature?view=login', request.url))
-    }
-    console.log('[Proxy] Candidate access granted')
+  // Protection route login (rediriger si déjà connecté)
+  if (request.nextUrl.pathname === '/login' && session) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  return NextResponse.next()
+  return response;
 }
 
 export const config = {
   matcher: [
-    '/candidature',
-    '/admin',
-    '/admin/:path*',
-    '/dashboard/:path*',
-    '/login',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-}
+};

@@ -60,25 +60,18 @@ export default function CandidateDashboard() {
         return;
       }
 
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      // Get session natively from Supabase
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (sessionError) {
+      if (sessionError || !session) {
         console.error('[CandidateDashboard] Session error:', sessionError);
         setError('Session expirée. Veuillez vous reconnecter.');
         setLoading(false);
         return;
       }
 
-      const sessionUserId = sessionData.session?.user.id;
+      const sessionUserId = session.user.id;
       console.log('[CandidateDashboard] Session User ID:', sessionUserId);
-
-      if (!sessionUserId) {
-        console.warn('[CandidateDashboard] No active session found, redirecting...');
-        localStorage.removeItem('user_id');
-        localStorage.removeItem('user_role');
-        window.location.href = '/candidature?view=login';
-        return;
-      }
 
       // Check profile
       const { data: profile, error: profileError } = await supabase
@@ -96,40 +89,24 @@ export default function CandidateDashboard() {
 
       if (profile.role !== 'candidate') {
         console.warn('[CandidateDashboard] User is not a candidate, role:', profile.role);
-        localStorage.removeItem('user_id');
-        localStorage.removeItem('user_role');
         window.location.href = '/candidature?view=login';
         return;
       }
 
-      // Sync local session info IMMEDIATELY after validation
-      localStorage.setItem('user_id', sessionUserId);
-      localStorage.setItem('user_role', profile.role);
-      const cookieOptions = 'path=/; max-age=604800; SameSite=Lax; Secure';
-      document.cookie = `user_id=${sessionUserId}; ${cookieOptions}`;
-      document.cookie = `user_role=${profile.role}; ${cookieOptions}`;
-
-      console.log('[CandidateDashboard] Session synced, waiting for cookie propagation...');
+      console.log('[CandidateDashboard] Profile validated, fetching data in parallel...');
       
-      // Wait for cookies to be properly set before querying database
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Fetch system control and candidate data in parallel for better performance
+      const [systemControl, candidates] = await Promise.all([
+        db.getSystemControl(),
+        db.getCandidates({ profileId: sessionUserId })
+      ]);
 
-      // Get system control
-      const sc = await db.getSystemControl();
-      setSystemControl(sc);
-      console.log('[CandidateDashboard] Current phase:', sc?.current_phase);
+      setSystemControl(systemControl);
+      console.log('[CandidateDashboard] Current phase:', systemControl?.current_phase);
+      console.log('[CandidateDashboard] Candidates returned:', candidates.length);
 
-      // Get candidate data with proper field mapping
-      console.log('[CandidateDashboard] Fetching candidate record for profile:', sessionUserId);
-      console.log('[CandidateDashboard] Available cookies:', {
-        user_id: document.cookie.split(';').find(c => c.trim().startsWith('user_id='))?.split('=')[1],
-        user_role: document.cookie.split(';').find(c => c.trim().startsWith('user_role='))?.split('=')[1]
-      });
-      
-      const candidates = await db.getCandidates({ profileId: sessionUserId });
       const userCandidate = candidates[0];
       console.log('[CandidateDashboard] Candidate record found:', userCandidate?.stage_name || 'NONE');
-      console.log('[CandidateDashboard] Total candidates returned:', candidates.length);
       
       if (candidates.length > 0) {
         console.log('[CandidateDashboard] First candidate details:', {
@@ -150,7 +127,11 @@ export default function CandidateDashboard() {
         if (userCandidate.status === 'approved') {
           console.log('[CandidateDashboard] Candidate is approved, loading competition stats...');
           try {
-            const allCandidates = await db.getCandidates();
+            const [allCandidates, juryData] = await Promise.all([
+              db.getCandidates(),
+              db.getJuryAverages(systemControl.current_phase)
+            ]);
+
             const approved = allCandidates
               .filter(c => c.status === 'approved')
               .sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0));
@@ -159,7 +140,6 @@ export default function CandidateDashboard() {
             const currentRank = approved.findIndex(c => c.id === userCandidate.id) + 1;
             setRank(currentRank > 0 ? currentRank : null);
 
-            const juryData = await db.getJuryAverages(sc.current_phase);
             if (juryData[userCandidate.id]) {
               setJuryAverage(juryData[userCandidate.id].total_jury_average);
             }
