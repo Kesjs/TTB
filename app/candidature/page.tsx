@@ -798,35 +798,58 @@ export default function CandidaturePage() {
                           1. Sélectionne ton domaine artistique *
                         </label>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {categories.map((cat) => {
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                          {categories.map((cat, index) => {
                             const IconComponent = cat.icon;
                             const isSelected = formData.discipline === cat.id;
                             
                             return (
-                              <button
+                              <motion.button
                                 key={cat.id}
                                 type="button"
                                 onClick={() => {
                                   setFormData(prev => ({ ...prev, discipline: cat.id }));
                                   setFieldErrors(prev => ({ ...prev, discipline: '' }));
                                 }}
-                                className={`p-4 border text-left transition-all relative flex flex-col justify-between min-h-[120px] rounded-none ${
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                                whileHover={{ 
+                                  scale: 1.02, 
+                                  y: -2,
+                                  transition: { duration: 0.2 }
+                                }}
+                                whileTap={{ 
+                                  scale: 0.98,
+                                  transition: { duration: 0.1 }
+                                }}
+                                className={`p-3 sm:p-4 border text-left transition-all relative flex flex-col justify-between min-h-[100px] sm:min-h-[110px] rounded-lg ${
                                   isSelected
-                                    ? 'border-black bg-zinc-950 text-white shadow-md'
-                                    : 'border-zinc-200 bg-white text-black hover:border-zinc-400'
+                                    ? 'border-[#e5c47f] bg-zinc-950 text-white shadow-lg ring-2 ring-[#e5c47f]/20'
+                                    : 'border-zinc-200 bg-white text-black hover:border-[#e5c47f] hover:shadow-md'
                                 }`}
                               >
-                                <IconComponent className={`w-5 h-5 ${isSelected ? 'text-[#e5c47f]' : 'text-zinc-400'}`} />
-                                <div className="mt-4">
-                                  <h3 className="text-[10px] font-heading font-black uppercase tracking-wider mb-0.5">
+                                <div className="flex items-start justify-between mb-2">
+                                  <IconComponent className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${isSelected ? 'text-[#e5c47f]' : 'text-zinc-400'}`} />
+                                  {isSelected && (
+                                    <motion.div
+                                      initial={{ scale: 0 }}
+                                      animate={{ scale: 1 }}
+                                      className="w-2 h-2 bg-[#e5c47f] rounded-full"
+                                    />
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <h3 className="text-[9px] sm:text-[10px] font-heading font-black uppercase tracking-wider mb-1 leading-tight">
                                     {cat.title}
                                   </h3>
-                                  <p className={`text-[9px] font-body line-clamp-2 ${isSelected ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                                  <p className={`text-[8px] sm:text-[9px] font-body line-clamp-2 leading-tight ${
+                                    isSelected ? 'text-zinc-400' : 'text-zinc-500'
+                                  }`}>
                                     {cat.subtitle}
                                   </p>
                                 </div>
-                              </button>
+                              </motion.button>
                             );
                           })}
                         </div>
