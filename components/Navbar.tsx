@@ -70,7 +70,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
 
         {/* ZONE LOGO + TEXTE SUR UNE SEULE LIGNE (OPTIMISÉE MOBILE) */}
-        <div className="flex items-center gap-2 sm:gap-3 select-none cursor-default">
+        <Link href="/" className="flex items-center gap-2 sm:gap-3 transition-opacity hover:opacity-80 active:scale-95">
           <img 
             src="/logo_ttb.jfif" 
             alt="Top Talent du Bénin" 
@@ -83,7 +83,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
             <span className="text-[#e5c47f] font-normal">TALENT</span>
             <span> DU BÉNIN</span>
           </div>
-        </div>
+        </Link>
 
         {/* MENUS DESKTOP */}
         <div className="hidden lg:flex items-center gap-4 sm:gap-6">
