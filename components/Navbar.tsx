@@ -102,12 +102,12 @@ export default function Navbar({ currentPhase = 'PRESELECTION' }: NavbarProps) {
               Le Palmarès
             </button>
           ) : (
-            <a
-              href="#talents-section"
+            <button
+              onClick={() => document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' })}
               className="hidden lg:block px-4 sm:px-5 py-2 bg-white border-2 border-[#050509] text-[#050509] font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#050509] hover:text-white transition-all duration-300 transform active:scale-95"
             >
-              Voter
-            </a>
+              Voir les Candidats
+            </button>
           )}
           
           {/* Bouton Burger Mobile */}
@@ -174,13 +174,15 @@ export default function Navbar({ currentPhase = 'PRESELECTION' }: NavbarProps) {
                   Le Palmarès
                 </button>
               ) : (
-                <a
-                  href="#talents-section"
-                  onClick={() => setMobileMenuOpen(false)}
+                <button
+                  onClick={() => {
+                    document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' });
+                    setMobileMenuOpen(false);
+                  }}
                   className="block w-full px-5 py-2 bg-white border-2 border-[#050509] text-[#050509] font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#050509] hover:text-white transition-all duration-300 text-center"
                 >
-                  Voter
-                </a>
+                  Voir les Candidats
+                </button>
               )}
             </div>
           </div>
