@@ -322,6 +322,15 @@ export default function JuryDashboard() {
     setError('');
 
     try {
+      // Normalisation de la phase pour la base de données (minuscules)
+      const phaseMapping: Record<string, string> = {
+        'PRESELECTION': 'preselection',
+        'VOTES_TOP_40': 'preselection',
+        'SEMIFINAL': 'semifinal',
+        'FINAL': 'final'
+      };
+      const dbPhase = phaseMapping[systemControl.current_phase] || systemControl.current_phase.toLowerCase();
+
       const result = await db.saveJuryRating({
         jury_id: juryId,
         candidate_id: activeCandidate.id,
@@ -329,7 +338,7 @@ export default function JuryDashboard() {
         score_originalite: scoreOriginalite,
         score_presence: scorePresence,
         is_approved_preselection: isApprovedPreselection,
-        phase: systemControl.current_phase as any,
+        phase: dbPhase as any,
       });
 
       console.log('[Jury Dashboard] Save successful! Result:', result);
