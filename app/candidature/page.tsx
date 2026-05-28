@@ -51,7 +51,7 @@ export default function CandidaturePage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
-  // Update password criteria in real-time
+  // Update password criteria and confirm password validation in real-time
   useEffect(() => {
     setPasswordCriteria({
       minLength: formData.password.length >= 8,
@@ -59,7 +59,13 @@ export default function CandidaturePage() {
       hasNumber: /[0-9]/.test(formData.password),
       hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password)
     });
-  }, [formData.password]);
+
+    // Re-validate confirm password if it's already been touched
+    if (touchedFields.confirmPassword) {
+      const confirmError = formData.confirmPassword !== formData.password ? 'Les mots de passe ne correspondent pas' : '';
+      setFieldErrors(prev => ({ ...prev, confirmPassword: confirmError }));
+    }
+  }, [formData.password, formData.confirmPassword, touchedFields.confirmPassword]);
 
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [videoPreview, setVideoPreview] = useState<File | null>(null);
@@ -72,6 +78,18 @@ export default function CandidaturePage() {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedImage, setCroppedImage] = useState<File | null>(null);
+
+  // Clear sensitive data when switching views
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      password: '',
+      confirmPassword: ''
+    }));
+    setFieldErrors({});
+    setTouchedFields({});
+    setError('');
+  }, [viewState]);
 
   // Fetch current phase on mount and redirect if not PRESELECTION
   useEffect(() => {
@@ -108,13 +126,15 @@ export default function CandidaturePage() {
         if (!emailRegex.test(value)) error = 'Format email invalide';
         break;
       case 'password':
-        if (value.length < 8) error = 'Minimum 8 caractères requis';
-        if (!/[A-Z]/.test(value)) error = 'Au moins une majuscule requise';
-        if (!/[0-9]/.test(value)) error = 'Au moins un chiffre requis';
-        if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) error = 'Au moins un caractère spécial requis';
+        if (value.length > 0 && value.length < 8) return 'Minimum 8 caractères requis';
+        if (value.length >= 8) {
+          if (!/[A-Z]/.test(value)) return 'Au moins une majuscule requise';
+          if (!/[0-9]/.test(value)) return 'Au moins un chiffre requis';
+          if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) return 'Au moins un caractère spécial requis';
+        }
         break;
       case 'confirmPassword':
-        if (value !== formData.password) error = 'Les mots de passe ne correspondent pas';
+        if (value && value !== formData.password) return 'Les mots de passe ne correspondent pas';
         break;
       case 'specialite':
         if (!value) error = 'Veuillez préciser votre spécialité';
@@ -462,7 +482,7 @@ export default function CandidaturePage() {
             {/* Main Form */}
             <div className="lg:col-span-8 bg-white border border-zinc-100 p-6 sm:p-8 lg:p-10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.01)]">
               <div className="flex border-b border-zinc-100 pb-4 mb-6 gap-3 sm:gap-6 overflow-x-auto">
-                {currentPhase === 'preselection_open' && (
+                {currentPhase === 'PRESELECTION' && (
                   <button
                     type="button"
                     onClick={() => setViewState('form')}
@@ -887,7 +907,7 @@ export default function CandidaturePage() {
                               onChange={(event) => setFormData({ ...formData, password: event.target.value })}
                               onBlur={() => handleFieldBlur('password', formData.password)}
                               placeholder="••••••••"
-                              className={`w-full bg-zinc-50 border p-3 sm:p-4 pr-10 text-sm font-heading tracking-widest focus:outline-none transition-colors ${
+                              className={`w-full bg-zinc-50 border p-3 sm:p-4 pr-10 text-sm font-sans focus:outline-none transition-colors ${
                                 touchedFields.password && fieldErrors.password
                                   ? 'border-red-500'
                                   : 'border-zinc-200 focus:border-black'
@@ -959,7 +979,7 @@ export default function CandidaturePage() {
                               onChange={(event) => setFormData({ ...formData, confirmPassword: event.target.value })}
                               onBlur={() => handleFieldBlur('confirmPassword', formData.confirmPassword)}
                               placeholder="••••••••"
-                              className={`w-full bg-zinc-50 border p-3 sm:p-4 pr-10 text-sm font-heading tracking-widest focus:outline-none transition-colors ${
+                              className={`w-full bg-zinc-50 border p-3 sm:p-4 pr-10 text-sm font-sans focus:outline-none transition-colors ${
                                 touchedFields.confirmPassword && fieldErrors.confirmPassword
                                   ? 'border-red-500'
                                   : 'border-zinc-200 focus:border-black'
@@ -1029,11 +1049,20 @@ export default function CandidaturePage() {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="VOTRE@EMAIL.COM"
-                      className="w-full bg-zinc-50 border border-zinc-200 p-3 sm:p-4 text-sm font-heading tracking-wide focus:outline-none focus:border-black"
+                      className="w-full bg-zinc-50 border border-zinc-200 p-3 sm:p-4 text-sm font-sans focus:outline-none focus:border-black"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold mb-2">Mot de passe</label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm uppercase tracking-widest text-zinc-400 font-bold">Mot de passe</label>
+                      <button 
+                        type="button"
+                        onClick={() => window.open('mailto:kenkenbabatounde@gmail.com?subject=Identifiants oubliés - Top Talent Bénin', '_blank')}
+                        className="text-[10px] text-[#e5c47f] hover:underline uppercase tracking-wider font-bold"
+                      >
+                        Identifiants oubliés ?
+                      </button>
+                    </div>
                     <div className="relative">
                       <input
                         type={showPassword ? "text" : "password"}
@@ -1042,7 +1071,7 @@ export default function CandidaturePage() {
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         placeholder="••••••••"
-                        className="w-full bg-zinc-50 border border-zinc-200 p-3 sm:p-4 pr-10 text-sm font-heading tracking-widest focus:outline-none focus:border-black"
+                        className="w-full bg-zinc-50 border border-zinc-200 p-3 sm:p-4 pr-10 text-sm font-sans focus:outline-none focus:border-black"
                       />
                       <button
                         type="button"

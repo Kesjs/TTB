@@ -142,7 +142,16 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-widest text-zinc-500 font-bold mb-2">Mot de passe</label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-xs uppercase tracking-widest text-zinc-500 font-bold">Mot de passe</label>
+                  <button 
+                    type="button"
+                    onClick={() => window.open('mailto:kenkenbabatounde@gmail.com?subject=Accès Staff Oublié - Top Talent Bénin', '_blank')}
+                    className="text-[9px] text-[#e5c47f] hover:underline uppercase tracking-wider font-bold"
+                  >
+                    Identifiants oubliés ?
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}

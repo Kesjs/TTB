@@ -87,6 +87,10 @@ export async function signIn(state: { error: string } | null, formData: FormData
 
   console.log('Role trouvé:', profile.role);
 
+  if (profile.role !== 'candidate') {
+    return { error: 'Cet espace est réservé aux candidats. Pour l\'accès administratif ou jury, veuillez utiliser la page de connexion dédiée.' };
+  }
+
   cookieStore.set('user_id', data.session.user.id, {
     path: '/',
     maxAge: 604800,
@@ -100,15 +104,6 @@ export async function signIn(state: { error: string } | null, formData: FormData
     secure: process.env.NODE_ENV === 'production',
   });
 
-  // Redirect based on role
-  switch (profile.role) {
-    case 'admin':
-      redirect('/dashboard/admin');
-    case 'jury':
-      redirect('/dashboard/jury');
-    case 'candidate':
-      redirect('/dashboard/candidate');
-    default:
-      redirect('/candidature');
-  }
+  // Redirect strictly to candidate dashboard
+  redirect('/dashboard/candidate');
 }
