@@ -97,6 +97,17 @@ export default function CandidateCard({
         </div>
       )}
 
+      {/* Jury Score Badge (Top Right) */}
+      {juryScore !== undefined && juryScore > 0 && (
+        <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-950/80 backdrop-blur-md text-[#e5c47f] rounded-lg border border-[#e5c47f]/30 shadow-xl">
+          <Star className="w-3 h-3 fill-[#e5c47f]" />
+          <div className="flex flex-col leading-none">
+            <span className="font-heading font-black text-[10px] tracking-tight">{juryScore.toFixed(1)}</span>
+            <span className="text-[6px] uppercase font-bold text-zinc-500 tracking-tighter">Expertise</span>
+          </div>
+        </div>
+      )}
+
       {/* Main Image/Video Container */}
       <div className="relative aspect-[3/4] bg-zinc-800 overflow-hidden">
         {selectedVideo === candidate.id && isPlaying ? (

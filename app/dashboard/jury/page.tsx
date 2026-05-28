@@ -338,8 +338,13 @@ export default function JuryDashboard() {
       setConfirmRatingMode(false);
       setShowCandidateModal(false);
       addToast('success', `Note enregistrée pour ${activeCandidate.stage_name}`);
-      setTimeout(() => setSuccess(false), 3000);
-      await loadData();
+      
+      // Auto-close notation by resetting active candidate after a short delay
+      setTimeout(async () => {
+        setSuccess(false);
+        setActiveCandidateId(''); // This "closes" the notation panel
+        await loadData();
+      }, 1500);
     } catch (err) {
       console.error('[Jury Dashboard] Error saving score:', err);
       setError('Erreur lors de la sauvegarde de la note.');

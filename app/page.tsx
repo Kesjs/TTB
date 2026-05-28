@@ -191,35 +191,32 @@ function HomeContent() {
 
 
       // Supabase Realtime subscription for candidates (to detect status changes)
-
       const candidatesChannel = supabase
-
         .channel('candidates_public')
-
         .on('postgres_changes', { event: '*', schema: 'public', table: 'candidates' }, (payload) => {
-
           console.log('Candidates updated:', payload);
-
           // Reload candidates when status changes or new candidates are added
-
           void loadData();
-
         })
-
         .subscribe((status) => {
-
           console.log('Candidates subscription status:', status);
-
         });
 
-
+      // Supabase Realtime subscription for jury ratings (to update scores in real-time)
+      const ratingsChannel = supabase
+        .channel('jury_ratings_public')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'jury_ratings' }, (payload) => {
+          console.log('Jury ratings updated:', payload);
+          void loadData();
+        })
+        .subscribe((status) => {
+          console.log('Ratings subscription status:', status);
+        });
 
       return () => {
-
         systemChannel.unsubscribe();
-
         candidatesChannel.unsubscribe();
-
+        ratingsChannel.unsubscribe();
       };
 
     }
