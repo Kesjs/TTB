@@ -9,7 +9,7 @@ import {
   ExternalLink, LogOut, Database, Monitor, Eye, EyeOff, User, Trophy
 } from 'lucide-react';
 import { Candidate, SystemControl, db } from '@/lib/supabase';
-import { Profile, CandidateVoteCount } from '@/lib/supabase/types';
+import { Profile, CandidateVoteCount, toSqlPhase } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
 import { signOut } from '@/app/actions/auth';
 import { updateCandidateStatus, confirmCandidateByAdmin } from '@/app/actions/admin';
@@ -1062,7 +1062,8 @@ export default function AdminDashboard() {
                         </td>
                         <td className="p-4">
                           {(() => {
-                            const ratingPhase = phase; // Already uppercase from systemControl
+                            // Convert phase to lowercase to match database format
+                            const ratingPhase = toSqlPhase(phase);
                             
                             // Get ratings for this candidate in the current phase
                             const ratingsForCandidate = (existingRatings || []).filter(

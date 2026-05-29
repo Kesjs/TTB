@@ -1,6 +1,7 @@
 import { isClient, supabase } from '@/lib/supabase/client';
 import { DEFAULT_CANDIDATES, DEFAULT_JURY_RATINGS, DEFAULT_PROFILES, DEFAULT_SYSTEM_CONTROL, DEFAULT_VOTES } from '@/lib/supabase/mock';
 import type { Candidate, JuryAverage, JuryRating, Profile, SystemControl, Vote, CandidateVoteCount } from '@/lib/supabase/types';
+import { toSqlPhase } from '@/lib/supabase/types';
 
 const initLocalStorage = () => {
   if (!isClient) return;
@@ -329,12 +330,16 @@ export const db = {
 
   saveJuryRating: async (rating: Omit<JuryRating, 'id' | 'created_at'>): Promise<JuryRating> => {
     const tempId = 'r-' + Math.random().toString(36).substr(2, 9);
+    
+    // Convert phase to lowercase to match SQL CHECK constraint
     const ratingToSave: any = {
       ...rating,
+      phase: toSqlPhase(rating.phase),
       created_at: new Date().toISOString(),
     };
 
     console.log('[DB] saveJuryRating called with:', rating);
+    console.log('[DB] Phase converted to SQL format:', ratingToSave.phase);
 
     if (supabase) {
       console.log('[DB] Attempting Supabase upsert...');
@@ -343,6 +348,7 @@ export const db = {
       
       if (error) {
         console.error('[DB] Supabase error during saveJuryRating:', error);
+        throw new Error(`Erreur lors de l'enregistrement de la note: ${error.message}`);
       }
 
       if (!error && data) {

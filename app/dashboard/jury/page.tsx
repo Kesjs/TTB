@@ -10,7 +10,7 @@ import {
   Eye, X, ChevronLeft
 } from 'lucide-react';
 import { Candidate, SystemControl, db } from '@/lib/supabase';
-import { Profile } from '@/lib/supabase/types';
+import { Profile, toSqlPhase } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
 import { signOut } from '@/app/actions/auth';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -65,7 +65,7 @@ export default function JuryDashboard() {
     });
     
     const evaluatedCount = filtered.filter(c => 
-      existingRatings.some(r => r.candidate_id === c.id && r.phase === phase)
+      existingRatings.some(r => r.candidate_id === c.id && r.phase === toSqlPhase(phase))
     ).length;
     
     return { evaluated: evaluatedCount, total: filtered.length };
@@ -91,7 +91,7 @@ export default function JuryDashboard() {
 
   const getCandidateRatingDetails = (candidateId: string) => {
     const rating = existingRatings.find(
-      r => r.candidate_id === candidateId && r.phase === systemControl?.current_phase && r.jury_id === juryId
+      r => r.candidate_id === candidateId && r.phase === toSqlPhase(systemControl?.current_phase || '') && r.jury_id === juryId
     );
     if (!rating) return null;
     return {
@@ -306,7 +306,7 @@ export default function JuryDashboard() {
   // Mettre à jour les sliders si le candidat sélectionné a déjà une note
   useEffect(() => {
     if (!activeCandidateId || !systemControl || !juryId) return;
-    const currentPhase = systemControl.current_phase;
+    const currentPhase = toSqlPhase(systemControl.current_phase);
     const rating = existingRatings.find(
       r => r.candidate_id === activeCandidateId && r.phase === currentPhase && r.jury_id === juryId
     );
@@ -385,15 +385,16 @@ export default function JuryDashboard() {
       setShowCandidateModal(false);
       addToast('success', `Note enregistrée pour ${activeCandidate.stage_name}`);
       
-      // Auto-close notation by resetting active candidate after a short delay
-      setTimeout(async () => {
-        setSuccess(false);
-        setActiveCandidateId(''); // This "closes" the notation panel
-        await loadData();
-      }, 1500);
+      // Auto-close notation immediately and reload data
+      setSuccess(false);
+      setActiveCandidateId(''); // This "closes" the notation panel
+      await loadData();
     } catch (err) {
       console.error('[Jury Dashboard] Error saving score:', err);
-      setError('Erreur lors de la sauvegarde de la note.');
+      const errorMessage = err instanceof Error ? err.message : 'Erreur technique lors de l\'enregistrement';
+      setError(errorMessage);
+      alert(errorMessage); // Show clear alert to user as requested
+      addToast('error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -721,7 +722,7 @@ export default function JuryDashboard() {
                           }
 
                           return qualified.map((c) => {
-                            const rating = existingRatings.find(r => r.candidate_id === c.id && r.jury_id === juryId && r.phase === phase);
+                            const rating = existingRatings.find(r => r.candidate_id === c.id && r.jury_id === juryId && r.phase === toSqlPhase(phase));
                             const avg = rating ? (Number(rating.score_technique) + Number(rating.score_originalite) + Number(rating.score_presence)) / 3 : null;
                             
                             return (

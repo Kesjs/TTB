@@ -39,7 +39,7 @@ export interface Vote {
   network: 'MTN' | 'MOOV';
   transaction_ref: string;
   payment_status: 'pending' | 'success' | 'failed';
-  phase: 'PRESELECTION' | 'VOTES_TOP_40' | 'SEMIFINAL' | 'FINAL';
+  phase: 'preselection' | 'audition' | 'semifinal' | 'final';
   created_at: string;
 }
 
@@ -51,7 +51,7 @@ export interface JuryRating {
   score_originalite: number;
   score_presence: number;
   is_approved_preselection: boolean;
-  phase: 'PRESELECTION' | 'VOTES_TOP_40' | 'SEMIFINAL' | 'FINAL';
+  phase: 'preselection' | 'audition' | 'semifinal' | 'final';
   created_at: string;
 }
 
@@ -65,6 +65,29 @@ export interface SystemControl {
   is_maintenance_mode?: boolean;
   created_at: string;
   updated_at: string;
+}
+
+// Helper function to convert TypeScript phase to SQL phase (lowercase)
+export function toSqlPhase(phase: string): string {
+  const phaseMap: Record<string, string> = {
+    'PRESELECTION': 'preselection',
+    'VOTES_TOP_40': 'audition',
+    'SEMIFINAL': 'semifinal',
+    'FINAL': 'final',
+    'ARCHIVED': 'final',
+  };
+  return phaseMap[phase] || phase.toLowerCase();
+}
+
+// Helper function to convert SQL phase to TypeScript phase (uppercase)
+export function fromSqlPhase(phase: string): string {
+  const phaseMap: Record<string, string> = {
+    'preselection': 'PRESELECTION',
+    'audition': 'VOTES_TOP_40',
+    'semifinal': 'SEMIFINAL',
+    'final': 'FINAL',
+  };
+  return phaseMap[phase] || phase.toUpperCase();
 }
 
 export interface JuryAverage {
