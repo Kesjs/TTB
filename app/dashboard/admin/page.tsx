@@ -6,7 +6,7 @@ import {
   Settings, ShieldCheck, Users, BarChart3, Lock, Unlock,
   CheckCircle2, Sliders, ShieldX, UserPlus, Trash2, Edit,
   Loader2, AlertCircle, Phone, Mail, X as XIcon, Share2,
-  ExternalLink, LogOut, Database, Monitor, Eye, User, Trophy
+  ExternalLink, LogOut, Database, Monitor, Eye, EyeOff, User, Trophy
 } from 'lucide-react';
 import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile, CandidateVoteCount } from '@/lib/supabase/types';
@@ -52,6 +52,7 @@ export default function AdminDashboard() {
     avatarUrl: ''
   });
   const [adminProfileLoading, setAdminProfileLoading] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
   // Master Switchboard State
   const [phase, setPhase] = useState<SystemControl['current_phase']>(() => {
@@ -112,6 +113,7 @@ export default function AdminDashboard() {
   });
   const [editingJury, setEditingJury] = useState<Profile | null>(null);
   const [juryLoading, setJuryLoading] = useState(false);
+  const [showJuryPassword, setShowJuryPassword] = useState(false);
 
   // Settings State
   const [settings, setSettings] = useState({
@@ -752,14 +754,23 @@ export default function AdminDashboard() {
                     <label className="block text-[10px] font-mono uppercase text-zinc-500 mb-1.5">
                       {editingJury ? 'Nouveau mot de passe (laisser vide pour ne pas changer)' : 'Mot de passe'}
                     </label>
-                    <input
-                      type="password"
-                      value={juryForm.password}
-                      onChange={(e) => setJuryForm({ ...juryForm, password: e.target.value })}
-                      required={!editingJury}
-                      placeholder={editingJury ? 'Laisser vide pour conserver le mot de passe actuel' : 'Mot de passe pour la connexion jury'}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-700"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showJuryPassword ? 'text' : 'password'}
+                        value={juryForm.password}
+                        onChange={(e) => setJuryForm({ ...juryForm, password: e.target.value })}
+                        required={!editingJury}
+                        placeholder={editingJury ? 'Laisser vide pour conserver le mot de passe actuel' : 'Mot de passe pour la connexion jury'}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-700 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowJuryPassword(!showJuryPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-[#e5c47f] transition-colors"
+                      >
+                        {showJuryPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div className="col-span-2 flex gap-3">
                     <button
@@ -1300,13 +1311,22 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <label className="block text-[10px] font-mono uppercase text-zinc-500 mb-1.5">Nouveau mot de passe (optionnel)</label>
-                      <input
-                        type="password"
-                        value={adminProfile.password}
-                        onChange={(e) => setAdminProfile({ ...adminProfile, password: e.target.value })}
-                        placeholder="Laisser vide pour ne pas changer"
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-700"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showAdminPassword ? 'text' : 'password'}
+                          value={adminProfile.password}
+                          onChange={(e) => setAdminProfile({ ...adminProfile, password: e.target.value })}
+                          placeholder="Laisser vide pour ne pas changer"
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-700 pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowAdminPassword(!showAdminPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-[#e5c47f] transition-colors"
+                        >
+                          {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
                     <div className="col-span-2">
                       <label className="block text-[10px] font-mono uppercase text-zinc-500 mb-1.5">URL Photo</label>

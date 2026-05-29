@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -12,6 +12,36 @@ import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase';
 import { signIn } from '@/app/actions/auth';
 import CustomSelect from '@/components/ui/CustomSelect';
+
+// Memoized Video Preview Component to prevent flickering during upload
+const VideoPreview = ({ videoFile, onRemove }: { videoFile: File; onRemove: () => void }) => {
+  const videoUrl = useMemo(() => URL.createObjectURL(videoFile), [videoFile]);
+  
+  return (
+    <div className="w-full space-y-3" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-center gap-2 text-emerald-600 font-heading text-[10px] font-bold uppercase tracking-wider">
+        <Film className="w-4 h-4" /> Capsule Sélectionnée avec succès
+      </div>
+      <p className="text-xs text-zinc-500 font-mono line-clamp-1 max-w-md mx-auto">
+        {videoFile.name} ({(videoFile.size / (1024 * 1024)).toFixed(2)} Mo)
+      </p>
+      <div className="max-w-xs mx-auto overflow-hidden border border-zinc-100 shadow-sm">
+        <video 
+          src={videoUrl} 
+          controls 
+          className="w-full h-36 object-cover bg-black"
+        />
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="text-[9px] font-heading font-bold text-red-500 uppercase tracking-widest hover:underline"
+      >
+        Changer la vidéo
+      </button>
+    </div>
+  );
+};
 
 export default function CandidaturePage() {
   const router = useRouter();
@@ -582,17 +612,10 @@ export default function CandidaturePage() {
       localStorage.removeItem('ttb_candidature_draft');
       setIsSubmittingSuccess(true);
       
-      // ✅ SÉCURISATION DU TIMING DES COOKIES À L'INSCRIPTION
+      // Auto-login with the created session and redirect directly to dashboard
       setTimeout(() => {
-        const cookieOptions = 'path=/; max-age=604800; SameSite=Lax; Secure';
-        document.cookie = `user_id=${result.user.id}; ${cookieOptions}`;
-        document.cookie = `user_role=candidate; ${cookieOptions}`;
-        
-        // Notification système au routeur de Next.js pour aligner instantanément le middleware
         router.refresh();
-        setTimeout(() => {
-          router.push('/dashboard/candidate');
-        }, 150);
+        router.push('/dashboard/candidate');
       }, 1500);
 
     } catch (err: any) {
@@ -637,6 +660,16 @@ export default function CandidaturePage() {
 
   return (
     <div className="min-h-screen bg-white text-[#050505] pt-24 sm:pt-32 pb-12 sm:pb-16 selection:bg-[#e5c47f] selection:text-black">
+      {/* Global Progress Bar - SaaS Style */}
+      {isUploading && (
+        <div className="fixed bottom-0 left-0 w-full h-1 bg-neutral-800 z-50">
+          <div 
+            className="h-full bg-[#e5c47f] transition-all duration-300 ease-out"
+            style={{ width: `${uploadProgress}%` }}
+          />
+        </div>
+      )}
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-8">
         
         {/* Navigation Breadcrumbs back home */}
@@ -1241,31 +1274,13 @@ export default function CandidaturePage() {
                           />
                           
                           {videoPreview ? (
-                            <div className="w-full space-y-3" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center justify-center gap-2 text-emerald-600 font-heading text-[10px] font-bold uppercase tracking-wider">
-                                <Film className="w-4 h-4" /> Capsule Sélectionnée avec succès
-                              </div>
-                              <p className="text-xs text-zinc-500 font-mono line-clamp-1 max-w-md mx-auto">
-                                {videoPreview.name} ({(videoPreview.size / (1024 * 1024)).toFixed(2)} Mo)
-                              </p>
-                              <div className="max-w-xs mx-auto overflow-hidden border border-zinc-100 shadow-sm">
-                                <video 
-                                  src={URL.createObjectURL(videoPreview)} 
-                                  controls 
-                                  className="w-full h-36 object-cover bg-black"
-                                />
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setVideoPreview(null);
-                                  if (videoInputRef.current) videoInputRef.current.value = '';
-                                }}
-                                className="text-[9px] font-heading font-bold text-red-500 uppercase tracking-widest hover:underline"
-                              >
-                                Changer la vidéo
-                              </button>
-                            </div>
+                            <VideoPreview 
+                              videoFile={videoPreview} 
+                              onRemove={() => {
+                                setVideoPreview(null);
+                                if (videoInputRef.current) videoInputRef.current.value = '';
+                              }}
+                            />
                           ) : (
                             <div className="flex flex-col items-center py-4">
                               <Upload className="w-6 h-6 text-zinc-400 mb-2" />
@@ -1365,10 +1380,7 @@ export default function CandidaturePage() {
                           className="flex-1 py-3.5 bg-zinc-950 text-white text-xs font-heading font-black uppercase tracking-widest hover:bg-[#e5c47f] hover:text-black transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 rounded-none shadow-md"
                         >
                           {isUploading ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin text-[#e5c47f]" /> 
-                              TRANSMISSION DES FICHIERS... {uploadProgress}%
-                            </>
+                            <>Transmission en cours...</>
                           ) : (
                             <>
                               VALIDER ET SOUMETTRE MON DOSSIER

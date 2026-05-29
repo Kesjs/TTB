@@ -364,16 +364,14 @@ export default function JuryDashboard() {
         phase: systemControl.current_phase as any,
       });
 
-      // Si le juré a validé le candidat, mettre à jour le tag correspondant pour l'admin recap
-      if (isApprovedPreselection) {
-        let fieldToUpdate: 'is_top_40' | 'is_semifinalist' | 'is_finalist' | null = null;
-        if (systemControl.current_phase === 'PRESELECTION') fieldToUpdate = 'is_top_40';
-        else if (systemControl.current_phase === 'VOTES_TOP_40') fieldToUpdate = 'is_semifinalist';
-        else if (systemControl.current_phase === 'SEMIFINAL') fieldToUpdate = 'is_finalist';
+      // Mettre à jour automatiquement le tag correspondant pour l'admin recap dès qu'une note est enregistrée
+      let fieldToUpdate: 'is_top_40' | 'is_semifinalist' | 'is_finalist' | null = null;
+      if (systemControl.current_phase === 'PRESELECTION') fieldToUpdate = 'is_top_40';
+      else if (systemControl.current_phase === 'VOTES_TOP_40') fieldToUpdate = 'is_semifinalist';
+      else if (systemControl.current_phase === 'SEMIFINAL') fieldToUpdate = 'is_finalist';
 
-        if (fieldToUpdate) {
-          await db.updateCandidateSelection(activeCandidate.id, fieldToUpdate, true);
-        }
+      if (fieldToUpdate) {
+        await db.updateCandidateSelection(activeCandidate.id, fieldToUpdate, true);
       }
 
       console.log('[Jury Dashboard] Save successful! Result:', result);
