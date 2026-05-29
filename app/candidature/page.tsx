@@ -622,10 +622,12 @@ export default function CandidaturePage() {
       setIsSubmittingSuccess(true);
       
       // Auto-login immediately after successful registration
-      await supabase.auth.signInWithPassword({ 
-        email: formData.email, 
-        password: formData.password 
-      });
+      if (supabase) {
+        await supabase.auth.signInWithPassword({ 
+          email: formData.email, 
+          password: formData.password 
+        });
+      }
       
       // Redirect directly to dashboard
       setTimeout(() => {
