@@ -621,7 +621,13 @@ export default function CandidaturePage() {
       localStorage.removeItem('ttb_candidature_draft');
       setIsSubmittingSuccess(true);
       
-      // Auto-login with the created session and redirect directly to dashboard
+      // Auto-login immediately after successful registration
+      await supabase.auth.signInWithPassword({ 
+        email: formData.email, 
+        password: formData.password 
+      });
+      
+      // Redirect directly to dashboard
       setTimeout(() => {
         router.refresh();
         router.push('/dashboard/candidate');

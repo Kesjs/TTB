@@ -189,16 +189,10 @@ export default function JuryDashboard() {
           console.error('[Jury Dashboard] Error loading jury ratings:', err);
           return [];
         }),
-        (async () => {
-          if (!supabase) return [];
-          try {
-            const { data } = await supabase.from('profiles').select('*');
-            return data || [];
-          } catch (err) {
-            console.error('[Jury Dashboard] Error loading profiles:', err);
-            return [];
-          }
-        })(),
+        db.getJuryProfiles().catch(err => {
+          console.error('[Jury Dashboard] Error loading jury profiles:', err);
+          return [];
+        }),
       ]);
 
       setCandidates(allCandidates);
@@ -217,8 +211,17 @@ export default function JuryDashboard() {
       }
       setProfiles(profilesMap);
 
-      if (juryId && profilesMap[juryId]) {
-        setJuryProfile(profilesMap[juryId]);
+      // Try to get current jury profile directly
+      if (juryId) {
+        const userProfile = await db.getCurrentUserProfile().catch(err => {
+          console.error('[Jury Dashboard] Error loading user profile:', err);
+          return null;
+        });
+        if (userProfile) {
+          setJuryProfile(userProfile);
+        } else if (profilesMap[juryId]) {
+          setJuryProfile(profilesMap[juryId]);
+        }
       }
 
       // Si l'admin a défini un candidat actif sur scène, le sélectionner par défaut
