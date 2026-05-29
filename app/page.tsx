@@ -72,6 +72,8 @@ function HomeContent() {
 
   const [candidates, setCandidates] = useState<Candidate[]>([]);
 
+  const [allCandidates, setAllCandidates] = useState<Candidate[]>([]);
+
   const [systemControl, setSystemControl] = useState<SystemControl>(FALLBACK_SYSTEM);
 
   const [voteCounts, setVoteCounts] = useState<CandidateVoteCount[]>([]);
@@ -94,9 +96,11 @@ function HomeContent() {
 
       setError(null);
 
-      const [allCandidates, sc, voteCountsData, allRatings] = await Promise.all([
+      const [approvedCandidates, allCands, sc, voteCountsData, allRatings] = await Promise.all([
 
-        db.getCandidates({ status: 'approved' }), // Only fetch approved candidates
+        db.getCandidates({ status: 'approved' }), // Only fetch approved candidates for display
+
+        db.getCandidates(), // Fetch all candidates for total count
 
         db.getSystemControl(),
 
@@ -108,7 +112,9 @@ function HomeContent() {
 
 
 
-      setCandidates(allCandidates);
+      setCandidates(approvedCandidates);
+
+      setAllCandidates(allCands || []);
 
       
 
@@ -143,6 +149,8 @@ function HomeContent() {
       setSystemControl(FALLBACK_SYSTEM);
 
       setCandidates([]);
+
+      setAllCandidates([]);
 
     } finally {
 
@@ -397,11 +405,13 @@ function HomeContent() {
 
 
 
-          <HeroSection 
+          <HeroSection
 
             currentPhase={systemControl.current_phase}
 
             isVotingOpen={systemControl.is_voting_open}
+
+            totalInscrits={allCandidates.length}
 
           />
 

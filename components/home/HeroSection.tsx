@@ -6,15 +6,16 @@ import { Lock, Flame, ArrowRight, Timer, Users, Award, Radio } from 'lucide-reac
 interface HeroSectionProps {
   currentPhase?: 'PRESELECTION' | 'VOTES_TOP_40' | 'SEMIFINAL' | 'FINAL' | 'ARCHIVED';
   isVotingOpen?: boolean;
+  totalInscrits?: number;
 }
 
-export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpen = false }: HeroSectionProps) {
+export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpen = false, totalInscrits: propTotalInscrits = 0 }: HeroSectionProps) {
   const isPreselectionOpen = currentPhase === 'PRESELECTION';
   const isFinal = currentPhase === 'FINAL';
   const isArchived = currentPhase === 'ARCHIVED';
   
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const [totalInscrits, setTotalInscrits] = useState(0);
+  const [totalInscrits, setTotalInscrits] = useState(propTotalInscrits);
 
   // Configuration centralisée du contenu par Phase
   const phaseContent = {
@@ -76,12 +77,10 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
 
   const currentContent = phaseContent[currentPhase];
 
-  // Simulation inscriptions (Phase Preselection)
+  // Mettre à jour totalInscrits quand la prop change
   useEffect(() => {
-    if (isPreselectionOpen) {
-      setTotalInscrits(142); 
-    }
-  }, [isPreselectionOpen]);
+    setTotalInscrits(propTotalInscrits);
+  }, [propTotalInscrits]);
 
   // Logique du Compte à rebours
   useEffect(() => {
