@@ -54,10 +54,25 @@ export default function CandidateDashboard() {
     setError('');
 
     try {
-      // Récupération parallèle des données (middleware gère l'auth)
+      // ÉTAPE 1 : Récupérer l'utilisateur depuis la session AVANT toute requête DB
+      if (!supabase) {
+        setError('Client Supabase non disponible');
+        setLoading(false);
+        return;
+      }
+      
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        setError('Session non disponible. Veuillez vous reconnecter.');
+        setLoading(false);
+        return;
+      }
+
+      // ÉTAPE 2 : Maintenant que l'utilisateur est validé, récupérer les données
       const [systemControl, candidates] = await Promise.all([
         db.getSystemControl(),
-        db.getCandidates({}) // Récupérer tous les candidats, on filtrera après
+        db.getCandidates({})
       ]);
 
       setSystemControl(systemControl);
@@ -65,23 +80,11 @@ export default function CandidateDashboard() {
       if (!candidates || candidates.length === 0) {
         setError('Aucun dossier de candidature trouvé.');
       } else {
-        // Récupérer l'ID utilisateur depuis la session (middleware garantit qu'elle existe)
-        if (!supabase) {
-          setError('Client Supabase non disponible');
-          setLoading(false);
-          return;
-        }
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setError('Session non disponible');
-          setLoading(false);
-          return;
-        }
-
         const userCandidate = candidates.find(c => c.profile_id === user.id);
         
         if (!userCandidate) {
-          setError('Aucun dossier de candidature trouvé pour votre compte.');
+          // L'utilisateur existe mais son dossier candidat n'est pas encore créé
+          setError('Votre dossier est en cours de création. Veuillez compléter votre inscription.');
         } else {
           setCandidate(userCandidate);
           
