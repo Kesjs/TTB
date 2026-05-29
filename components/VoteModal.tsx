@@ -193,19 +193,23 @@ export default function VoteModal({ candidate, onClose, currentPhase }: VoteModa
                   Numéro Mobile Money (Bénin)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-3 text-slate-400 font-bold text-sm">+229</span>
+                  <span className="absolute left-3 top-3 text-slate-400 font-bold text-sm">+229 01</span>
                   <input
                     type="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Ex: 97 00 00 00"
-                    maxLength={8}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 8);
+                      const formatted = value.replace(/(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4').trim();
+                      setPhone(formatted);
+                    }}
+                    placeholder="XX XX XX XX"
+                    maxLength={11}
                     required
                     className="w-full bg-white/5 border border-white/10 rounded-lg pl-14 pr-4 py-2.5 text-white focus:outline-none focus:border-[#e5c47f] font-mono tracking-widest text-lg"
                   />
                 </div>
                 <p className="text-[10px] text-slate-500 mt-1">
-                  Saisissez les 8 chiffres sans l'indicatif.
+                  Saisissez les 8 chiffres du numéro béninois.
                 </p>
               </div>
 

@@ -16,6 +16,7 @@ export interface Candidate {
   region: 'Alibori' | 'Atacora' | 'Atlantique' | 'Borgou' | 'Collines' | 'Donga' | 'Kouffo' | 'Littoral' | 'Mono' | 'Ouémé' | 'Plateau' | 'Zou';
   video_url: string;
   cover_image_url?: string;
+  phone?: string;
   candidature_type?: 'solo' | 'group';
   member_count?: number;
   status: 'pending_review' | 'approved' | 'rejected';

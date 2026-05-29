@@ -519,8 +519,8 @@ export default function JuryDashboard() {
                   {juryProfile?.full_name?.charAt(0) || 'J'}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-white uppercase truncate">{juryProfile?.full_name || 'Chargement...'}</p>
-                  <p className="text-[9px] text-zinc-500 uppercase tracking-widest">{juryProfile?.phone || 'Expert Technique'}</p>
+                  <p className="text-xs font-bold text-white uppercase truncate">{juryProfile?.full_name || 'Membre du Jury'}</p>
+                  <p className="text-[9px] text-zinc-500 uppercase tracking-widest">{juryProfile?.phone || 'Jury Expert'}</p>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-zinc-900 flex justify-between items-center">

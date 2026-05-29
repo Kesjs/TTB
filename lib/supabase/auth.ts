@@ -173,6 +173,7 @@ export const auth = {
         region,
         video_url: publicUrl,
         cover_image_url: coverImageUrl,
+        phone: phone,
         candidature_type: candidatureType,
         member_count: memberCount,
         bio: bio,

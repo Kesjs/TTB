@@ -82,6 +82,7 @@ export default function CandidaturePage() {
     region: '',
     bio: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: '',
     memberCount: 1,
@@ -201,6 +202,7 @@ export default function CandidaturePage() {
         bio: formData.bio,
         memberCount: formData.memberCount,
         email: formData.email,
+        phone: formData.phone,
         candidatureType,
         currentStep
       };
@@ -290,6 +292,11 @@ export default function CandidaturePage() {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!value) error = 'L\'adresse e-mail est requise';
         else if (!emailRegex.test(value)) error = 'Format e-mail invalide';
+        break;
+      case 'phone':
+        const phoneDigits = value.replace(/\D/g, '');
+        if (!value) error = 'Le numéro de téléphone est requis';
+        else if (phoneDigits.length !== 8) error = 'Le numéro doit contenir 8 chiffres';
         break;
       case 'password':
         if (!value) error = 'Le mot de passe est requis';
@@ -440,13 +447,14 @@ export default function CandidaturePage() {
     } else if (currentStep === 2) {
       errors.region = validateField('region', formData.region);
       errors.email = validateField('email', formData.email);
+      errors.phone = validateField('phone', formData.phone);
       errors.password = validateField('password', formData.password);
       errors.confirmPassword = validateField('confirmPassword', formData.confirmPassword);
-      
+
       setFieldErrors(prev => ({ ...prev, ...errors }));
-      setTouchedFields(prev => ({ ...prev, region: true, email: true, password: true, confirmPassword: true }));
-      
-      const hasErrors = errors.region || errors.email || errors.password || errors.confirmPassword;
+      setTouchedFields(prev => ({ ...prev, region: true, email: true, phone: true, password: true, confirmPassword: true }));
+
+      const hasErrors = errors.region || errors.email || errors.phone || errors.password || errors.confirmPassword;
       if (hasErrors || emailStatus === 'taken') return;
     }
 
@@ -600,6 +608,7 @@ export default function CandidaturePage() {
         videoFile: videoPreview!,
         coverImageFile: coverImagePreview!,
         fullName: formData.stageName, // Map stageName to profile fullName constraint
+        phone: `+229 01 ${formData.phone}`, // Format complet avec indicatif
         candidatureType,
         memberCount: formData.memberCount,
         bio: formData.bio,
@@ -1115,6 +1124,38 @@ export default function CandidaturePage() {
                           </div>
                           {touchedFields.email && fieldErrors.email && (
                             <p className="text-xs text-red-500 font-body">{fieldErrors.email}</p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="block text-xs uppercase tracking-widest text-zinc-400 font-bold">
+                            Numéro de téléphone *
+                          </label>
+                          <div className="flex">
+                            <span className="bg-zinc-100 border border-zinc-200 border-r-0 px-3 py-3 text-sm text-zinc-600 flex items-center font-mono">
+                              +229 01
+                            </span>
+                            <input
+                              type="tel"
+                              required
+                              value={formData.phone}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/\D/g, '').slice(0, 8);
+                                const formatted = value.replace(/(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4').trim();
+                                setFormData(prev => ({ ...prev, phone: formatted }));
+                              }}
+                              onBlur={(e) => handleFieldBlur('phone', e.target.value)}
+                              placeholder="XX XX XX XX"
+                              maxLength={11}
+                              className={`flex-1 bg-zinc-50 border p-3 text-sm font-heading tracking-wide rounded-none focus:outline-none transition-all ${
+                                touchedFields.phone && fieldErrors.phone
+                                  ? 'border-red-400 focus:border-red-500'
+                                  : 'border-zinc-200 focus:border-black'
+                              }`}
+                            />
+                          </div>
+                          {touchedFields.phone && fieldErrors.phone && (
+                            <p className="text-xs text-red-500 font-body">{fieldErrors.phone}</p>
                           )}
                         </div>
                       </div>
