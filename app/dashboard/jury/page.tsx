@@ -12,7 +12,7 @@ import {
 import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
-import { auth } from '@/lib/supabase/auth';
+import { signOut } from '@/app/actions/auth';
 
 type TabType = 'selection' | 'evaluation' | 'history' | 'stats';
 
@@ -50,21 +50,6 @@ export default function JuryDashboard() {
     if (!systemControl) return 0;
     return roadmapSteps.findIndex(step => step.id === systemControl.current_phase);
   }, [systemControl]);
-
-  useEffect(() => {
-    const checkJuryRole = async () => {
-      try {
-        const profile = await db.getCurrentUserProfile();
-        if (!profile || profile.role !== 'jury') {
-          console.warn('[JuryDashboard] Access denied: Not a jury member');
-          window.location.href = '/login';
-        }
-      } catch (err) {
-        window.location.href = '/login';
-      }
-    };
-    void checkJuryRole();
-  }, []);
 
   const stats = useMemo(() => {
     const phase = systemControl?.current_phase;
@@ -138,8 +123,7 @@ export default function JuryDashboard() {
   };
 
   const handleLogout = async () => {
-    await auth.signOut();
-    window.location.href = '/login';
+    await signOut();
   };
 
   const handleToggleSelection = (candidateId: string) => {
@@ -179,10 +163,15 @@ export default function JuryDashboard() {
     console.log('[Jury Dashboard] Loading data (middleware handles auth)');
     setLoading(true);
     try {
-      // Get jury ID from localStorage (set by login)
-      const userId = localStorage.getItem('user_id');
-      if (userId) {
-        setJuryId(userId);
+      // Get jury ID from Supabase session (middleware guarantees it exists)
+      if (!supabase) {
+        console.error('[Jury Dashboard] Supabase client not available');
+        setLoading(false);
+        return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setJuryId(user.id);
       }
 
       // Load data with individual error handling
@@ -227,8 +216,8 @@ export default function JuryDashboard() {
       }
       setProfiles(profilesMap);
 
-      if (userId && profilesMap[userId]) {
-        setJuryProfile(profilesMap[userId]);
+      if (juryId && profilesMap[juryId]) {
+        setJuryProfile(profilesMap[juryId]);
       }
 
       // Si l'admin a défini un candidat actif sur scène, le sélectionner par défaut
@@ -244,7 +233,7 @@ export default function JuryDashboard() {
       }
 
       // Filtrer les évaluations de ce jury
-      setExistingRatings(ratings.filter(r => r.jury_id === userId));
+      setExistingRatings(ratings.filter(r => r.jury_id === juryId));
     } catch (err) {
       console.error('[Jury Dashboard] Unexpected error loading data:', err);
       setError('Erreur lors du chargement des données');

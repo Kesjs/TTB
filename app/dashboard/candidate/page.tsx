@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/db';
-import { auth } from '@/lib/supabase/auth';
+import { signOut } from '@/app/actions/auth';
 import type { Candidate, SystemControl } from '@/lib/supabase/types';
 
 export default function CandidateDashboard() {
@@ -49,90 +49,77 @@ export default function CandidateDashboard() {
   }, [candidate]);
 
   const loadCandidateData = async () => {
-    console.log('[CandidateDashboard] Starting to load candidate data...');
+    console.log('[CandidateDashboard] Loading candidate data...');
     setLoading(true);
     setError('');
 
     try {
-      if (!supabase) {
-        console.error('[CandidateDashboard] Supabase client not available');
-        window.location.href = '/candidature?view=login';
-        return;
-      }
-
-      // 1. Tentative de récupération native
-      let { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      // 2. Si erreur ou session nulle, on tente un rafraîchissement (Correction du bug de session expirée)
-      if (sessionError || !session) {
-        console.warn('[CandidateDashboard] Session missing, attempting refresh...');
-        const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError || !refreshedSession) {
-          console.error('[CandidateDashboard] Refresh failed, redirecting...');
-          window.location.href = '/candidature?view=login';
-          return;
-        }
-        session = refreshedSession;
-      }
-
-      const sessionUserId = session.user.id;
-
-      // 3. Récupération parallèle
-      const [profileRes, systemControl, candidates] = await Promise.all([
-        supabase.from('profiles').select('role').eq('id', sessionUserId).single(),
+      // Récupération parallèle des données (middleware gère l'auth)
+      const [systemControl, candidates] = await Promise.all([
         db.getSystemControl(),
-        db.getCandidates({ profileId: sessionUserId })
+        db.getCandidates({}) // Récupérer tous les candidats, on filtrera après
       ]);
-
-      if (profileRes.error || profileRes.data?.role !== 'candidate') {
-        window.location.href = '/candidature?view=login';
-        return;
-      }
 
       setSystemControl(systemControl);
 
       if (!candidates || candidates.length === 0) {
         setError('Aucun dossier de candidature trouvé.');
       } else {
-        const userCandidate = candidates[0];
-        setCandidate(userCandidate);
+        // Récupérer l'ID utilisateur depuis la session (middleware garantit qu'elle existe)
+        if (!supabase) {
+          setError('Client Supabase non disponible');
+          setLoading(false);
+          return;
+        }
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setError('Session non disponible');
+          setLoading(false);
+          return;
+        }
+
+        const userCandidate = candidates.find(c => c.profile_id === user.id);
         
-        // 4. Calcul des stats (On inclut 'pending_review' ou 'approved' pour éviter les bugs)
-        if (userCandidate.status === 'approved' && systemControl) {
-          try {
-            const [allCandidates, juryData] = await Promise.all([
-              db.getCandidates(),
-              db.getJuryAverages(systemControl.current_phase)
-            ]);
+        if (!userCandidate) {
+          setError('Aucun dossier de candidature trouvé pour votre compte.');
+        } else {
+          setCandidate(userCandidate);
+          
+          // Calcul des stats
+          if (userCandidate.status === 'approved' && systemControl) {
+            try {
+              const [allCandidates, juryData] = await Promise.all([
+                db.getCandidates(),
+                db.getJuryAverages(systemControl.current_phase)
+              ]);
 
-            const approved = allCandidates
-              .filter(c => c.status === 'approved')
-              .sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0));
-            
-            setTotalParticipants(approved.length);
-            const currentRank = approved.findIndex(c => c.id === userCandidate.id) + 1;
-            setRank(currentRank > 0 ? currentRank : null);
+              const approved = allCandidates
+                .filter(c => c.status === 'approved')
+                .sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0));
+              
+              setTotalParticipants(approved.length);
+              const currentRank = approved.findIndex(c => c.id === userCandidate.id) + 1;
+              setRank(currentRank > 0 ? currentRank : null);
 
-            if (juryData[userCandidate.id]) {
-              setJuryAverage(juryData[userCandidate.id].total_jury_average);
+              if (juryData[userCandidate.id]) {
+                setJuryAverage(juryData[userCandidate.id].total_jury_average);
+              }
+            } catch (statsErr) {
+              console.error('[CandidateDashboard] Stats loading error:', statsErr);
             }
-          } catch (statsErr) {
-            console.error('[CandidateDashboard] Stats loading error:', statsErr);
           }
         }
       }
     } catch (err) {
       console.error('[CandidateDashboard] Unexpected error:', err);
-      setError('Erreur lors du traitement de vos données.');
+      setError('Erreur lors du chargement de vos données.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogout = async () => {
-    await auth.signOut();
-    window.location.href = '/';
+    await signOut();
   };
 
   const handleCopy = () => {

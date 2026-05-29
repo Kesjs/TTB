@@ -1,8 +1,57 @@
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
+    // Verify authentication and admin role
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set({ name, value, ...options });
+            } catch (error) {
+              // Ignore errors in server components
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.delete({ name, ...options });
+            } catch (error) {
+              // Ignore errors in server components
+            }
+          },
+        },
+      }
+    );
+
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      console.error('Unauthorized: No valid session');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Verify admin role
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    if (profileError || !profile || profile.role !== 'admin') {
+      console.error('Forbidden: User is not an admin');
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { userId, email, password, fullName, phone, avatarUrl } = await request.json();
 
     if (!userId) {
@@ -19,7 +68,7 @@ export async function POST(request: Request) {
     }
 
     // Create Supabase client with service role key for admin operations
-    const supabase = createClient(
+    const adminSupabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
@@ -31,7 +80,7 @@ export async function POST(request: Request) {
     );
 
     // Update profile
-    const { error: profileError } = await supabase
+    const { error: updateError } = await adminSupabase
       .from('profiles')
       .update({
         full_name: fullName,
@@ -40,9 +89,9 @@ export async function POST(request: Request) {
       })
       .eq('id', userId);
 
-    if (profileError) {
-      console.error('Error updating profile:', profileError);
-      return NextResponse.json({ error: 'Failed to update profile: ' + profileError.message }, { status: 500 });
+    if (updateError) {
+      console.error('Error updating profile:', updateError);
+      return NextResponse.json({ error: 'Failed to update profile: ' + updateError.message }, { status: 500 });
     }
 
     console.log('Profile updated successfully');
@@ -56,7 +105,7 @@ export async function POST(request: Request) {
 
         console.log('Attempting to update auth user with data:', { hasEmail: !!email, hasPassword: !!password });
 
-        const { error: authError } = await supabase.auth.admin.updateUserById(userId, updateData);
+        const { error: authError } = await adminSupabase.auth.admin.updateUserById(userId, updateData);
 
         if (authError) {
           console.error('Error updating auth user:', authError);

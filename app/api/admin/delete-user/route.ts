@@ -1,8 +1,57 @@
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
+    // Verify authentication and admin role
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set({ name, value, ...options });
+            } catch (error) {
+              // Ignore errors in server components
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.delete({ name, ...options });
+            } catch (error) {
+              // Ignore errors in server components
+            }
+          },
+        },
+      }
+    );
+
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      console.error('Unauthorized: No valid session');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Verify admin role
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    if (profileError || !profile || profile.role !== 'admin') {
+      console.error('Forbidden: User is not an admin');
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { userId } = await request.json();
 
     if (!userId) {
@@ -19,7 +68,7 @@ export async function POST(request: Request) {
     }
 
     // Create Supabase client with service role key for admin operations
-    const supabase = createClient(
+    const adminSupabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
@@ -31,21 +80,21 @@ export async function POST(request: Request) {
     );
 
     // First, try to delete the profile (this is the most important part)
-    const { error: profileError } = await supabase
+    const { error: deleteError } = await adminSupabase
       .from('profiles')
       .delete()
       .eq('id', userId);
 
-    if (profileError) {
-      console.error('Error deleting profile:', profileError);
-      return NextResponse.json({ error: 'Failed to delete profile: ' + profileError.message }, { status: 500 });
+    if (deleteError) {
+      console.error('Error deleting profile:', deleteError);
+      return NextResponse.json({ error: 'Failed to delete profile: ' + deleteError.message }, { status: 500 });
     }
 
     console.log('Profile deleted successfully');
 
     // Then try to delete the auth user (requires service role)
     try {
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      const { error: authError } = await adminSupabase.auth.admin.deleteUser(userId);
 
       if (authError) {
         console.error('Error deleting auth user:', authError);

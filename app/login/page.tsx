@@ -4,21 +4,17 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
-import { signInStaff } from '@/app/actions/staff-auth';
+import { signIn } from '@/app/actions/auth';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
-  const [isChecking, setIsChecking] = useState(true); // Bloque le rendu pendant la vérification
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fonction de connexion corrigée
-  const handleCleanLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -29,70 +25,18 @@ export default function LoginPage() {
       formData.append('email', email);
       formData.append('password', password);
       
-      const result = await signInStaff(null, formData);
+      const result = await signIn(null, formData);
       
       if (result?.error) {
         setError(result.error);
-      } else if (result?.success) {
-        // Redirection basée sur le rôle retourné
-        if (result.role === 'admin') router.push('/dashboard/admin');
-        else if (result.role === 'jury') router.push('/dashboard/jury');
-        
-        router.refresh();
+        setIsSubmitting(false);
       }
+      // Si pas d'erreur, la redirection est gérée par le middleware
     } catch (err) {
       setError("Une erreur système est survenue. Veuillez réessayer.");
-    } finally {
       setIsSubmitting(false);
     }
   };
-
-  // Effet de nettoyage et de vérification de session
-  useEffect(() => {
-    const initSession = async () => {
-      setIsHydrated(true);
-
-      // 1. Vérification de session existante pour éviter le flash
-      if (supabase) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.session.user.id)
-            .maybeSingle();
-
-          if (profile?.role === 'admin') { router.push('/dashboard/admin'); return; }
-          if (profile?.role === 'jury') { router.push('/dashboard/jury'); return; }
-        }
-      }
-
-      // 2. Nettoyage de l'environnement local pour éviter les restes de sessions corrompues
-      try {
-        localStorage.clear();
-        sessionStorage.clear();
-        // Suppression propre des cookies
-        document.cookie.split(";").forEach((c) => {
-          document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-        });
-      } catch (e) {
-        console.warn("Cleanup warning", e);
-      }
-      
-      setIsChecking(false);
-    };
-    
-    void initSession();
-  }, [router]);
-
-  // Si on attend l'hydratation ou la vérification de session, on affiche le loader
-  if (!isHydrated || isChecking) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e5c47f]"></div>
-      </div>
-    );
-  }
 
   // Rendu de la page de connexion
   return (
@@ -115,7 +59,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleCleanLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             {error && (
               <div className="bg-red-900/20 border border-red-900/50 rounded-none p-3 text-sm text-red-400">
                 {error}

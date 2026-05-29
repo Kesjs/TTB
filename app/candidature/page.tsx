@@ -11,7 +11,6 @@ import { auth } from '@/lib/supabase/auth';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase';
 import { signIn } from '@/app/actions/auth';
-import { signInStaff } from '@/app/actions/staff-auth';
 import CustomSelect from '@/components/ui/CustomSelect';
 
 export default function CandidaturePage() {
@@ -62,7 +61,7 @@ export default function CandidaturePage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
-  // Handle initial hydration and session check
+  // Handle initial hydration and URL parameter check
   useEffect(() => {
     setIsHydrated(true);
     
@@ -71,27 +70,7 @@ export default function CandidaturePage() {
     if (params.get('view') === 'login') {
       setViewState('login');
     }
-
-    const checkSession = async () => {
-      if (!supabase) return;
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        // Fetch role
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.session.user.id)
-          .single();
-        
-        setProfile(profile);
-        
-        if (profile?.role === 'candidate') {
-          router.push('/dashboard/candidate');
-        }
-      }
-    };
-    void checkSession();
-  }, [router]);
+  }, []);
 
   // Update password criteria and confirm password validation in real-time
   useEffect(() => {

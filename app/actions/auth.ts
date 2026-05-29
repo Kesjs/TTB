@@ -87,23 +87,47 @@ export async function signIn(state: { error: string } | null, formData: FormData
 
   console.log('Role trouvé:', profile.role);
 
-  if (profile.role !== 'candidate') {
-    return { error: 'Cet espace est réservé aux candidats. Pour l\'accès administratif ou jury, veuillez utiliser la page de connexion dédiée.' };
+  // Redirect dynamically based on role
+  if (profile.role === 'candidate') {
+    redirect('/dashboard/candidate');
+  } else if (profile.role === 'admin') {
+    redirect('/dashboard/admin');
+  } else if (profile.role === 'jury') {
+    redirect('/dashboard/jury');
+  } else {
+    return { error: 'Rôle non reconnu. Contactez l\'administrateur.' };
   }
+}
 
-  cookieStore.set('user_id', data.session.user.id, {
-    path: '/',
-    maxAge: 604800,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  });
-  cookieStore.set('user_role', profile.role, {
-    path: '/',
-    maxAge: 604800,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  });
+export async function signOut() {
+  const cookieStore = await cookies();
 
-  // Redirect strictly to candidate dashboard
-  redirect('/dashboard/candidate');
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set({ name, value, ...options });
+          } catch (error) {
+            // Ignore errors in server components
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.delete({ name, ...options });
+          } catch (error) {
+            // Ignore errors in server components
+          }
+        },
+      },
+    }
+  );
+
+  await supabase.auth.signOut();
+  redirect('/');
 }

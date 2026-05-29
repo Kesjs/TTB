@@ -11,7 +11,7 @@ import {
 import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile, CandidateVoteCount } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
-import { auth } from '@/lib/supabase/auth';
+import { signOut } from '@/app/actions/auth';
 import CustomSelectDark from '@/components/ui/CustomSelectDark';
 
 type TabType = 'jury' | 'moderation' | 'phases' | 'settings' | 'preview';
@@ -139,21 +139,6 @@ export default function AdminDashboard() {
     setToasts(prev => [...prev, { id, type, message }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   };
-
-  useEffect(() => {
-    const checkAdminRole = async () => {
-      try {
-        const profile = await db.getCurrentUserProfile();
-        if (!profile || profile.role !== 'admin') {
-          console.warn('[AdminDashboard] Access denied: Not an admin');
-          window.location.href = '/login';
-        }
-      } catch (err) {
-        window.location.href = '/login';
-      }
-    };
-    void checkAdminRole();
-  }, []);
 
   // Data Hydration
   useEffect(() => {
@@ -671,8 +656,7 @@ export default function AdminDashboard() {
             </a>
             <button 
               onClick={async () => {
-                await auth.signOut();
-                window.location.href = '/';
+                await signOut();
               }}
               className="flex items-center gap-2 text-[10px] font-mono text-zinc-400 hover:text-red-400 transition-colors bg-zinc-900/50 sm:bg-transparent px-2 py-1 sm:p-0 rounded border border-zinc-800 sm:border-transparent"
             >
