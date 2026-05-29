@@ -12,6 +12,7 @@ import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile, CandidateVoteCount } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
 import { signOut } from '@/app/actions/auth';
+import { updateCandidateStatus, confirmCandidateByAdmin } from '@/app/actions/admin';
 import CustomSelectDark from '@/components/ui/CustomSelectDark';
 import { Skeleton } from '@/components/ui/Skeleton';
 
@@ -472,7 +473,7 @@ export default function AdminDashboard() {
   // Candidate Moderation Handlers
   const handleCandidateStatus = async (id: string, status: 'approved' | 'rejected') => {
     try {
-      await db.updateCandidateStatus(id, status);
+      await updateCandidateStatus(id, status);
       setCandidates(prev => prev.map(c => c.id === id ? { ...c, status } : c));
       addToast('success', status === 'approved' ? 'Candidat approuvé' : 'Candidat rejeté');
     } catch (err) {
@@ -512,13 +513,13 @@ export default function AdminDashboard() {
       if (isConfirmed) {
         // When confirming, also approve the candidate status
         await Promise.all([
-          db.confirmCandidateByAdmin(id, true),
-          db.updateCandidateStatus(id, 'approved')
+          confirmCandidateByAdmin(id, true),
+          updateCandidateStatus(id, 'approved')
         ]);
         setCandidates(prev => prev.map(c => c.id === id ? { ...c, is_confirmed_by_admin: true, status: 'approved' } : c));
         addToast('success', 'Candidat confirmé et approuvé');
       } else {
-        await db.confirmCandidateByAdmin(id, false);
+        await confirmCandidateByAdmin(id, false);
         setCandidates(prev => prev.map(c => c.id === id ? { ...c, is_confirmed_by_admin: false } : c));
         addToast('success', 'Confirmation annulée');
       }

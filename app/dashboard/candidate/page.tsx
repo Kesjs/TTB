@@ -92,7 +92,7 @@ export default function CandidateDashboard() {
           if (userCandidate.status === 'approved' && systemControl) {
             try {
               const [allCandidates, juryData] = await Promise.all([
-                db.getCandidates(),
+                db.getCandidates({ status: 'approved' }),
                 db.getJuryAverages(systemControl.current_phase)
               ]);
 
