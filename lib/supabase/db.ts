@@ -77,7 +77,7 @@ export const db = {
     if (supabase) {
       let query = supabase.from('candidates').select('*');
       if (options?.status) query = query.eq('status', options.status);
-      if (options?.profileId) {
+      if (options?.profileId && options.profileId !== undefined && options.profileId !== null && options.profileId !== '') {
         console.log('[DB] Filtering candidates by profile_id:', options.profileId);
         query = query.eq('profile_id', options.profileId);
       }
@@ -110,7 +110,7 @@ export const db = {
     const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
     let filtered = candidates;
     if (options?.status) filtered = filtered.filter((candidate) => candidate.status === options.status);
-    if (options?.profileId) filtered = filtered.filter((candidate) => candidate.profile_id === options.profileId);
+    if (options?.profileId && options.profileId !== undefined && options.profileId !== null && options.profileId !== '') filtered = filtered.filter((candidate) => candidate.profile_id === options.profileId);
     return filtered;
   },
 
