@@ -28,7 +28,7 @@ export default function Error({
         {/* Error Message */}
         <div className="space-y-4">
           <h1 className="text-3xl font-black text-white uppercase tracking-tight">
-            Oups, ça a planté
+            Oups, ça a planté !
           </h1>
           <p className="text-zinc-400 text-sm leading-relaxed">
             Une erreur inattendue s'est produite. Nos équipes ont été notifiées et nous travaillons à résoudre le problème.
