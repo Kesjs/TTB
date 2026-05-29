@@ -336,22 +336,17 @@ export default function CandidaturePage() {
       loginFormData.append('password', formData.password);
 
       // Appel synchrone direct de l'action serveur signIn
+      // Note: Le serveur gère déjà la redirection, pas besoin de router.push côté client
       const result = await signIn(null, loginFormData);
 
       if (result && result.error) {
         setError(result.error);
-      } else {
-        console.log('✅ Connexion candidat réussie. Rafraîchissement global des cookies...');
-        router.refresh();
-        // Léger délai pour s'assurer que le thread du navigateur enregistre bien les en-têtes avant la navigation
-        setTimeout(() => {
-          router.push('/dashboard/candidate');
-        }, 100);
+        setIsLoggingIn(false);
       }
+      // Si pas d'erreur, le serveur redirige automatiquement vers /dashboard/candidate
     } catch (err) {
       console.error(err);
       setError('Une erreur est survenue lors de la connexion. Veuillez réessayer.');
-    } finally {
       setIsLoggingIn(false);
     }
   };
