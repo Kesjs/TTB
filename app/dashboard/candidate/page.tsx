@@ -57,17 +57,39 @@ export default function CandidateDashboard() {
       // ÉTAPE 1 : Récupérer l'utilisateur depuis la session AVANT toute requête DB
       if (!supabase) {
         setError('Client Supabase non disponible');
-        setLoading(false);
         return;
       }
       
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      // Essayer de récupérer la session côté client avec retries pour éviter les flashs
+      let user;
+      let userError;
+      let retryCount = 0;
+      const maxRetries = 5; // Augmenté pour plus de robustesse avec createBrowserClient
+
+      while (retryCount < maxRetries) {
+        const result = await supabase.auth.getUser();
+        userError = result.error;
+        user = result.data.user;
+
+        if (user) {
+          console.log('[CandidateDashboard] User found on attempt:', retryCount + 1);
+          break;
+        }
+
+        console.log('[CandidateDashboard] User not found, retrying...', retryCount + 1);
+        retryCount++;
+        // Attendre un peu avant de réessayer (délai progressif)
+        await new Promise(resolve => setTimeout(resolve, 300 + (retryCount * 100)));
+      }
       
+      // Ne setError qu'après tous les retries échoués pour éviter les flashs
       if (userError || !user) {
+        console.error('[CandidateDashboard] Failed to get user after retries:', userError);
         setError('Session non disponible. Veuillez vous reconnecter.');
-        setLoading(false);
         return;
       }
+
+      console.log('[CandidateDashboard] User ID:', user.id);
 
       // ÉTAPE 2 : Maintenant que l'utilisateur est validé, récupérer les données
       const [systemControl, candidates] = await Promise.all([
@@ -77,6 +99,8 @@ export default function CandidateDashboard() {
 
       setSystemControl(systemControl);
 
+      console.log('[CandidateDashboard] Candidates found:', candidates?.length || 0);
+
       if (!candidates || candidates.length === 0) {
         setError('Aucun dossier de candidature trouvé.');
       } else {
@@ -84,8 +108,10 @@ export default function CandidateDashboard() {
         
         if (!userCandidate) {
           // L'utilisateur existe mais son dossier candidat n'est pas encore créé
+          console.error('[CandidateDashboard] No candidate found with profile_id:', user.id);
           setError('Votre dossier est en cours de création. Veuillez compléter votre inscription.');
         } else {
+          console.log('[CandidateDashboard] Candidate found:', userCandidate.stage_name);
           setCandidate(userCandidate);
           
           // Calcul des stats
