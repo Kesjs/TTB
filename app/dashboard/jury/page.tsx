@@ -722,7 +722,7 @@ export default function JuryDashboard() {
                           }
 
                           return qualified.map((c) => {
-                            const rating = existingRatings.find(r => r.candidate_id === c.id && r.jury_id === juryId && r.phase === toSqlPhase(phase));
+                            const rating = existingRatings.find(r => r.candidate_id === c.id && r.jury_id === juryId && phase && r.phase === toSqlPhase(phase));
                             const avg = rating ? (Number(rating.score_technique) + Number(rating.score_originalite) + Number(rating.score_presence)) / 3 : null;
                             
                             return (
