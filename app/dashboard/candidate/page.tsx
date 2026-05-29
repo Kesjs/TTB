@@ -72,7 +72,7 @@ export default function CandidateDashboard() {
       // ÉTAPE 2 : Maintenant que l'utilisateur est validé, récupérer les données
       const [systemControl, candidates] = await Promise.all([
         db.getSystemControl(),
-        db.getCandidates({})
+        db.getCandidates({ profileId: user.id })
       ]);
 
       setSystemControl(systemControl);

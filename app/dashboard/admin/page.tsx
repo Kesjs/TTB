@@ -151,7 +151,7 @@ export default function AdminDashboard() {
 
         // Load data with individual error handling
         const [allCandidates, sc, juryData, userProfile, ratings, votes] = await Promise.all([
-          db.getCandidates().catch(err => {
+          db.getCandidates({ status: statusFilterMap[candidateStatusFilter] }).catch(err => {
             console.error('[Admin Dashboard] Error loading candidates:', err);
             return [];
           }),
@@ -232,7 +232,10 @@ export default function AdminDashboard() {
           .channel('candidates_admin')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'candidates' }, (payload) => {
             console.log('Candidate updated:', payload);
-            db.getCandidates().then(allCandidates => setCandidates(allCandidates || []));
+            // Refetch with current status filter to ensure correct data
+            db.getCandidates({ status: statusFilterMap[candidateStatusFilter] })
+              .then(allCandidates => setCandidates(allCandidates || []))
+              .catch(err => console.error('[Admin Dashboard] Error refetching candidates:', err));
           })
           .subscribe();
         channels.push(candidatesChannel);
@@ -252,6 +255,24 @@ export default function AdminDashboard() {
         };
       }
   }, []);
+
+  // Refetch candidates when status filter changes
+  useEffect(() => {
+    const fetchCandidatesByStatus = async () => {
+      try {
+        console.log('[Admin Dashboard] Fetching candidates with status:', statusFilterMap[candidateStatusFilter]);
+        const filteredCandidates = await db.getCandidates({ status: statusFilterMap[candidateStatusFilter] });
+        setCandidates(filteredCandidates || []);
+      } catch (err) {
+        console.error('[Admin Dashboard] Error fetching candidates by status:', err);
+        addToast('error', 'Erreur lors du chargement des candidats');
+      }
+    };
+
+    if (!loading) {
+      fetchCandidatesByStatus();
+    }
+  }, [candidateStatusFilter]);
 
   // Master Switchboard Handlers
   const handlePhaseChange = async (newPhase: SystemControl['current_phase']) => {
@@ -569,7 +590,7 @@ export default function AdminDashboard() {
           // Reload data
           const updatedControl = await db.getSystemControl();
           if (updatedControl) setSystemControl(updatedControl);
-          const allCandidates = await db.getCandidates();
+          const allCandidates = await db.getCandidates({ status: statusFilterMap[candidateStatusFilter] });
           setCandidates(allCandidates || []);
 
         } catch (err) {
