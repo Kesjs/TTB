@@ -13,6 +13,7 @@ import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
 import { signOut } from '@/app/actions/auth';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 type TabType = 'selection' | 'evaluation' | 'history' | 'stats';
 
@@ -402,9 +403,102 @@ export default function JuryDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] text-zinc-400 font-mono flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-[#e5c47f] mr-3" />
-        CHARGEMENT DU PANNEL JURY...
+      <div className="min-h-screen bg-[#050505] text-zinc-100 font-sans flex flex-col">
+        {/* Header Skeleton */}
+        <header className="bg-[#050505] border-b border-zinc-800 px-4 sm:px-6 py-3">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-24 hidden sm:block" />
+            </div>
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-16 hidden sm:block" />
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Skeleton className="h-3 w-24 hidden sm:block" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content Skeleton */}
+        <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+          <div className="w-full lg:w-[70%] p-4 sm:p-6 overflow-y-auto">
+            {/* Roadmap & Profile Summary Skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6 sm:mb-8">
+              <div className="md:col-span-8 bg-zinc-950 border border-zinc-900 p-4 sm:p-5 rounded-2xl">
+                <div className="flex items-center gap-3 mb-5">
+                  <Skeleton className="h-3 w-3" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <div className="flex justify-between items-start">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="flex flex-col items-center">
+                      <Skeleton className="h-8 w-8 rounded-full mb-2" />
+                      <Skeleton className="h-3 w-12" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="md:col-span-4 bg-zinc-950 border border-zinc-900 p-4 sm:p-5 rounded-2xl">
+                <div className="flex items-center gap-3 mb-3">
+                  <Skeleton className="h-3 w-3" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <div className="flex items-center gap-3 mb-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-2 w-20" />
+                  </div>
+                </div>
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </div>
+
+            {/* Tab Navigation Skeleton */}
+            <nav className="flex gap-2 mb-6 sm:mb-8 bg-zinc-950 p-1 border border-zinc-800 rounded-xl overflow-x-auto">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-10 w-24 rounded-lg" />
+              ))}
+            </nav>
+
+            {/* Table Skeleton */}
+            <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <Skeleton className="h-8 w-20" />
+              </div>
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center gap-4 p-3 border border-zinc-800 rounded-lg">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <Skeleton className="h-4 flex-1" />
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-16" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column Skeleton */}
+          <div className="w-full lg:w-[30%] p-4 sm:p-6 overflow-y-auto border-l border-zinc-800">
+            <div className="space-y-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4">
+                  <Skeleton className="h-4 w-24 mb-3" />
+                  <Skeleton className="h-8 w-full mb-2" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

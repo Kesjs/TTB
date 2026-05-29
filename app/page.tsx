@@ -378,13 +378,7 @@ function HomeContent() {
 
         <div className="flex-1 flex items-center justify-center bg-white">
 
-          <div className="text-center">
-
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e5c47f] mx-auto mb-4"></div>
-
-            <p className="text-sm text-slate-600">Chargement...</p>
-
-          </div>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
 
         </div>
 
@@ -518,7 +512,11 @@ export default function Home() {
 
   return (
 
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center">Chargement...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
+      </div>
+    }>
 
       <HomeContent />
 
