@@ -104,7 +104,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
           </Link>
           
           {/* Titre aligné sur une ligne avec gestion de taille responsive pour éviter les collisions avec le burger */}
-          <div className="font-mono text-[10px] xs:text-xs sm:text-sm font-bold tracking-wider text-[#050509] uppercase whitespace-nowrap cursor-default">
+          <div className="font-sans text-[10px] xs:text-xs sm:text-sm font-bold tracking-wider text-[#050509] uppercase whitespace-nowrap cursor-default">
             <span>TOP </span>
             <span className="text-[#e5c47f] font-normal">TALENT</span>
             <span> DU BÉNIN</span>
@@ -119,7 +119,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
               <Link
                 key={item.href}
                 href={item.href}
-                className={`font-mono text-xs uppercase tracking-[0.15em] transition-all duration-200 relative px-2 sm:px-3 py-1 ${
+                className={`font-sans text-xs uppercase tracking-[0.15em] transition-all duration-200 relative px-2 sm:px-3 py-1 ${
                   isActive
                     ? 'text-[#e5c47f] font-bold after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#e5c47f]'
                     : 'text-[#050509]/80 hover:text-[#e5c47f]'
@@ -138,14 +138,14 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
           ) : isDashboard ? (
             <button
               onClick={handleSignOut}
-              className="hidden lg:flex items-center gap-2 px-4 sm:px-5 py-2 bg-red-600 text-white font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-red-500 transition-all duration-300 transform active:scale-95"
+              className="hidden lg:flex items-center gap-2 px-4 sm:px-5 py-2 bg-red-600 text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-red-500 transition-all duration-300 transform active:scale-95"
             >
               <LogOut className="w-4 h-4" /> Déconnexion
             </button>
           ) : isPreselectionOpen ? (
             <Link
               href="/candidature"
-              className={`hidden lg:block px-4 sm:px-5 py-2 bg-[#050509] text-white font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] transform active:scale-95 ${
+              className={`hidden lg:block px-4 sm:px-5 py-2 bg-[#050509] text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] transform active:scale-95 ${
                 showCta 
                   ? 'opacity-100 translate-y-0 pointer-events-auto duration-300 ease-out transition-all' 
                   : 'opacity-0 translate-y-[-10px] pointer-events-none'
@@ -162,7 +162,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                   router.push('/?scroll=talents');
                 }
               }}
-              className="hidden lg:block px-4 sm:px-5 py-2 bg-[#e5c47f] text-zinc-950 font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-zinc-900 hover:text-white transition-all duration-300 transform active:scale-95 shadow-lg shadow-[#e5c47f]/20"
+              className="hidden lg:block px-4 sm:px-5 py-2 bg-[#e5c47f] text-zinc-950 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-zinc-900 hover:text-white transition-all duration-300 transform active:scale-95 shadow-lg shadow-[#e5c47f]/20"
             >
               Le Palmarès
             </button>
@@ -175,7 +175,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                   router.push('/?scroll=talents');
                 }
               }}
-              className="hidden lg:block px-4 sm:px-5 py-2 bg-white border-2 border-[#050509] text-[#050509] font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#050509] hover:text-white transition-all duration-300 transform active:scale-95"
+              className="hidden lg:block px-4 sm:px-5 py-2 bg-white border-2 border-[#050509] text-[#050509] font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#050509] hover:text-white transition-all duration-300 transform active:scale-95"
             >
               Voir les Candidats
             </button>
@@ -204,7 +204,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`font-mono text-sm uppercase tracking-[0.1em] transition-all duration-200 relative px-3 py-2 ${
+                  className={`font-sans text-sm uppercase tracking-[0.1em] transition-all duration-200 relative px-3 py-2 ${
                     isActive
                       ? 'text-[#e5c47f] font-bold bg-slate-50 border-l-2 border-[#e5c47f]'
                       : 'text-[#050509]/80 hover:text-[#e5c47f]'
@@ -224,7 +224,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                     handleSignOut();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-5 py-2 bg-red-600 text-white font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-red-500 transition-all duration-300"
+                  className="w-full flex items-center justify-center gap-2 px-5 py-2 bg-red-600 text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-red-500 transition-all duration-300"
                 >
                   <LogOut className="w-4 h-4" /> Déconnexion
                 </button>
@@ -232,7 +232,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                 <Link
                   href="/candidature"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block w-full px-5 py-2 bg-[#050509] text-white font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] transition-all duration-300 text-center"
+                  className="block w-full px-5 py-2 bg-[#050509] text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] transition-all duration-300 text-center"
                 >
                   Postuler
                 </Link>
@@ -246,7 +246,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                     }
                     setMobileMenuOpen(false);
                   }}
-                  className="block w-full px-5 py-2 bg-[#e5c47f] text-zinc-950 font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none text-center shadow-lg shadow-[#e5c47f]/10"
+                  className="block w-full px-5 py-2 bg-[#e5c47f] text-zinc-950 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none text-center shadow-lg shadow-[#e5c47f]/10"
                 >
                   Le Palmarès
                 </button>
@@ -260,7 +260,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                     }
                     setMobileMenuOpen(false);
                   }}
-                  className="block w-full px-5 py-2 bg-white border-2 border-[#050509] text-[#050509] font-mono font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#050509] hover:text-white transition-all duration-300 text-center"
+                  className="block w-full px-5 py-2 bg-white border-2 border-[#050509] text-[#050509] font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#050509] hover:text-white transition-all duration-300 text-center"
                 >
                   Voir les Candidats
                 </button>

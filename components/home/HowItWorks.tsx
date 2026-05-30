@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const steps = [
-  {
-    number: '01',
-    title: 'Auditions Nationales',
-    pool: 'Sélection Initiale',
-    description: 'Ouverture des inscriptions dans les 12 départements. L\'admin valide les dossiers sérieux, puis le jury sélectionne les 40 profils qui rejoindront la phase nationale.',
-    reward: null,
-  },
+  // Modifie juste cette description dans ton tableau 'steps' :
+{
+  number: '01',
+  title: 'Auditions Nationales',
+  pool: 'La Grande Quête',
+  description: 'Nous parcourons les 12 départements du pays pour dénicher les futurs talents. Les meilleurs profils sont sélectionnés pour rejoindre le Top 40 et entamer l\'aventure officielle.',
+  reward: null,
+},
   {
     number: '02',
     title: 'Quarts de Finale',
