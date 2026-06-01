@@ -109,55 +109,7 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
   };
 
   return (
-    <header className="relative flex items-center px-4 sm:px-6 lg:px-12 overflow-hidden bg-[#0a0a0a] min-h-[calc(100vh-120px)] pt-8 sm:pt-16 lg:pt-20">
-
-      {/* Grid background */}
-      <div
-        className="absolute inset-0 pointer-events-none z-0"
-        style={{
-          backgroundImage: `linear-gradient(rgba(229,196,127,0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(229,196,127,0.04) 1px, transparent 1px)`,
-          backgroundSize: '40px 40px'
-        }}
-      />
-
-      {/* Scanline */}
-      <div
-        className="absolute left-0 right-0 h-px pointer-events-none z-0 animate-scanline"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(229,196,127,0.15), transparent)' }}
-      />
-
-      {/* Radial glow */}
-      <motion.div
-        className="absolute inset-0 opacity-30 pointer-events-none z-0"
-        animate={{
-          background: [
-            "radial-gradient(circle at 20% 50%, rgba(229,196,127,0.1) 0%, transparent 50%)",
-            "radial-gradient(circle at 80% 50%, rgba(229,196,127,0.15) 0%, transparent 50%)",
-            "radial-gradient(circle at 40% 80%, rgba(229,196,127,0.1) 0%, transparent 50%)",
-            "radial-gradient(circle at 20% 50%, rgba(229,196,127,0.1) 0%, transparent 50%)",
-          ]
-        }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      {/* Floating dots */}
-      <motion.div className="absolute top-20 left-10 w-2 h-2 bg-[#e5c47f] rounded-full opacity-40"
-        animate={{ y: [0, -20, 0], opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div className="absolute top-40 right-20 w-3 h-3 bg-[#e5c47f] rounded-full opacity-30"
-        animate={{ y: [0, 30, 0], x: [0, -10, 0], opacity: [0.3, 0.6, 0.3] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-      />
-      <motion.div className="absolute bottom-40 left-1/4 w-1.5 h-1.5 bg-[#e5c47f] rounded-full opacity-50"
-        animate={{ y: [0, -15, 0], opacity: [0.5, 0.9, 0.5] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-      />
-      <motion.div className="absolute top-1/3 right-1/4 w-2 h-2 bg-white/30 rounded-full opacity-30"
-        animate={{ y: [0, 25, 0], x: [0, 15, 0], opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-      />
+    <header className="relative flex items-center px-4 sm:px-6 lg:px-12 overflow-hidden bg-white min-h-[calc(100vh-120px)] border-b border-zinc-100 pt-8 sm:pt-16 lg:pt-20">
 
       {/* Conteneur Central */}
       <motion.div
@@ -172,15 +124,15 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-none"
+          className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/40 backdrop-blur-md border border-zinc-200/50 rounded-none"
         >
           {currentContent.showInscriptionsCloses && (
             <>
-              <div className="flex items-center gap-2 text-white/60">
-                <Lock className="w-3.5 h-3.5 text-white/40" />
+              <div className="flex items-center gap-2 text-zinc-900">
+                <Lock className="w-3.5 h-3.5 text-zinc-500" />
                 <span className="font-mono text-[10px] font-medium uppercase tracking-wider">Inscriptions Closes</span>
               </div>
-              <span className="w-px h-3 bg-white/20" />
+              <span className="w-px h-3 bg-zinc-300" />
             </>
           )}
           <div className={`flex items-center gap-2 ${currentContent.badgeClass}`}>
@@ -193,7 +145,7 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
 
         {/* 2. TITRE */}
         <motion.h1
-          className="font-heading font-black text-2xl sm:text-5xl lg:text-6xl tracking-tight leading-none text-white uppercase"
+          className="font-heading font-black text-2xl sm:text-5xl lg:text-6xl tracking-tight leading-none text-[#050505] uppercase"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
@@ -206,7 +158,7 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="max-w-xl mx-auto text-xs sm:text-sm leading-relaxed text-white/50 font-body px-2"
+          className="max-w-xl mx-auto text-xs sm:text-sm leading-relaxed text-zinc-500 font-body px-2"
         >
           {currentContent.description}
         </motion.p>
@@ -220,7 +172,7 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
         >
           <motion.button
             onClick={handleMainCTA}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#e5c47f] text-[#0a0a0a] font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent relative overflow-hidden group"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#050509] text-white font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent relative overflow-hidden group"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -241,17 +193,17 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="pt-4 flex items-center justify-center gap-4 font-mono text-[10px] text-white/40 tracking-wider uppercase w-full"
+            className="pt-4 flex items-center justify-center gap-4 font-mono text-[10px] text-zinc-400 tracking-wider uppercase w-full"
           >
-            <Timer className="w-3 h-3 text-white/40" />
+            <Timer className="w-3 h-3 text-zinc-400" />
             <div className="flex items-center gap-2 tabular-nums">
-              <span className="text-white font-bold">{String(timeLeft.days).padStart(2, '0')}</span>
+              <span className="text-zinc-900 font-bold">{String(timeLeft.days).padStart(2, '0')}</span>
               <span>j</span>
-              <span className="text-white font-bold">{String(timeLeft.hours).padStart(2, '0')}</span>
+              <span className="text-zinc-900 font-bold">{String(timeLeft.hours).padStart(2, '0')}</span>
               <span>h</span>
-              <span className="text-white font-bold">{String(timeLeft.minutes).padStart(2, '0')}</span>
+              <span className="text-zinc-900 font-bold">{String(timeLeft.minutes).padStart(2, '0')}</span>
               <span>m</span>
-              <span className="text-white font-bold">{String(timeLeft.seconds).padStart(2, '0')}</span>
+              <span className="text-zinc-900 font-bold">{String(timeLeft.seconds).padStart(2, '0')}</span>
               <span>s</span>
             </div>
           </motion.div>

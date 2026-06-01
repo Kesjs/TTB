@@ -77,18 +77,19 @@ export default function StatsCards({ totalInscrits, departements = 12, disciplin
         {cards.map((card, index) => (
           <div
             key={index}
-            className="group relative flex-1 min-w-0 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 sm:p-6
+            className="group relative flex-1 min-w-0 bg-white/80 backdrop-blur-sm border border-zinc-200/80 rounded-xl p-3 sm:p-6
+                       shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]
                        transition-all duration-500 ease-out hover:border-[#e5c47f]/40 hover:-translate-y-1"
           >
             <div className="flex flex-col items-center text-center gap-2 sm:gap-3">
-              <div className="p-2 sm:p-3 bg-white/5 rounded-xl group-hover:bg-[#e5c47f]/10 transition-all duration-500">
+              <div className="p-2 sm:p-3 bg-gradient-to-br from-zinc-50 to-zinc-100/50 rounded-xl group-hover:from-[#e5c47f]/10 group-hover:to-[#d4a84b]/10 transition-all duration-500">
                 {card.icon}
               </div>
               <div className="space-y-0.5 sm:space-y-1">
-                <p className="font-heading font-black text-xl sm:text-3xl text-[#e5c47f] tabular-nums tracking-tight">
+                <p className="font-heading font-black text-xl sm:text-3xl text-[#050505] tabular-nums tracking-tight">
                   {card.value}
                 </p>
-                <p className="font-mono text-[9px] sm:text-[11px] text-white/40 uppercase tracking-widest font-medium leading-tight">
+                <p className="font-mono text-[9px] sm:text-[11px] text-zinc-500 uppercase tracking-widest font-medium leading-tight">
                   {card.label}
                 </p>
               </div>

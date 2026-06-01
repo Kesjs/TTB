@@ -24,9 +24,8 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
 
   const isHomePage = pathname === '/';
 
-  // Sur home : transparent au top, blanc au scroll
-  // Sur autres pages : toujours blanc (pas de hero noir)
-  const navScrolled = isHomePage ? scrolled : true;
+  // Navbar toujours blanche, peu importe le scroll
+  const navScrolled = true;
 
   useEffect(() => {
     const handleScroll = () => {
