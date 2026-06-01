@@ -24,7 +24,8 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
 
   const isHomePage = pathname === '/';
 
-  // Sur les pages autres que home, la navbar est toujours en mode "scrolled" (blanc)
+  // Sur home : transparent au top, blanc au scroll
+  // Sur autres pages : toujours blanc (pas de hero noir)
   const navScrolled = isHomePage ? scrolled : true;
 
   useEffect(() => {
@@ -75,11 +76,17 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
     { name: 'ALLIANCES', href: '/alliances' },
   ];
 
+  // Couleurs selon état
+  const textPrimary   = navScrolled ? 'text-[#050509]'      : 'text-white';
+  const textMuted     = navScrolled ? 'text-[#050509]/70'   : 'text-white/80';
+  const borderColor   = navScrolled ? 'border-zinc-200'     : 'border-white/15';
+  const separatorBg   = navScrolled ? 'bg-zinc-300'         : 'bg-white/30';
+
   return (
     <nav
       className={`fixed top-0 left-0 right-0 w-full z-50 px-4 sm:px-6 py-3 transition-all duration-300
         ${navScrolled
-          ? 'bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm'
+          ? 'bg-white border-b border-zinc-200 shadow-sm'
           : 'bg-transparent border-b border-white/10'
         }`}
     >
@@ -104,10 +111,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
             />
           </Link>
 
-          <div
-            className={`font-sans text-[10px] xs:text-xs sm:text-sm font-bold tracking-wider uppercase whitespace-nowrap cursor-default transition-colors duration-300
-              ${navScrolled ? 'text-[#050509]' : 'text-white'}`}
-          >
+          <div className={`font-sans text-[10px] xs:text-xs sm:text-sm font-bold tracking-wider uppercase whitespace-nowrap cursor-default transition-colors duration-300 ${textPrimary}`}>
             <span>TOP </span>
             <span className="text-[#e5c47f] font-normal">TALENT</span>
             <span> DU BÉNIN</span>
@@ -129,9 +133,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                   className={`font-sans text-xs uppercase tracking-[0.15em] transition-all duration-200 relative px-2 sm:px-3 py-1
                     ${isActive
                       ? 'text-[#e5c47f] font-bold after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#e5c47f]'
-                      : navScrolled
-                        ? 'text-[#050509]/80 hover:text-[#e5c47f]'
-                        : 'text-white/70 hover:text-[#e5c47f]'
+                      : `${textMuted} hover:text-[#e5c47f]`
                     }`}
                 >
                   {item.name}
@@ -144,9 +146,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
         {/* BOUTONS D'ACTION */}
         <div className="flex items-center gap-2 sm:gap-4">
           {loading ? (
-            <div className={`animate-pulse w-24 sm:w-32 h-9 rounded-none
-              ${navScrolled ? 'bg-zinc-100 border border-zinc-200' : 'bg-white/10 border border-white/10'}`}
-            />
+            <div className={`animate-pulse w-24 sm:w-32 h-9 rounded-none border ${navScrolled ? 'bg-zinc-100 border-zinc-200' : 'bg-white/10 border-white/10'}`} />
           ) : isDashboard ? (
             <motion.button
               onClick={handleSignOut}
@@ -181,7 +181,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
               className={`hidden lg:block px-4 sm:px-5 py-2 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none transition-all duration-300
                 ${navScrolled
                   ? 'bg-[#e5c47f] text-zinc-950 hover:bg-zinc-900 hover:text-white'
-                  : 'bg-white/10 text-white border border-white/20 hover:bg-[#e5c47f] hover:text-[#050509] hover:border-[#e5c47f]'
+                  : 'bg-white/10 text-white border border-white/25 hover:bg-[#e5c47f] hover:text-[#050509]'
                 }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -200,7 +200,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
               className={`hidden lg:block px-4 sm:px-5 py-2 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none transition-all duration-300
                 ${navScrolled
                   ? 'bg-white border-2 border-[#050509] text-[#050509] hover:bg-[#050509] hover:text-white'
-                  : 'bg-white/10 text-white border border-white/30 hover:bg-[#e5c47f] hover:text-[#050509] hover:border-[#e5c47f]'
+                  : 'bg-transparent text-white border border-white/30 hover:bg-[#e5c47f] hover:text-[#050509] hover:border-[#e5c47f]'
                 }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -212,8 +212,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
           {/* Burger Mobile */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className={`lg:hidden p-2 transition-colors flex-shrink-0 hover:text-[#e5c47f]
-              ${navScrolled ? 'text-[#050509]' : 'text-white'}`}
+            className={`lg:hidden p-2 transition-colors flex-shrink-0 hover:text-[#e5c47f] ${textPrimary}`}
             aria-label="Menu"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -221,7 +220,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
         </div>
       </div>
 
-      {/* MENU MOBILE */}
+      {/* MENU MOBILE — toujours fond noir pour lisibilité */}
       {mobileMenuOpen && (
         <div className="lg:hidden mt-4 pt-4 border-t border-white/10 bg-[#0a0a0a]">
           <div className="flex flex-col gap-3">
@@ -235,7 +234,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                   className={`font-sans text-sm uppercase tracking-[0.1em] transition-all duration-200 px-3 py-2
                     ${isActive
                       ? 'text-[#e5c47f] font-bold border-l-2 border-[#e5c47f] bg-white/5'
-                      : 'text-white/60 hover:text-[#e5c47f]'
+                      : 'text-white/70 hover:text-[#e5c47f]'
                     }`}
                 >
                   {item.name}
@@ -249,7 +248,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
               ) : isDashboard ? (
                 <button
                   onClick={() => { handleSignOut(); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center justify-center gap-2 px-5 py-2 bg-red-600 text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-red-500 transition-all duration-300"
+                  className="w-full flex items-center justify-center gap-2 px-5 py-2 bg-red-600 text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-red-500 transition-all"
                 >
                   <LogOut className="w-4 h-4" /> Déconnexion
                 </button>
@@ -257,7 +256,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                 <Link
                   href="/candidature"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block w-full px-5 py-2 bg-[#e5c47f] text-[#050509] font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-white transition-all duration-300 text-center"
+                  className="block w-full px-5 py-2 bg-[#e5c47f] text-[#050509] font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none text-center"
                 >
                   Postuler
                 </Link>
@@ -285,7 +284,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                     }
                     setMobileMenuOpen(false);
                   }}
-                  className="block w-full px-5 py-2 bg-white/10 text-white border border-white/20 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] hover:text-[#050509] transition-all duration-300 text-center"
+                  className="block w-full px-5 py-2 bg-transparent text-white border border-white/20 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] hover:text-[#050509] transition-all text-center"
                 >
                   Voir les Candidats
                 </button>

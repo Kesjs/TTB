@@ -11,10 +11,7 @@ interface StatsCardsProps {
 }
 
 export default function StatsCards({ totalInscrits, departements = 12, disciplines = "Toutes", edition = "2026" }: StatsCardsProps) {
-  const [counts, setCounts] = useState({
-    inscrits: 0,
-    departements: 0
-  });
+  const [counts, setCounts] = useState({ inscrits: 0, departements: 0 });
 
   useEffect(() => {
     const duration = 2000;
@@ -26,18 +23,13 @@ export default function StatsCards({ totalInscrits, departements = 12, disciplin
       step++;
       const progress = step / steps;
       const easeOut = 1 - Math.pow(1 - progress, 3);
-      
       setCounts({
         inscrits: Math.round(totalInscrits * easeOut),
         departements: Math.round(departements * easeOut)
       });
-
       if (step >= steps) {
         clearInterval(timer);
-        setCounts({
-          inscrits: totalInscrits,
-          departements: departements
-        });
+        setCounts({ inscrits: totalInscrits, departements: departements });
       }
     }, interval);
 
@@ -46,34 +38,25 @@ export default function StatsCards({ totalInscrits, departements = 12, disciplin
 
   const cards = [
     {
-      icon: <Users className="w-5 h-5 text-[#e5c47f]" />,
+      icon: <Users className="w-4 h-4 sm:w-5 sm:h-5 text-[#e5c47f]" />,
       value: counts.inscrits,
-      label: "Artistes Inscrits",
-      suffix: ""
+      label: "Artistes inscrits",
     },
     {
-      icon: <MapPin className="w-5 h-5 text-[#e5c47f]" />,
+      icon: <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[#e5c47f]" />,
       value: counts.departements,
       label: "Départements",
-      suffix: ""
     },
     {
-      icon: <Music className="w-5 h-5 text-[#e5c47f]" />,
+      icon: <Music className="w-4 h-4 sm:w-5 sm:h-5 text-[#e5c47f]" />,
       value: disciplines,
       label: "Disciplines",
-      suffix: ""
     },
-    {
-      icon: <Award className="w-5 h-5 text-[#e5c47f]" />,
-      value: edition,
-      label: "Édition",
-      suffix: "",
-      isEdition: true
-    }
   ];
 
   return (
     <div className="w-full max-w-4xl mx-auto pt-8">
+
       {/* Badge Édition */}
       <div className="flex justify-center mb-6">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-[#e5c47f]/20 to-[#d4a84b]/20 border border-[#e5c47f]/30 rounded-full">
@@ -84,27 +67,28 @@ export default function StatsCards({ totalInscrits, departements = 12, disciplin
         </div>
       </div>
 
-      {/* Grid de cartes */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {cards.filter(card => !card.isEdition).map((card, index) => (
+      {/* 
+        CHANGEMENT CLÉ :
+        - Mobile  : flex-row  → 3 cartes côte à côte horizontalement
+        - Desktop : grid 3 cols → comportement identique à avant
+        - min-w-0 sur chaque carte pour éviter le débordement
+      */}
+      <div className="flex flex-row gap-3 sm:grid sm:grid-cols-3 sm:gap-4">
+        {cards.map((card, index) => (
           <div
             key={index}
-            className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5 sm:p-6
-                       shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]
-                       transition-all duration-500 ease-out
-                       hover:border-[#e5c47f]/40 hover:-translate-y-1"
+            className="group relative flex-1 min-w-0 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 sm:p-6
+                       transition-all duration-500 ease-out hover:border-[#e5c47f]/40 hover:-translate-y-1"
           >
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="p-3 bg-gradient-to-br from-white/5 to-white/10 rounded-xl
-                            group-hover:from-[#e5c47f]/10 group-hover:to-[#d4a84b]/10
-                            transition-all duration-500">
+            <div className="flex flex-col items-center text-center gap-2 sm:gap-3">
+              <div className="p-2 sm:p-3 bg-white/5 rounded-xl group-hover:bg-[#e5c47f]/10 transition-all duration-500">
                 {card.icon}
               </div>
-              <div className="space-y-1">
-                <p className="font-heading font-black text-2xl sm:text-3xl text-[#e5c47f] tabular-nums tracking-tight">
-                  {typeof card.value === 'number' ? card.value : card.value}
+              <div className="space-y-0.5 sm:space-y-1">
+                <p className="font-heading font-black text-xl sm:text-3xl text-[#e5c47f] tabular-nums tracking-tight">
+                  {card.value}
                 </p>
-                <p className="font-mono text-[10px] sm:text-[11px] text-white/40 uppercase tracking-widest font-medium">
+                <p className="font-mono text-[9px] sm:text-[11px] text-white/40 uppercase tracking-widest font-medium leading-tight">
                   {card.label}
                 </p>
               </div>
