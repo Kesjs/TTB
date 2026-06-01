@@ -14,7 +14,7 @@ export default function JurySection() {
     target: ref,
     offset: ["start end", "end start"]
   });
-  const y = useTransform(scrollYProgress, [0, 1], [0, -15]);
+  const y = useTransform(scrollYProgress, [0, 1], [0, -30]);
 
   useEffect(() => {
     const fetchJury = async () => {

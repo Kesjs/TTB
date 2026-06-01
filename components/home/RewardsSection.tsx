@@ -6,7 +6,7 @@ import { useRef } from 'react';
 
 export default function RewardsSection() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: false, amount: 0.3 });
 
   const rewards = [
     {

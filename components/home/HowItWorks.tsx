@@ -38,7 +38,7 @@ const steps = [
 export default function HowItWorks() {
   const [activeTab, setActiveTab] = useState(0);
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: false, amount: 0.3 });
 
   return (
     <section id="parcours-victoire" ref={ref} className="bg-zinc-50/50 px-4 sm:px-6 py-28 border-b border-zinc-100 overflow-hidden">

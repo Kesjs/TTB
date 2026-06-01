@@ -10,7 +10,7 @@ interface CallForApplicationsProps {
 
 export default function CallForApplications({ competitionStarted = false }: CallForApplicationsProps) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: false, amount: 0.3 });
 
   // Liste épurée des disciplines
   const disciplines = [
