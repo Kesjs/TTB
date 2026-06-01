@@ -163,48 +163,6 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
           </button>
         </div>
 
-        {/* 4.5 LIVE STATISTICS PANEL (Uniquement en phase PRESELECTION) */}
-        {isPreselectionOpen && (
-          <div className="w-full max-w-xl mt-6 animate-fadeIn px-2">
-            <div className="grid grid-cols-3 border border-zinc-200/60 bg-transparent divide-x divide-zinc-200/60 rounded-none">
-              <div className="p-3 text-center flex flex-col items-center justify-center">
-                <Users className="w-3.5 h-3.5 text-zinc-400 mb-1" />
-                <span className="font-heading font-black text-sm sm:text-base text-zinc-900 tabular-nums uppercase">
-                  {totalInscrits}
-                </span>
-                <span className="font-mono text-[8px] text-zinc-400 tracking-widest uppercase mt-1">
-                  Artistes Inscrits
-                </span>
-              </div>
-
-              <div className="p-3 text-center flex flex-col items-center justify-center">
-                <Award className="w-3.5 h-3.5 text-zinc-400 mb-1" />
-                <span className="font-heading font-black text-sm sm:text-base text-zinc-900 uppercase">
-                  Toutes
-                </span>
-                <span className="font-mono text-[8px] text-zinc-400 tracking-widest uppercase mt-1">
-                  Disciplines
-                </span>
-              </div>
-
-              <div className="p-3 text-center flex flex-col items-center justify-center">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  <Radio className="w-3.5 h-3.5 text-zinc-400" />
-                </div>
-                <span className="font-heading font-black text-[10px] text-emerald-600 tracking-wider uppercase">
-                  LIVE SYNC
-                </span>
-                <span className="font-mono text-[8px] text-zinc-400 tracking-widest uppercase mt-0.5">
-                  12 Départements
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* 5. COUNTDOWN TIMER */}
         {!isPreselectionOpen && !isArchived && (
@@ -225,7 +183,10 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
 
         {/* 6. LIENS TECHNIQUES SANS CHICHI */}
         {!isArchived && (
-          <div className="pt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 font-mono text-[9px] text-zinc-400 tracking-widest uppercase border-t border-zinc-100 w-full max-w-xs justify-center">
+          <div className="pt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 font-mono text-[9px] text-zinc-400 tracking-widest uppercase border-t border-zinc-100 w-full max-w-sm justify-center">
+            <span className="text-zinc-900 font-bold">{totalInscrits}</span>
+            <span>Artistes Inscrits</span>
+            <span>•</span>
             <span>12 Départements</span>
             <span>•</span>
             <span>Toutes Disciplines</span>
