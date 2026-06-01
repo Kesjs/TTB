@@ -5,9 +5,9 @@ import { motion } from 'framer-motion'; // Assure-toi d'avoir installé framer-m
 
 export default function SiteFooter() {
   return (
-    <footer className="bg-zinc-50/50 px-6 sm:px-12 py-24 border-t border-zinc-200 relative overflow-hidden">
+    <footer className="bg-white px-6 sm:px-12 py-24 pt-1 border-t border-zinc-100 relative overflow-hidden">
       {/* Liseré supérieur pour marquer la fin de page */}
-      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#e5c47f]/50 to-transparent" />
+      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#e5c47f]/70 to-transparent" />
       
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start gap-16 md:gap-24">
         

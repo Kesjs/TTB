@@ -120,7 +120,21 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
   };
 
   return (
-    <header className="relative flex items-center px-4 sm:px-6 lg:px-12 overflow-hidden bg-white min-h-[calc(100vh-120px)] border-b border-zinc-100 pt-8 sm:pt-16 lg:pt-20">
+    <header className="relative flex items-center px-4 sm:px-6 lg:px-12 overflow-hidden bg-[#0a0a0a] min-h-[calc(100vh-120px)] border-b border-zinc-100 pt-8 sm:pt-16 lg:pt-20">
+
+      {/* Grid background */}
+      <div className="absolute inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage: `linear-gradient(rgba(229,196,127,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(229,196,127,0.04) 1px, transparent 1px)`,
+          backgroundSize: '40px 40px'
+        }}
+      />
+
+      {/* Scanline animation */}
+      <div className="absolute left-0 right-0 h-px pointer-events-none z-0 animate-scanline"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(229,196,127,0.15), transparent)' }}
+      />
 
       {/* Animated Gradient Background */}
       <motion.div
@@ -181,7 +195,7 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
         }}
       />
       <motion.div
-        className="absolute top-1/3 right-1/4 w-2 h-2 bg-zinc-300 rounded-full opacity-30"
+        className="absolute top-1/3 right-1/4 w-2 h-2 bg-white/30 rounded-full opacity-30"
         animate={{
           y: [0, 25, 0],
           x: [0, 15, 0],
@@ -208,15 +222,15 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/40 backdrop-blur-md border border-zinc-200/50 rounded-none"
+          className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-none"
         >
           {currentContent.showInscriptionsCloses && (
             <>
-              <div className="flex items-center gap-2 text-zinc-900">
-                <Lock className="w-3.5 h-3.5 text-zinc-500" />
+              <div className="flex items-center gap-2 text-white/70">
+                <Lock className="w-3.5 h-3.5 text-white/50" />
                 <span className="font-mono text-[10px] font-medium uppercase tracking-wider">Inscriptions Closes</span>
               </div>
-              <span className="w-px h-3 bg-zinc-300" />
+              <span className="w-px h-3 bg-white/20" />
             </>
           )}
           <div className={`flex items-center gap-2 ${currentContent.badgeClass}`}>
@@ -227,33 +241,14 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
           </div>
         </motion.div>
 
-        {/* 2. TYPOGRAPHIE ACADÉMIQUE avec Text Reveal et Shimmer */}
+        {/* 2. TYPOGRAPHIE ACADÉMIQUE avec Text Reveal progressif */}
         <motion.h1
-          className="font-heading font-black text-2xl sm:text-5xl lg:text-6xl tracking-tight leading-none text-[#050505] uppercase relative inline-block"
-          initial={{ opacity: 0, y: 50 }}
+          className="font-heading font-black text-2xl sm:text-5xl lg:text-6xl tracking-tight leading-none text-white uppercase"
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
         >
-          <motion.span
-            className="relative"
-            animate={{
-              backgroundPosition: ["0%", "200%"]
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            style={{
-              background: "linear-gradient(90deg, #050505 0%, #050505 50%, #e5c47f 100%, #050505 50%, #050505 100%)",
-              backgroundSize: "200% auto",
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              WebkitTextFillColor: "transparent"
-            }}
-          >
-            {currentContent.title}
-          </motion.span>
+          {currentContent.title}
         </motion.h1>
 
         {/* 3. PARAGRAPHE DESCRIPTIF */}
@@ -261,7 +256,7 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="max-w-xl mx-auto text-xs sm:text-sm leading-relaxed text-zinc-500 font-body px-2"
+          className="max-w-xl mx-auto text-xs sm:text-sm leading-relaxed text-white/50 font-body px-2"
         >
           {currentContent.description}
         </motion.p>
@@ -275,16 +270,10 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
         >
           <motion.button
             onClick={handleMainCTA}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#050505] text-white font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent relative overflow-hidden group"
-            whileHover={{ scale: 1.05 }}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#e5c47f] text-[#0a0a0a] font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent relative overflow-hidden group"
+            whileHover={{ scale: 1.05, backgroundColor: "#f0d890" }}
             whileTap={{ scale: 0.95 }}
           >
-            <motion.span
-              className="absolute inset-0 bg-gradient-to-r from-[#e5c47f] to-[#e5c47f] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              initial={{ x: "-100%" }}
-              whileHover={{ x: "0%" }}
-              transition={{ duration: 0.3 }}
-            />
             <span className="relative z-10">{currentContent.ctaText}</span>
             <motion.span
               className="relative z-10"
@@ -303,17 +292,17 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="pt-4 flex items-center justify-center gap-4 font-mono text-[10px] text-zinc-400 tracking-wider uppercase w-full"
+            className="pt-4 flex items-center justify-center gap-4 font-mono text-[10px] text-white/40 tracking-wider uppercase w-full"
           >
-            <Timer className="w-3 h-3 text-zinc-400" />
+            <Timer className="w-3 h-3 text-white/40" />
             <div className="flex items-center gap-2 tabular-nums">
-              <span className="text-zinc-900 font-bold">{String(timeLeft.days).padStart(2, '0')}</span>
+              <span className="text-white font-bold">{String(timeLeft.days).padStart(2, '0')}</span>
               <span>j</span>
-              <span className="text-zinc-900 font-bold">{String(timeLeft.hours).padStart(2, '0')}</span>
+              <span className="text-white font-bold">{String(timeLeft.hours).padStart(2, '0')}</span>
               <span>h</span>
-              <span className="text-zinc-900 font-bold">{String(timeLeft.minutes).padStart(2, '0')}</span>
+              <span className="text-white font-bold">{String(timeLeft.minutes).padStart(2, '0')}</span>
               <span>m</span>
-              <span className="text-zinc-900 font-bold">{String(timeLeft.seconds).padStart(2, '0')}</span>
+              <span className="text-white font-bold">{String(timeLeft.seconds).padStart(2, '0')}</span>
               <span>s</span>
             </div>
           </motion.div>
@@ -336,6 +325,12 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
         )}
 
       </motion.div>
+
+      {/* Dégradé de transition noir → blanc */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none z-10"
+        style={{ background: 'linear-gradient(to bottom, transparent, #ffffff)' }}
+      />
+
     </header>
   );
 }

@@ -89,22 +89,22 @@ export default function StatsCards({ totalInscrits, departements = 12, disciplin
         {cards.filter(card => !card.isEdition).map((card, index) => (
           <div
             key={index}
-            className="group relative bg-white/80 backdrop-blur-sm border border-zinc-200/80 rounded-xl p-5 sm:p-6 
+            className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5 sm:p-6
                        shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]
                        transition-all duration-500 ease-out
                        hover:border-[#e5c47f]/40 hover:-translate-y-1"
           >
             <div className="flex flex-col items-center text-center space-y-3">
-              <div className="p-3 bg-gradient-to-br from-zinc-50 to-zinc-100/50 rounded-xl 
-                            group-hover:from-[#e5c47f]/10 group-hover:to-[#d4a84b]/10 
+              <div className="p-3 bg-gradient-to-br from-white/5 to-white/10 rounded-xl
+                            group-hover:from-[#e5c47f]/10 group-hover:to-[#d4a84b]/10
                             transition-all duration-500">
                 {card.icon}
               </div>
               <div className="space-y-1">
-                <p className="font-heading font-black text-2xl sm:text-3xl text-[#050505] tabular-nums tracking-tight">
+                <p className="font-heading font-black text-2xl sm:text-3xl text-[#e5c47f] tabular-nums tracking-tight">
                   {typeof card.value === 'number' ? card.value : card.value}
                 </p>
-                <p className="font-mono text-[10px] sm:text-[11px] text-zinc-500 uppercase tracking-widest font-medium">
+                <p className="font-mono text-[10px] sm:text-[11px] text-white/40 uppercase tracking-widest font-medium">
                   {card.label}
                 </p>
               </div>

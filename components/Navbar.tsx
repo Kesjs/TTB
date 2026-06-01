@@ -20,30 +20,28 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
   const [systemPhase, setSystemPhase] = useState<string>(propPhase || 'PRESELECTION');
   const [loading, setLoading] = useState<boolean>(!propPhase || propLoading);
   const [showCta, setShowCta] = useState<boolean>(false);
+  const [scrolled, setScrolled] = useState<boolean>(false);
+
+  const isHomePage = pathname === '/';
+
+  // Sur les pages autres que home, la navbar est toujours en mode "scrolled" (blanc)
+  const navScrolled = isHomePage ? scrolled : true;
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      if (scrollY > 400) {
-        setShowCta(true);
-      } else {
-        setShowCta(false);
-      }
+      setScrolled(window.scrollY > 80);
+      setShowCta(window.scrollY > 400);
     };
-
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
-    // Si la phase est déjà fournie via les props (ex: sur la home), on l'utilise
     if (propPhase) {
       setSystemPhase(propPhase);
       setLoading(propLoading);
       return;
     }
-
-    // Sinon, on la récupère nous-mêmes (ex: sur les pages Alliances, Sélections...)
     const fetchPhase = async () => {
       try {
         const sc = await db.getSystemControl();
@@ -54,7 +52,6 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
         setLoading(false);
       }
     };
-
     fetchPhase();
   }, [propPhase, propLoading]);
 
@@ -65,10 +62,9 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
   const handleSignOut = async () => {
     try {
       await auth.signOut();
-      window.location.href = '/'; // Hard redirect to clear any residual state
+      window.location.href = '/';
     } catch (error) {
       console.error('Erreur de déconnexion:', error);
-      // Fallback redirect
       window.location.href = '/';
     }
   };
@@ -80,15 +76,19 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
   ];
 
   return (
-    /* La navbar prend maintenant toute la largeur et se colle au top-0 sans marges externes pour être hermétique au scroll */
-    <nav className="fixed top-0 left-0 right-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 py-3 transition-all duration-300 shadow-sm">
-      {/* Conteneur interne max-w-7xl pour centrer le contenu comme avant */}
+    <nav
+      className={`fixed top-0 left-0 right-0 w-full z-50 px-4 sm:px-6 py-3 transition-all duration-300
+        ${navScrolled
+          ? 'bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm'
+          : 'bg-transparent border-b border-white/10'
+        }`}
+    >
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
 
-        {/* ZONE LOGO (CLIQUABLE) + TEXTE (STATIQUE) */}
+        {/* LOGO */}
         <div className="flex items-center gap-2 sm:gap-3 select-none">
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="transition-opacity hover:opacity-80 active:scale-95 flex-shrink-0"
             onClick={(e) => {
               if (pathname === '/') {
@@ -97,15 +97,17 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
               }
             }}
           >
-            <img 
-              src="/logo_ttb.jfif" 
-              alt="Top Talent du Bénin" 
-              className="h-8 sm:h-10 lg:h-12 w-auto object-contain" 
+            <img
+              src="/logo_ttb.jfif"
+              alt="Top Talent du Bénin"
+              className="h-8 sm:h-10 lg:h-12 w-auto object-contain"
             />
           </Link>
-          
-          {/* Titre aligné sur une ligne avec gestion de taille responsive pour éviter les collisions avec le burger */}
-          <div className="font-sans text-[10px] xs:text-xs sm:text-sm font-bold tracking-wider text-[#050509] uppercase whitespace-nowrap cursor-default">
+
+          <div
+            className={`font-sans text-[10px] xs:text-xs sm:text-sm font-bold tracking-wider uppercase whitespace-nowrap cursor-default transition-colors duration-300
+              ${navScrolled ? 'text-[#050509]' : 'text-white'}`}
+          >
             <span>TOP </span>
             <span className="text-[#e5c47f] font-normal">TALENT</span>
             <span> DU BÉNIN</span>
@@ -124,11 +126,13 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
               >
                 <Link
                   href={item.href}
-                  className={`font-sans text-xs uppercase tracking-[0.15em] transition-all duration-200 relative px-2 sm:px-3 py-1 ${
-                    isActive
+                  className={`font-sans text-xs uppercase tracking-[0.15em] transition-all duration-200 relative px-2 sm:px-3 py-1
+                    ${isActive
                       ? 'text-[#e5c47f] font-bold after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#e5c47f]'
-                      : 'text-[#050509]/80 hover:text-[#e5c47f]'
-                  }`}
+                      : navScrolled
+                        ? 'text-[#050509]/80 hover:text-[#e5c47f]'
+                        : 'text-white/70 hover:text-[#e5c47f]'
+                    }`}
                 >
                   {item.name}
                 </Link>
@@ -137,10 +141,12 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
           })}
         </div>
 
-        {/* BOUTONS D'ACTIONS */}
+        {/* BOUTONS D'ACTION */}
         <div className="flex items-center gap-2 sm:gap-4">
           {loading ? (
-            <div className="animate-pulse bg-zinc-100 border border-zinc-200 w-24 sm:w-32 h-9 rounded-none" />
+            <div className={`animate-pulse w-24 sm:w-32 h-9 rounded-none
+              ${navScrolled ? 'bg-zinc-100 border border-zinc-200' : 'bg-white/10 border border-white/10'}`}
+            />
           ) : isDashboard ? (
             <motion.button
               onClick={handleSignOut}
@@ -152,11 +158,12 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
             </motion.button>
           ) : isPreselectionOpen ? (
             <motion.div
-              className={`hidden lg:block px-4 sm:px-5 py-2 bg-[#050509] text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] transition-all duration-300 ${
-                showCta
-                  ? 'opacity-100 translate-y-0 pointer-events-auto duration-300 ease-out transition-all'
-                  : 'opacity-0 translate-y-[-10px] pointer-events-none'
-              }`}
+              className={`hidden lg:block px-4 sm:px-5 py-2 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none transition-all duration-300
+                ${showCta ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}
+                ${navScrolled
+                  ? 'bg-[#050509] text-white hover:bg-[#e5c47f] hover:text-[#050509]'
+                  : 'bg-[#e5c47f] text-[#050509] hover:bg-white hover:text-[#050509]'
+                }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -171,7 +178,11 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                   router.push('/?scroll=talents');
                 }
               }}
-              className="hidden lg:block px-4 sm:px-5 py-2 bg-[#e5c47f] text-zinc-950 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-zinc-900 hover:text-white transition-all duration-300 shadow-lg shadow-[#e5c47f]/20"
+              className={`hidden lg:block px-4 sm:px-5 py-2 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none transition-all duration-300
+                ${navScrolled
+                  ? 'bg-[#e5c47f] text-zinc-950 hover:bg-zinc-900 hover:text-white'
+                  : 'bg-white/10 text-white border border-white/20 hover:bg-[#e5c47f] hover:text-[#050509] hover:border-[#e5c47f]'
+                }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -186,29 +197,33 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                   router.push('/?scroll=talents');
                 }
               }}
-              className="hidden lg:block px-4 sm:px-5 py-2 bg-white border-2 border-[#050509] text-[#050509] font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#050509] hover:text-white transition-all duration-300"
+              className={`hidden lg:block px-4 sm:px-5 py-2 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none transition-all duration-300
+                ${navScrolled
+                  ? 'bg-white border-2 border-[#050509] text-[#050509] hover:bg-[#050509] hover:text-white'
+                  : 'bg-white/10 text-white border border-white/30 hover:bg-[#e5c47f] hover:text-[#050509] hover:border-[#e5c47f]'
+                }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               Voir les Candidats
             </motion.button>
           )}
-          
-          {/* Bouton Burger Mobile */}
+
+          {/* Burger Mobile */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-[#050509] hover:text-[#e5c47f] transition-colors flex-shrink-0"
+            className={`lg:hidden p-2 transition-colors flex-shrink-0 hover:text-[#e5c47f]
+              ${navScrolled ? 'text-[#050509]' : 'text-white'}`}
             aria-label="Menu"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
-
       </div>
 
-      {/* MENU DÉROULANT SUR MOBILE */}
+      {/* MENU MOBILE */}
       {mobileMenuOpen && (
-        <div className="lg:hidden mt-4 pt-4 border-t border-slate-200 bg-white">
+        <div className="lg:hidden mt-4 pt-4 border-t border-white/10 bg-[#0a0a0a]">
           <div className="flex flex-col gap-3">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
@@ -217,26 +232,23 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`font-sans text-sm uppercase tracking-[0.1em] transition-all duration-200 relative px-3 py-2 ${
-                    isActive
-                      ? 'text-[#e5c47f] font-bold bg-slate-50 border-l-2 border-[#e5c47f]'
-                      : 'text-[#050509]/80 hover:text-[#e5c47f]'
-                  }`}
+                  className={`font-sans text-sm uppercase tracking-[0.1em] transition-all duration-200 px-3 py-2
+                    ${isActive
+                      ? 'text-[#e5c47f] font-bold border-l-2 border-[#e5c47f] bg-white/5'
+                      : 'text-white/60 hover:text-[#e5c47f]'
+                    }`}
                 >
                   {item.name}
                 </Link>
               );
             })}
-            
-            <div className="pt-2 mt-2 border-t border-slate-200">
+
+            <div className="pt-2 mt-2 border-t border-white/10">
               {loading ? (
-                <div className="animate-pulse bg-zinc-100 border border-zinc-200 w-full h-10 rounded-none" />
+                <div className="animate-pulse bg-white/10 w-full h-10 rounded-none" />
               ) : isDashboard ? (
                 <button
-                  onClick={() => {
-                    handleSignOut();
-                    setMobileMenuOpen(false);
-                  }}
+                  onClick={() => { handleSignOut(); setMobileMenuOpen(false); }}
                   className="w-full flex items-center justify-center gap-2 px-5 py-2 bg-red-600 text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-red-500 transition-all duration-300"
                 >
                   <LogOut className="w-4 h-4" /> Déconnexion
@@ -245,7 +257,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                 <Link
                   href="/candidature"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block w-full px-5 py-2 bg-[#050509] text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] transition-all duration-300 text-center"
+                  className="block w-full px-5 py-2 bg-[#e5c47f] text-[#050509] font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-white transition-all duration-300 text-center"
                 >
                   Postuler
                 </Link>
@@ -259,7 +271,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                     }
                     setMobileMenuOpen(false);
                   }}
-                  className="block w-full px-5 py-2 bg-[#e5c47f] text-zinc-950 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none text-center shadow-lg shadow-[#e5c47f]/10"
+                  className="block w-full px-5 py-2 bg-[#e5c47f] text-zinc-950 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none text-center"
                 >
                   Le Palmarès
                 </button>
@@ -273,7 +285,7 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                     }
                     setMobileMenuOpen(false);
                   }}
-                  className="block w-full px-5 py-2 bg-white border-2 border-[#050509] text-[#050509] font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#050509] hover:text-white transition-all duration-300 text-center"
+                  className="block w-full px-5 py-2 bg-white/10 text-white border border-white/20 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] hover:text-[#050509] transition-all duration-300 text-center"
                 >
                   Voir les Candidats
                 </button>
