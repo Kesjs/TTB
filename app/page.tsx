@@ -313,9 +313,9 @@ function HomeContent() {
   // Filter candidates based on phase
 
   const filteredCandidates = useMemo(() => {
-    // En présélection, aucun candidat n'est visible publiquement (uniquement pour le jury en coulisses)
+    // En présélection, afficher tous les candidats approuvés
     if (systemControl.current_phase === 'PRESELECTION') {
-      return [];
+      return rankedCandidates;
     }
 
     if (systemControl.current_phase === 'VOTES_TOP_40')
@@ -331,9 +331,9 @@ function HomeContent() {
   }, [rankedCandidates, systemControl.current_phase]);
 
   const showCandidateGrid = useMemo(() => {
-    // Ne montrer la grille en phase de présélection que s'il y a déjà des qualifiés Top 40
-    return systemControl.current_phase !== 'PRESELECTION' || filteredCandidates.length > 0;
-  }, [systemControl.current_phase, filteredCandidates.length]);
+    // Toujours montrer la grille s'il y a des candidats approuvés
+    return filteredCandidates.length > 0;
+  }, [filteredCandidates.length]);
 
   const handleSelectVideo = useCallback((candidateId: string | null) => {
 

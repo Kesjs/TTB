@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Lock, Flame, ArrowRight, Timer, Users, Award, Radio } from 'lucide-react';
+import StatsCards from './StatsCards';
 
 interface HeroSectionProps {
   currentPhase?: 'PRESELECTION' | 'VOTES_TOP_40' | 'SEMIFINAL' | 'FINAL' | 'ARCHIVED';
@@ -181,18 +182,14 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
           </div>
         )}
 
-        {/* 6. LIENS TECHNIQUES SANS CHICHI */}
+        {/* 6. CARTES DE STATISTIQUES */}
         {!isArchived && (
-          <div className="pt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 font-mono text-[9px] text-zinc-400 tracking-widest uppercase border-t border-zinc-100 w-full max-w-sm justify-center">
-            <span className="text-zinc-900 font-bold">{totalInscrits}</span>
-            <span>Artistes Inscrits</span>
-            <span>•</span>
-            <span>12 Départements</span>
-            <span>•</span>
-            <span>Toutes Disciplines</span>
-            <span>•</span>
-            <span>Édition 2026</span>
-          </div>
+          <StatsCards 
+            totalInscrits={totalInscrits}
+            departements={12}
+            disciplines="Toutes"
+            edition="2026"
+          />
         )}
 
       </div>
