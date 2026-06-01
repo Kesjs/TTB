@@ -13,7 +13,9 @@ import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile, toSqlPhase } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
 import { signOut } from '@/app/actions/auth';
+import { toggleJurySelection, submitJurySelection, getJurySelectionCount } from '@/app/actions/jury';
 import { Skeleton } from '@/components/ui/Skeleton';
+import NotificationBadge from '@/components/ui/NotificationBadge';
 
 type TabType = 'selection' | 'evaluation' | 'history' | 'stats';
 
@@ -76,15 +78,15 @@ export default function JuryDashboard() {
     if (!phase) return [];
 
     return candidates.filter(c => {
-      // Le jury ne voit que les candidats approuvés par l'admin
-      if (c.status !== 'approved') return false;
+      // Le jury ne voit que les candidats pré-approuvés par l'admin (nouveau workflow)
+      if (c.status !== 'pre_approved' && c.status !== 'jury_selected') return false;
 
       // Filtrage selon la phase
       if (phase === 'VOTES_TOP_40') return c.is_top_40;
       if (phase === 'SEMIFINAL') return c.is_semifinalist;
       if (phase === 'FINAL') return c.is_finalist;
-      
-      // En phase PRESELECTION, il voit tout ce qui est approuvé
+
+      // En phase VOTES_TOP_40, il voit les pre_approved et jury_selected
       return true;
     });
   }, [candidates, systemControl]);
@@ -106,6 +108,8 @@ export default function JuryDashboard() {
 
   // Selection state for PRESELECTION phase
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
+  const [selectionCount, setSelectionCount] = useState<number>(0);
+  const [isSelectionSubmitted, setIsSelectionSubmitted] = useState<boolean>(false);
 
   // Candidat sélectionné pour la notation
   const [activeCandidateId, setActiveCandidateId] = useState<string>('');
@@ -127,36 +131,47 @@ export default function JuryDashboard() {
     await signOut();
   };
 
-  const handleToggleSelection = (candidateId: string) => {
-    setSelectedCandidateIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(candidateId)) {
-        newSet.delete(candidateId);
-      } else {
-        newSet.add(candidateId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleConfirmSelection = async () => {
-    if (selectedCandidateIds.size === 0) {
-      addToast('error', 'Vous devez sélectionner au moins un candidat');
+  const handleToggleSelection = async (candidateId: string) => {
+    if (isSelectionSubmitted) {
+      addToast('error', 'La sélection a déjà été soumise');
       return;
     }
 
     try {
-      // Update all selected candidates to is_top_40 = true
-      for (const candidateId of selectedCandidateIds) {
-        if (supabase) {
-          await supabase.from('candidates').update({ is_top_40: true }).eq('id', candidateId);
-        }
+      const candidate = candidates.find(c => c.id === candidateId);
+      if (!candidate) return;
+
+      const isSelected = candidate.status === 'jury_selected';
+      const updated = await toggleJurySelection(candidateId, !isSelected);
+
+      if (updated) {
+        setCandidates(prev => prev.map(c => c.id === candidateId ? updated : c));
+        // Update selection count
+        const newCount = await getJurySelectionCount();
+        setSelectionCount(newCount);
+        addToast('success', !isSelected ? 'Candidat sélectionné' : 'Candidat désélectionné');
       }
-      addToast('success', `${selectedCandidateIds.size} candidat(s) sélectionné(s) avec succès`);
-      // Reload data to reflect changes
-      void loadData();
     } catch (err) {
-      addToast('error', 'Erreur lors de la confirmation de la sélection');
+      addToast('error', 'Erreur lors de la modification de la sélection');
+    }
+  };
+
+  const handleSubmitSelection = async () => {
+    if (selectionCount !== 40) {
+      addToast('error', 'Vous devez sélectionner exactement 40 candidats');
+      return;
+    }
+
+    try {
+      const success = await submitJurySelection();
+      if (success) {
+        setIsSelectionSubmitted(true);
+        addToast('success', 'Sélection soumise avec succès');
+        // Reload data
+        void loadData();
+      }
+    } catch (err) {
+      addToast('error', 'Erreur lors de la soumission de la sélection');
     }
   };
 
@@ -197,6 +212,15 @@ export default function JuryDashboard() {
 
       setCandidates(allCandidates);
       setSystemControl(sc);
+
+      // Check if jury selection has been submitted
+      if (sc) {
+        setIsSelectionSubmitted(sc.jury_selection_submitted || false);
+      }
+
+      // Calculate initial selection count
+      const jurySelectedCount = allCandidates.filter(c => c.status === 'jury_selected').length;
+      setSelectionCount(jurySelectedCount);
 
       if (ratings.length > 0) {
         console.log('[Jury Dashboard] DEBUG - Existing rating phases in DB:', [...new Set(ratings.map((r: any) => r.phase))]);
@@ -549,6 +573,7 @@ export default function JuryDashboard() {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
+            <NotificationBadge />
             <a
               href="/"
               target="_blank"
@@ -658,33 +683,48 @@ export default function JuryDashboard() {
           {/* Tab Content */}
           {activeTab === 'selection' && (
             <div className="space-y-6">
+              {/* Selection Counter and Submit Button */}
               <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4 sm:p-6 shadow-2xl">
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <span className="flex items-center gap-1.5 text-xs font-bold text-[#e5c47f] uppercase tracking-widest mb-1">
                       <Trophy className="w-3.5 h-3.5" />
-                      {systemControl?.current_phase === 'PRESELECTION' ? 'Sélection Top 40' : 
-                       systemControl?.current_phase === 'VOTES_TOP_40' ? 'Sélection Demi-Finale' : 
-                       'Sélection Finale'}
+                      Sélection Top 40
                     </span>
-                    <h2 className="font-heading font-black text-lg sm:text-xl text-white uppercase tracking-tight">Récapitulatif de la Sélection</h2>
+                    <h2 className="font-heading font-black text-lg sm:text-xl text-white uppercase tracking-tight">Évaluation des Candidats</h2>
                     <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">
-                      Voici la liste des talents actuellement qualifiés pour la phase suivante.
+                      Sélectionnez les 40 meilleurs candidats parmi les pré-approuvés.
                     </p>
                   </div>
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 flex items-center gap-3">
-                    <div className="text-right">
-                      <span className="text-[9px] text-zinc-500 uppercase block">Qualifiés</span>
-                      <span className="text-xs font-bold text-white">
-                        {(() => {
-                          const phase = systemControl?.current_phase;
-                          if (phase === 'PRESELECTION') return candidates.filter(c => c.is_top_40).length;
-                          if (phase === 'VOTES_TOP_40') return candidates.filter(c => c.is_semifinalist).length;
-                          if (phase === 'SEMIFINAL') return candidates.filter(c => c.is_finalist).length;
-                          return 0;
-                        })()}
-                      </span>
+                  <div className="flex items-center gap-4">
+                    {/* Selection Counter */}
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 flex items-center gap-3">
+                      <div className="text-right">
+                        <span className="text-[9px] text-zinc-500 uppercase block">Sélectionnés</span>
+                        <span className="text-xs font-bold text-white">
+                          [{selectionCount}/40]
+                        </span>
+                      </div>
                     </div>
+                    {/* Submit Button */}
+                    {!isSelectionSubmitted && (
+                      <button
+                        onClick={handleSubmitSelection}
+                        disabled={selectionCount !== 40}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                          selectionCount !== 40
+                            ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                            : 'bg-[#e5c47f] text-zinc-950 hover:bg-[#d4b36f]'
+                        }`}
+                      >
+                        {selectionCount !== 40 ? 'Sélectionnez 40 candidats' : 'Soumettre ma sélection'}
+                      </button>
+                    )}
+                    {isSelectionSubmitted && (
+                      <div className="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                        Sélection soumise ✓
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -695,48 +735,57 @@ export default function JuryDashboard() {
                         <tr className="text-[8px] font-mono text-zinc-500 uppercase tracking-tighter">
                           <th className="p-3">Artiste</th>
                           <th className="p-3">Discipline</th>
-                          <th className="p-3 text-right">Votre Note</th>
+                          <th className="p-3">Région</th>
+                          <th className="p-3 text-right">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-800/50">
                         {(() => {
-                          const phase = systemControl?.current_phase;
-                          const qualified = candidates.filter(c => {
-                            if (phase === 'PRESELECTION') return c.is_top_40;
-                            if (phase === 'VOTES_TOP_40') return c.is_semifinalist;
-                            if (phase === 'SEMIFINAL') return c.is_finalist;
-                            return false;
-                          });
+                          const preApprovedCandidates = candidates.filter(c => c.status === 'pre_approved' || c.status === 'jury_selected');
 
-                          if (qualified.length === 0) {
+                          if (preApprovedCandidates.length === 0) {
                             return (
                               <tr>
-                                <td colSpan={3} className="p-12 text-center">
+                                <td colSpan={4} className="p-12 text-center">
                                   <div className="flex flex-col items-center gap-3 opacity-30">
                                     <CheckCircle2 className="w-8 h-8" />
-                                    <span className="text-[10px] font-mono uppercase tracking-widest">Aucun candidat qualifié pour le moment</span>
+                                    <span className="text-[10px] font-mono uppercase tracking-widest">Aucun candidat pré-approuvé pour le moment</span>
                                   </div>
                                 </td>
                               </tr>
                             );
                           }
 
-                          return qualified.map((c) => {
-                            const rating = existingRatings.find(r => r.candidate_id === c.id && r.jury_id === juryId && phase && r.phase === toSqlPhase(phase));
-                            const avg = rating ? (Number(rating.score_technique) + Number(rating.score_originalite) + Number(rating.score_presence)) / 3 : null;
+                          return preApprovedCandidates.map((c) => {
+                            const isSelected = c.status === 'jury_selected';
                             
                             return (
-                              <tr key={c.id} className="text-[10px] hover:bg-zinc-900/50 transition-colors">
+                              <tr key={c.id} className={`text-[10px] transition-colors ${isSelected ? 'bg-emerald-500/5' : 'hover:bg-zinc-900/50'}`}>
                                 <td className="p-3">
                                   <div className="font-bold text-white uppercase">{c.stage_name}</div>
-                                  <div className="text-[8px] text-zinc-600">{c.region}</div>
+                                  {c.bio && (
+                                    <div className="text-[8px] text-zinc-600 mt-1 italic line-clamp-1 max-w-[200px]" title={c.bio}>
+                                      {c.bio}
+                                    </div>
+                                  )}
                                 </td>
                                 <td className="p-3 text-zinc-500 uppercase">{c.discipline}</td>
+                                <td className="p-3 text-zinc-500">{c.region}</td>
                                 <td className="p-3 text-right">
-                                  {avg ? (
-                                    <span className="font-mono font-black text-[#e5c47f]">{avg.toFixed(1)}</span>
-                                  ) : (
-                                    <span className="text-zinc-700">--</span>
+                                  {!isSelectionSubmitted && (
+                                    <button
+                                      onClick={() => handleToggleSelection(c.id)}
+                                      className={`px-3 py-1.5 rounded-lg text-[8px] font-bold uppercase transition-all ${
+                                        isSelected
+                                          ? 'bg-emerald-500 text-zinc-950 hover:bg-emerald-400'
+                                          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
+                                      }`}
+                                    >
+                                      {isSelected ? '✓ Sélectionné' : 'Sélectionner'}
+                                    </button>
+                                  )}
+                                  {isSelectionSubmitted && isSelected && (
+                                    <span className="text-emerald-400 text-[8px] font-bold uppercase">✓ Sélectionné</span>
                                   )}
                                 </td>
                               </tr>

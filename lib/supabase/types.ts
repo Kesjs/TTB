@@ -19,7 +19,7 @@ export interface Candidate {
   phone?: string;
   candidature_type?: 'solo' | 'group';
   member_count?: number;
-  status: 'pending_review' | 'approved' | 'rejected';
+  status: 'pending_review' | 'pre_approved' | 'jury_selected' | 'approved' | 'rejected';
   votes_count?: number;
   views_count?: number;
   is_confirmed_by_admin?: boolean;
@@ -27,6 +27,9 @@ export interface Candidate {
   is_semifinalist?: boolean;
   is_finalist?: boolean;
   bio?: string;
+  jury_selection_submitted?: boolean;
+  jury_submitted_at?: string;
+  admin_confirmed_at?: string;
   created_at: string;
 }
 
@@ -57,12 +60,13 @@ export interface JuryRating {
 
 export interface SystemControl {
   id: number;
-  current_phase: 'PRESELECTION' | 'VOTES_TOP_40' | 'SEMIFINAL' | 'FINAL' | 'ARCHIVED'; // Maps to current_phase_new in DB
-  current_phase_old?: string; // Keep old phase for compatibility during transition
+  current_phase: 'PRESELECTION' | 'VOTES_TOP_40' | 'SEMIFINAL' | 'FINAL' | 'ARCHIVED';
   live_voting_candidate_id: string | null;
   is_voting_open: boolean;
   forced_tie_breaker_candidate_id: string | null;
   is_maintenance_mode?: boolean;
+  jury_selection_submitted?: boolean;
+  jury_submitted_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -110,5 +114,15 @@ export interface Partner {
   logo_url: string;
   category: 'institutionnel' | 'innovation';
   website_url?: string;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'new_candidate' | 'ready_for_jury' | 'jury_submitted' | 'published';
+  title: string;
+  message: string;
+  is_read: boolean;
   created_at: string;
 }

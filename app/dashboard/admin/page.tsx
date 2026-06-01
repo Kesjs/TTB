@@ -12,12 +12,13 @@ import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile, CandidateVoteCount, toSqlPhase } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
 import { signOut } from '@/app/actions/auth';
-import { updateCandidateStatus, confirmCandidateByAdmin } from '@/app/actions/admin';
+import { updateCandidateStatus, confirmCandidateByAdmin, preApproveCandidate, rejectCandidate, submitToJury, confirmAndPublishCandidates } from '@/app/actions/admin';
 import CustomSelectDark from '@/components/ui/CustomSelectDark';
 import { Skeleton } from '@/components/ui/Skeleton';
+import NotificationBadge from '@/components/ui/NotificationBadge';
 
 type TabType = 'jury' | 'moderation' | 'phases' | 'settings' | 'preview';
-type CandidateStatusFilter = 'pending' | 'approved' | 'rejected';
+type CandidateStatusFilter = 'pending' | 'pre_approved' | 'jury_selected' | 'approved' | 'rejected';
 
 interface Toast {
   id: string;
@@ -27,9 +28,9 @@ interface Toast {
 
 const PHASES = [
   { value: 'PRESELECTION' as const, label: 'Présélection' },
-  { value: 'VOTES_TOP_40' as const, label: 'Votes Top 40' },
-  { value: 'SEMIFINAL' as const, label: 'Demi-Finale' },
-  { value: 'FINAL' as const, label: 'Grande Finale' },
+  { value: 'VOTES_TOP_40' as const, label: 'Top 40' },
+  { value: 'SEMIFINAL' as const, label: 'Demi-finale' },
+  { value: 'FINAL' as const, label: 'Finale' },
   { value: 'ARCHIVED' as const, label: 'Archivé' },
 ];
 
@@ -133,6 +134,8 @@ export default function AdminDashboard() {
   // Status filter mapping to database values
   const statusFilterMap: Record<CandidateStatusFilter, Candidate['status']> = {
     pending: 'pending_review',
+    pre_approved: 'pre_approved',
+    jury_selected: 'jury_selected',
     approved: 'approved',
     rejected: 'rejected'
   };
@@ -481,6 +484,88 @@ export default function AdminDashboard() {
     }
   };
 
+  // New Workflow Handlers
+  const handlePreApproveCandidate = async (id: string, isPreApproved: boolean) => {
+    try {
+      await preApproveCandidate(id, isPreApproved);
+      setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: isPreApproved ? 'pre_approved' : 'pending_review' } : c));
+      addToast('success', isPreApproved ? 'Candidat pré-approuvé' : 'Pré-approbation annulée');
+    } catch (err) {
+      addToast('error', 'Erreur lors de la pré-approbation');
+    }
+  };
+
+  const handleRejectCandidate = async (id: string) => {
+    try {
+      await rejectCandidate(id);
+      setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: 'rejected' } : c));
+      addToast('success', 'Candidat rejeté');
+    } catch (err) {
+      addToast('error', 'Erreur lors du rejet');
+    }
+  };
+
+  const handleSubmitToJury = async () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'ENVOYER AU JURY',
+      message: `Vous êtes sur le point d'envoyer ${pendingCandidates.length} candidat(s) pré-approuvé(s) au jury. Cette action verrouillera la phase de pré-tri. Continuer ?`,
+      onConfirm: async () => {
+        try {
+          const success = await submitToJury();
+          if (success) {
+            addToast('success', 'Candidats envoyés au jury avec succès');
+            // Reload data
+            const allCandidates = await db.getCandidates({ status: statusFilterMap[candidateStatusFilter] });
+            setCandidates(allCandidates || []);
+            const updatedControl = await db.getSystemControl();
+            if (updatedControl) setSystemControl(updatedControl);
+          } else {
+            addToast('error', 'Erreur lors de l\'envoi au jury');
+          }
+        } catch (err) {
+          addToast('error', 'Erreur lors de l\'envoi au jury');
+        } finally {
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        }
+      }
+    });
+  };
+
+  const handleConfirmAndPublish = async () => {
+    const jurySelectedCandidates = candidates.filter(c => c.status === 'jury_selected');
+    if (jurySelectedCandidates.length === 0) {
+      addToast('error', 'Aucun candidat sélectionné par le jury');
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'CONFIRMER ET PUBLIER',
+      message: `Vous êtes sur le point de confirmer et publier ${jurySelectedCandidates.length} candidat(s) sélectionné(s) par le jury. Cette action les rendra visibles sur le site public. Continuer ?`,
+      onConfirm: async () => {
+        try {
+          const candidateIds = jurySelectedCandidates.map(c => c.id);
+          const success = await confirmAndPublishCandidates(candidateIds);
+          if (success) {
+            addToast('success', 'Candidats confirmés et publiés avec succès');
+            // Reload data
+            const allCandidates = await db.getCandidates({ status: statusFilterMap[candidateStatusFilter] });
+            setCandidates(allCandidates || []);
+            const updatedControl = await db.getSystemControl();
+            if (updatedControl) setSystemControl(updatedControl);
+          } else {
+            addToast('error', 'Erreur lors de la confirmation et publication');
+          }
+        } catch (err) {
+          addToast('error', 'Erreur lors de la confirmation et publication');
+        } finally {
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        }
+      }
+    });
+  };
+
   const handleDeleteCandidate = async (id: string) => {
     const candidate = candidates.find(c => c.id === id);
     if (!candidate) return;
@@ -615,6 +700,8 @@ export default function AdminDashboard() {
   // Filter candidates by status using database values
   const candidatesByStatus = {
     pending: candidates.filter(c => c.status === 'pending_review'),
+    pre_approved: candidates.filter(c => c.status === 'pre_approved'),
+    jury_selected: candidates.filter(c => c.status === 'jury_selected'),
     approved: candidates.filter(c => c.status === 'approved'),
     rejected: candidates.filter(c => c.status === 'rejected')
   };
@@ -736,6 +823,7 @@ export default function AdminDashboard() {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
+            <NotificationBadge />
             <a
               href="/"
               target="_blank"
@@ -745,7 +833,7 @@ export default function AdminDashboard() {
               <ExternalLink className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Voir le site public</span>
             </a>
-            <button 
+            <button
               onClick={async () => {
                 await signOut();
               }}
@@ -951,6 +1039,65 @@ export default function AdminDashboard() {
 
           {activeTab === 'moderation' && (
             <div className="space-y-6">
+              {/* Pre-tri Counter and Submit Button */}
+              {systemControl?.current_phase === 'PRESELECTION' && (
+                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-[#e5c47f]/10 flex items-center justify-center">
+                        <span className="text-xl font-black text-[#e5c47f]">{pendingCandidates.length}</span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                          Candidats en attente de pré-tri
+                        </h4>
+                        <p className="text-xs text-zinc-500">
+                          {pendingCandidates.length} candidat(s) pending_review à traiter
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleSubmitToJury}
+                      disabled={pendingCandidates.length > 0}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                        pendingCandidates.length > 0
+                          ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                          : 'bg-[#e5c47f] text-zinc-950 hover:bg-[#d4b36f]'
+                      }`}
+                    >
+                      {pendingCandidates.length > 0 ? 'Traitez tous les candidats d\'abord' : 'Envoyer au jury'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Jury Selection Confirmation */}
+              {systemControl?.current_phase === 'VOTES_TOP_40' && systemControl?.jury_selection_submitted && (
+                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                        <Trophy className="w-6 h-6 text-emerald-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                          Sélection du jury prête
+                        </h4>
+                        <p className="text-xs text-zinc-500">
+                          {candidates.filter(c => c.status === 'jury_selected').length} candidat(s) sélectionné(s) par le jury
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleConfirmAndPublish}
+                      className="px-4 py-2 rounded-lg bg-[#e5c47f] text-zinc-950 hover:bg-[#d4b36f] text-xs font-bold uppercase tracking-wider transition-all"
+                    >
+                      Confirmer et publier
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Info Banner - Reminder to change phase */}
               {phase === 'PRESELECTION' && approvedCandidates.length > 0 && (
                 <div className="bg-[#e5c47f]/10 border border-[#e5c47f]/30 rounded-xl p-4">
@@ -984,6 +1131,8 @@ export default function AdminDashboard() {
                     onChange={(value) => setCandidateStatusFilter(value as CandidateStatusFilter)}
                     options={[
                       { value: 'pending', label: 'En attente' },
+                      { value: 'pre_approved', label: 'Pré-approuvés' },
+                      { value: 'jury_selected', label: 'Sélectionnés par jury' },
                       { value: 'approved', label: 'Approuvés' },
                       { value: 'rejected', label: 'Rejetés' }
                     ]}
@@ -1162,14 +1311,14 @@ export default function AdminDashboard() {
                             {candidate.status === 'pending_review' && (
                               <>
                                 <button
-                                  onClick={() => handleConfirmCandidate(candidate.id, true)}
+                                  onClick={() => handlePreApproveCandidate(candidate.id, true)}
                                   className="text-zinc-500 hover:text-emerald-400 transition-colors"
-                                  title="Confirmer"
+                                  title="Pré-approuver"
                                 >
                                   <CheckCircle2 className="w-4 h-4" />
                                 </button>
                                 <button
-                                  onClick={() => handleCandidateStatus(candidate.id, 'rejected')}
+                                  onClick={() => handleRejectCandidate(candidate.id)}
                                   className="text-zinc-500 hover:text-red-400 transition-colors"
                                   title="Rejeter"
                                 >
@@ -1187,9 +1336,9 @@ export default function AdminDashboard() {
                             {candidate.status === 'rejected' && (
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => handleConfirmCandidate(candidate.id, true)}
+                                  onClick={() => handlePreApproveCandidate(candidate.id, true)}
                                   className="text-zinc-500 hover:text-emerald-400 transition-colors"
-                                  title="Confirmer"
+                                  title="Rétablir (pré-approuver)"
                                 >
                                   <CheckCircle2 className="w-4 h-4" />
                                 </button>
@@ -1201,6 +1350,31 @@ export default function AdminDashboard() {
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
+                            )}
+                            {candidate.status === 'pre_approved' && (
+                              <>
+                                <button
+                                  onClick={() => handlePreApproveCandidate(candidate.id, false)}
+                                  className="text-zinc-500 hover:text-amber-400 transition-colors"
+                                  title="Annuler pré-approbation"
+                                >
+                                  <XIcon className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleRejectCandidate(candidate.id)}
+                                  className="text-zinc-500 hover:text-red-400 transition-colors"
+                                  title="Rejeter"
+                                >
+                                  <XIcon className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCandidate(candidate.id)}
+                                  className="text-zinc-500 hover:text-red-600 transition-colors"
+                                  title="Supprimer définitivement"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
                             )}
                             {candidate.status === 'approved' && (
                               <>
@@ -1252,7 +1426,7 @@ export default function AdminDashboard() {
                       <span className="text-[10px] font-mono text-zinc-500">Sélection Jury</span>
                     </div>
                     <button
-                      onClick={() => handleLockPhase('VOTES_TOP_40')}
+                      onClick={() => handleLockPhase('SEMIFINAL')}
                       disabled={phase !== 'PRESELECTION' || top40Candidates.length === 0}
                       className="w-full py-2.5 bg-[#e5c47f] disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
@@ -1261,7 +1435,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Phase 2: Semi-Final */}
-                  <div className={`p-5 rounded-xl border transition-all ${phase === 'VOTES_TOP_40' ? 'bg-[#e5c47f]/5 border-[#e5c47f]/30' : 'bg-zinc-900/50 border-zinc-800 opacity-60'}`}>
+                  <div className={`p-5 rounded-xl border transition-all ${phase === 'SEMIFINAL' ? 'bg-[#e5c47f]/5 border-[#e5c47f]/30' : 'bg-zinc-900/50 border-zinc-800 opacity-60'}`}>
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-[10px] font-mono text-zinc-500 uppercase">Étape 02</span>
                       <Trophy className={`w-4 h-4 ${semiFinalists.length >= 20 ? 'text-emerald-400' : 'text-zinc-600'}`} />
@@ -1311,7 +1485,7 @@ export default function AdminDashboard() {
                       Récapitulatif de la sélection actuelle
                     </h4>
                     <span className="text-[9px] font-mono text-zinc-500 uppercase">
-                      {phase === 'PRESELECTION' ? 'Top 40' : phase === 'VOTES_TOP_40' ? 'Top 20' : 'Top 8'}
+                      Sélection du jury
                     </span>
                   </div>
                   <div className="max-h-[300px] overflow-y-auto">
@@ -1340,7 +1514,7 @@ export default function AdminDashboard() {
                             </td>
                           </tr>
                         ))}
-                        {(phase === 'PRESELECTION' ? top40Candidates : phase === 'VOTES_TOP_40' ? semiFinalists : finalists).length === 0 && (
+                        {candidates.filter(c => c.status === 'jury_selected').length === 0 && (
                           <tr>
                             <td colSpan={3} className="p-8 text-center text-zinc-600 font-mono text-[10px] uppercase tracking-widest">
                               Aucune sélection enregistrée par le jury
@@ -1712,20 +1886,13 @@ export default function AdminDashboard() {
                 </div>
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-3">
                   <span className="text-[9px] font-mono uppercase text-zinc-500 block mb-1">
-                    {phase === 'PRESELECTION' ? 'Top 40' : 
-                     phase === 'VOTES_TOP_40' ? 'Top 20' : 
-                     phase === 'SEMIFINAL' ? 'Top 8' : 'Sélection'}
+                    Sélection du jury
                   </span>
                   <span className={`text-lg font-bold ${
-                    (phase === 'PRESELECTION' && top40Candidates.length === 40) ||
-                    (phase === 'VOTES_TOP_40' && semiFinalists.length === 20) ||
-                    (phase === 'SEMIFINAL' && finalists.length === 8)
+                    candidates.filter(c => c.status === 'jury_selected').length === 40
                     ? 'text-emerald-400' : 'text-[#e5c47f]'
                   }`}>
-                    {phase === 'PRESELECTION' ? `${top40Candidates.length} / 40` :
-                     phase === 'VOTES_TOP_40' ? `${semiFinalists.length} / 20` :
-                     phase === 'SEMIFINAL' ? `${finalists.length} / 8` : 
-                     top40Candidates.length}
+                    {candidates.filter(c => c.status === 'jury_selected').length} / 40
                   </span>
                 </div>
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-3">
