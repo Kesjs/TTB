@@ -20,8 +20,8 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
 
   const phaseContent = {
     PRESELECTION: {
-      badgeClass: "text-emerald-400",
-      badgeIcon: <Flame className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />,
+      badgeClass: "text-emerald-600",
+      badgeIcon: <Flame className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />,
       badgeText: "Candidatures Ouvertes",
       showInscriptionsCloses: false,
       title: (

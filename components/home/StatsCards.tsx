@@ -77,7 +77,7 @@ export default function StatsCards({ totalInscrits, departements = 12, disciplin
         {cards.map((card, index) => (
           <div
             key={index}
-            className="group relative flex-1 min-w-0 bg-white/80 backdrop-blur-sm border border-zinc-200/80 rounded-xl p-3 sm:p-6
+            className="group relative flex-1 min-w-0 bg-white/80 backdrop-blur-sm border border-zinc-300 rounded-xl p-3 sm:p-6
                        shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]
                        transition-all duration-500 ease-out hover:border-[#e5c47f]/40 hover:-translate-y-1"
           >
