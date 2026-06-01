@@ -1,8 +1,13 @@
 'use client';
 
 import { Award, Trophy, Crown, Check, Sparkles } from 'lucide-react';
+import { motion, useInView } from 'framer-motion';
+import { useRef } from 'react';
 
 export default function RewardsSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
   const rewards = [
     {
       rank: 1,
@@ -34,11 +39,16 @@ export default function RewardsSection() {
   ];
 
   return (
-    <section className="bg-white px-6 py-24 sm:py-32 border-b border-zinc-100 selection:bg-[#e5c47f] selection:text-black">
+    <section ref={ref} className="bg-white px-6 py-24 sm:py-32 border-b border-zinc-100 selection:bg-[#e5c47f] selection:text-black">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* En-tête de section minimaliste */}
-        <div className="max-w-2xl mb-20">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.6 }}
+          className="max-w-2xl mb-20"
+        >
           <span className="font-heading text-[10px] font-bold uppercase tracking-[0.3em] text-[#e5c47f] flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5" /> Dotations de Prestige
           </span>
@@ -49,16 +59,19 @@ export default function RewardsSection() {
           <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-4 max-w-lg font-body">
             L&apos;Édition 2026 récompense l&apos;excellence avec des dotations qui symbolisent l&apos;engagement institutionnel envers l&apos;émancipation artistique au Bénin.
           </p>
-        </div>
+        </motion.div>
 
         {/* Grille des Prix avec traitement asymétrique */}
         <div className="grid grid-cols-1 md:flex md:gap-6 items-stretch">
-          {rewards.map((reward) => {
+          {rewards.map((reward, index) => {
             const IconComponent = reward.icon;
-            
+
             return (
-              <div
+              <motion.div
                 key={reward.rank}
+                initial={{ opacity: 0, y: 30 }}
+                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                transition={{ duration: 0.6, delay: 0.2 + (index * 0.2) }}
                 className={`rounded-sm transition-all duration-300 flex flex-col justify-between p-8 sm:p-10 ${
                   reward.featured
                     ? 'md:flex-[1.5] bg-[#050505] text-white border border-[#050505] shadow-[0_20px_50px_rgba(0,0,0,0.15)]'
@@ -114,7 +127,7 @@ export default function RewardsSection() {
                     </span>
                   </div>
                 )}
-              </div>
+              </motion.div>
             );
           })}
         </div>

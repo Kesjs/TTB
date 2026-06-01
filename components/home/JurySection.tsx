@@ -1,13 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import type { Profile } from '@/lib/supabase/types';
 import { Shield, User, Loader2 } from 'lucide-react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 export default function JurySection() {
   const [juryMembers, setJuryMembers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"]
+  });
+  const y = useTransform(scrollYProgress, [0, 1], [0, -15]);
 
   useEffect(() => {
     const fetchJury = async () => {
@@ -66,18 +73,18 @@ export default function JurySection() {
   const displayJury = juryMembers.length > 0 ? juryMembers : placeholderJury;
 
   return (
-    <section className="bg-white px-4 sm:px-6 py-28 relative overflow-hidden border-b border-zinc-100">
+    <section ref={ref} className="bg-white px-4 sm:px-6 py-28 relative overflow-hidden border-b border-zinc-100">
       {/* Halo lumineux très subtil en arrière-plan */}
       <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-[#e5c47f]/10 blur-[100px] rounded-full pointer-events-none" />
 
       <div className="max-w-5xl mx-auto relative z-10">
-        
+
         {/* EN-TÊTE GÉOMÉTRIQUE SANS BADGE */}
         <div className="max-w-2xl mb-20 space-y-4">
           <h2 className="font-title text-3xl sm:text-5xl font-black tracking-tight text-zinc-950 uppercase leading-none">
             Les Visages de la <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-950 to-zinc-400">Rigueur</span>
           </h2>
-          
+
           <p className="font-sans text-xs sm:text-sm text-zinc-500 leading-relaxed max-w-lg tracking-wide font-normal">
             Un panel d&apos;experts reconnus, garants de l&apos;équité absolue, du niveau technique et de l&apos;excellence structurelle tout au long du processus.
           </p>
@@ -112,10 +119,10 @@ export default function JurySection() {
 
                   <div className="space-y-6">
                     {/* Conteneur de l'image / avatar carré épuré */}
-                    <div className="w-14 h-14 rounded-lg bg-white border border-zinc-200 flex items-center justify-center overflow-hidden transition-colors group-hover:border-[#e5c47f]/40 shadow-sm">
+                    <motion.div style={{ y }} className="w-14 h-14 rounded-lg bg-white border border-zinc-200 flex items-center justify-center overflow-hidden transition-colors group-hover:border-[#e5c47f]/40 shadow-sm">
                       {!isPlaceholder && hasPhoto ? (
-                        <img 
-                          src={photoUrl} 
+                        <img
+                          src={photoUrl}
                           alt={member.full_name}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           loading="lazy"
@@ -129,7 +136,7 @@ export default function JurySection() {
                         /* Icône par défaut pour les emplacements réservés */
                         <User className="w-4 h-4 text-zinc-400 group-hover:text-zinc-500 transition-colors" />
                       )}
-                    </div>
+                    </motion.div>
                     
                     {/* Bloc Identité */}
                     <div className="space-y-1">

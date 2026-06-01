@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import NextTopLoader from "nextjs-toploader";
+import ScrollProgressBar from "@/components/ui/ScrollProgressBar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default function RootLayout({
       className="h-full"
     >
       <body className="min-h-full bg-background text-foreground font-sans antialiased">
+        <ScrollProgressBar />
         <NextTopLoader color="#e5c47f" showSpinner={false} />
         {children}
       </body>

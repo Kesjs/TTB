@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Lock, Flame, ArrowRight, Timer, Users, Award, Radio } from 'lucide-react';
+import { motion } from 'framer-motion';
 import StatsCards from './StatsCards';
 
 interface HeroSectionProps {
@@ -122,10 +123,20 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
     <header className="relative flex items-center px-4 sm:px-6 lg:px-12 overflow-hidden bg-white min-h-[calc(100vh-120px)] border-b border-zinc-100 pt-8 sm:pt-16 lg:pt-20">
 
       {/* Conteneur Central */}
-      <div className="max-w-3xl mx-auto text-center space-y-6 relative z-20 flex flex-col items-center py-2 sm:py-6 w-full">
+      <motion.div
+        className="max-w-3xl mx-auto text-center space-y-6 relative z-20 flex flex-col items-center py-2 sm:py-6 w-full"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      >
 
         {/* 1. GLASSMORPHIC STATUS BAR */}
-        <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/40 backdrop-blur-md border border-zinc-200/50 rounded-none">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/40 backdrop-blur-md border border-zinc-200/50 rounded-none"
+        >
           {currentContent.showInscriptionsCloses && (
             <>
               <div className="flex items-center gap-2 text-zinc-900">
@@ -141,20 +152,35 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
               {currentContent.badgeText}
             </span>
           </div>
-        </div>
+        </motion.div>
 
-        {/* 2. TYPOGRAPHIE ACADÉMIQUE */}
-        <h1 className="font-heading font-black text-2xl sm:text-5xl lg:text-6xl tracking-tight leading-none text-[#050505] uppercase">
+        {/* 2. TYPOGRAPHIE ACADÉMIQUE avec Text Reveal */}
+        <motion.h1
+          className="font-heading font-black text-2xl sm:text-5xl lg:text-6xl tracking-tight leading-none text-[#050505] uppercase"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+        >
           {currentContent.title}
-        </h1>
+        </motion.h1>
 
         {/* 3. PARAGRAPHE DESCRIPTIF */}
-        <p className="max-w-xl mx-auto text-xs sm:text-sm leading-relaxed text-zinc-500 font-body px-2">
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="max-w-xl mx-auto text-xs sm:text-sm leading-relaxed text-zinc-500 font-body px-2"
+        >
           {currentContent.description}
-        </p>
+        </motion.p>
 
         {/* 4. MAIN CTA BUTTON */}
-        <div className="pt-2 flex justify-center w-full sm:w-auto px-4 sm:px-0">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="pt-2 flex justify-center w-full sm:w-auto px-4 sm:px-0"
+        >
           <button
             onClick={handleMainCTA}
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#050505] text-white font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent transition-all hover:ring-2 hover:ring-[#e5c47f] hover:ring-offset-4 active:scale-[0.98]"
@@ -162,12 +188,17 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
             <span>{currentContent.ctaText}</span>
             <ArrowRight className="w-3 h-3" />
           </button>
-        </div>
+        </motion.div>
 
 
         {/* 5. COUNTDOWN TIMER */}
         {!isPreselectionOpen && !isArchived && (
-          <div className="pt-4 flex items-center justify-center gap-4 font-mono text-[10px] text-zinc-400 tracking-wider uppercase w-full">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="pt-4 flex items-center justify-center gap-4 font-mono text-[10px] text-zinc-400 tracking-wider uppercase w-full"
+          >
             <Timer className="w-3 h-3 text-zinc-400" />
             <div className="flex items-center gap-2 tabular-nums">
               <span className="text-zinc-900 font-bold">{String(timeLeft.days).padStart(2, '0')}</span>
@@ -179,20 +210,26 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
               <span className="text-zinc-900 font-bold">{String(timeLeft.seconds).padStart(2, '0')}</span>
               <span>s</span>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* 6. CARTES DE STATISTIQUES */}
         {!isArchived && (
-          <StatsCards 
-            totalInscrits={totalInscrits}
-            departements={12}
-            disciplines="Toutes"
-            edition="2026"
-          />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.7 }}
+          >
+            <StatsCards
+              totalInscrits={totalInscrits}
+              departements={12}
+              disciplines="Toutes"
+              edition="2026"
+            />
+          </motion.div>
         )}
 
-      </div>
+      </motion.div>
     </header>
   );
 }

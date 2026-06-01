@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef } from 'react';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 
 const steps = [
   // Modifie juste cette description dans ton tableau 'steps' :
@@ -37,27 +37,42 @@ const steps = [
 
 export default function HowItWorks() {
   const [activeTab, setActiveTab] = useState(0);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="parcours-victoire" className="bg-zinc-50/50 px-4 sm:px-6 py-28 border-b border-zinc-100 overflow-hidden">
+    <section id="parcours-victoire" ref={ref} className="bg-zinc-50/50 px-4 sm:px-6 py-28 border-b border-zinc-100 overflow-hidden">
       <div className="max-w-5xl mx-auto">
-        
+
         {/* EN-TÊTE ÉPURÉ */}
-        <div className="max-w-2xl mb-16 space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.6 }}
+          className="max-w-2xl mb-16 space-y-4"
+        >
           <h2 className="font-title text-3xl sm:text-5xl font-black tracking-tight text-zinc-950 uppercase leading-none">
             4 Phases. Une seule <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-950 to-zinc-400">Consécration.</span>
           </h2>
           <p className="font-sans text-xs sm:text-sm text-zinc-500 leading-relaxed max-w-lg tracking-wide font-normal">
             Cliquez sur les étapes pour découvrir le mécanisme d&apos;élimination et les opportunités de chaque palier.
           </p>
-        </div>
+        </motion.div>
 
         {/* NAVIGATION PAR NUMÉROS (TABS) */}
-        <div className="flex justify-between items-center border-b border-zinc-200 mb-12 relative">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="flex justify-between items-center border-b border-zinc-200 mb-12 relative"
+        >
           {steps.map((step, idx) => (
-            <button
+            <motion.button
               key={step.number}
               onClick={() => setActiveTab(idx)}
+              initial={{ opacity: 0, y: 10 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+              transition={{ duration: 0.4, delay: 0.3 + (idx * 0.1) }}
               className={`relative pb-6 flex flex-col items-center group transition-all duration-300 ${
                 activeTab === idx ? 'opacity-100' : 'opacity-40 hover:opacity-100'
               }`}
@@ -67,21 +82,26 @@ export default function HowItWorks() {
               }`}>
                 {step.number}
               </span>
-              
+
               {/* Indicateur de sélection (Ligne Or) */}
               {activeTab === idx && (
-                <motion.div 
+                <motion.div
                   layoutId="activeTabLine"
                   className="absolute bottom-0 left-0 right-0 h-1 bg-[#e5c47f] z-10"
                 />
               )}
-            </button>
+            </motion.button>
           ))}
-        </div>
+        </motion.div>
 
         {/* CONTENU DYNAMIQUE (ANIMÉ) */}
-        <div className="min-h-[300px] grid grid-cols-1 md:grid-cols-12 gap-12 items-start">
-          
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="min-h-[300px] grid grid-cols-1 md:grid-cols-12 gap-12 items-start"
+        >
+
           {/* Bloc Titre et Pool (Gauche) */}
           <div className="md:col-span-4 space-y-4">
             <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#e5c47f] font-bold">
@@ -145,10 +165,15 @@ export default function HowItWorks() {
               </motion.div>
             </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
 
         {/* PONDÉRATION (FOOTER) */}
-        <div className="mt-20 flex flex-col sm:flex-row items-center justify-between gap-8 py-8 border-t border-zinc-200">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6, delay: 0.7 }}
+          className="mt-20 flex flex-col sm:flex-row items-center justify-between gap-8 py-8 border-t border-zinc-200"
+        >
            <div className="flex items-center gap-12">
             <div className="text-center">
               <span className="block font-title font-black text-2xl text-zinc-950">50%</span>
@@ -163,7 +188,7 @@ export default function HowItWorks() {
           <p className="font-sans text-[10px] text-zinc-400 font-bold uppercase tracking-[0.2em] text-center sm:text-right max-w-xs leading-loose">
             Équité absolue. Chaque étape est soumise à une double validation pour garantir l&apos;excellence.
           </p>
-        </div>
+        </motion.div>
 
       </div>
     </section>

@@ -331,9 +331,13 @@ function HomeContent() {
   }, [rankedCandidates, systemControl.current_phase]);
 
   const showCandidateGrid = useMemo(() => {
-    // Toujours montrer la grille s'il y a des candidats approuvés
+    // Ne pas afficher la grille en phase PRESELECTION (contrôlée par l'admin via hero sections)
+    if (systemControl.current_phase === 'PRESELECTION') {
+      return false;
+    }
+    // Afficher la grille dans les autres phases s'il y a des candidats
     return filteredCandidates.length > 0;
-  }, [filteredCandidates.length]);
+  }, [filteredCandidates.length, systemControl.current_phase]);
 
   const handleSelectVideo = useCallback((candidateId: string | null) => {
 

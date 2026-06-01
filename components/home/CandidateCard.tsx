@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { Play, Star, Trophy, Radio, Eye, Heart, Flame, X, Info, Sparkles } from 'lucide-react';
 import Image from 'next/image';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import type { Candidate } from '@/lib/supabase';
 
 interface CandidateCardProps {
@@ -38,6 +39,14 @@ export default function CandidateCard({
   const viewsCount = candidate.views_count || 0;
   const [isPlaying, setIsPlaying] = useState(false);
   const [showBio, setShowBio] = useState(false);
+
+  // Parallax effect for image
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"]
+  });
+  const y = useTransform(scrollYProgress, [0, 1], [0, -20]);
 
   // Debug logs for video and image URLs
   console.log('CandidateCard - Candidate:', candidate.stage_name);
@@ -110,7 +119,7 @@ export default function CandidateCard({
       )}
 
       {/* Main Image/Video Container */}
-      <div className="relative aspect-[3/4] bg-zinc-800 overflow-hidden">
+      <div ref={ref} className="relative aspect-[3/4] bg-zinc-800 overflow-hidden">
         {selectedVideo === candidate.id && isPlaying ? (
           <div className="relative w-full h-full">
             <video
@@ -134,13 +143,15 @@ export default function CandidateCard({
         ) : (
           <>
             {candidate.cover_image_url ? (
-              <Image
-                src={candidate.cover_image_url}
-                alt={candidate.stage_name}
-                fill
-                className="object-cover transition-all duration-500 ease-out group-hover:scale-105"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              />
+              <motion.div style={{ y }}>
+                <Image
+                  src={candidate.cover_image_url}
+                  alt={candidate.stage_name}
+                  fill
+                  className="object-cover transition-all duration-500 ease-out group-hover:scale-105"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
+              </motion.div>
             ) : (
               <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
                 <span className="text-zinc-600 text-xs font-mono uppercase">No cover image</span>
