@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Lock, Flame, ArrowRight, Timer, Users, Award, Radio } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Lock, Flame, ArrowRight, Timer, Users, Award, Radio, Sparkles } from 'lucide-react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import StatsCards from './StatsCards';
 
 interface HeroSectionProps {
@@ -122,6 +122,79 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
   return (
     <header className="relative flex items-center px-4 sm:px-6 lg:px-12 overflow-hidden bg-white min-h-[calc(100vh-120px)] border-b border-zinc-100 pt-8 sm:pt-16 lg:pt-20">
 
+      {/* Animated Gradient Background */}
+      <motion.div
+        className="absolute inset-0 opacity-30"
+        animate={{
+          background: [
+            "radial-gradient(circle at 20% 50%, rgba(229, 196, 127, 0.1) 0%, transparent 50%)",
+            "radial-gradient(circle at 80% 50%, rgba(229, 196, 127, 0.15) 0%, transparent 50%)",
+            "radial-gradient(circle at 40% 80%, rgba(229, 196, 127, 0.1) 0%, transparent 50%)",
+            "radial-gradient(circle at 20% 50%, rgba(229, 196, 127, 0.1) 0%, transparent 50%)",
+          ]
+        }}
+        transition={{
+          duration: 10,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+
+      {/* Floating Decorative Elements */}
+      <motion.div
+        className="absolute top-20 left-10 w-2 h-2 bg-[#e5c47f] rounded-full opacity-40"
+        animate={{
+          y: [0, -20, 0],
+          opacity: [0.4, 0.8, 0.4],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+      <motion.div
+        className="absolute top-40 right-20 w-3 h-3 bg-[#e5c47f] rounded-full opacity-30"
+        animate={{
+          y: [0, 30, 0],
+          x: [0, -10, 0],
+          opacity: [0.3, 0.6, 0.3],
+        }}
+        transition={{
+          duration: 5,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 1
+        }}
+      />
+      <motion.div
+        className="absolute bottom-40 left-1/4 w-1.5 h-1.5 bg-[#e5c47f] rounded-full opacity-50"
+        animate={{
+          y: [0, -15, 0],
+          opacity: [0.5, 0.9, 0.5],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 0.5
+        }}
+      />
+      <motion.div
+        className="absolute top-1/3 right-1/4 w-2 h-2 bg-zinc-300 rounded-full opacity-30"
+        animate={{
+          y: [0, 25, 0],
+          x: [0, 15, 0],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{
+          duration: 6,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 2
+        }}
+      />
+
       {/* Conteneur Central */}
       <motion.div
         className="max-w-3xl mx-auto text-center space-y-6 relative z-20 flex flex-col items-center py-2 sm:py-6 w-full"
@@ -154,14 +227,33 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
           </div>
         </motion.div>
 
-        {/* 2. TYPOGRAPHIE ACADÉMIQUE avec Text Reveal */}
+        {/* 2. TYPOGRAPHIE ACADÉMIQUE avec Text Reveal et Shimmer */}
         <motion.h1
-          className="font-heading font-black text-2xl sm:text-5xl lg:text-6xl tracking-tight leading-none text-[#050505] uppercase"
+          className="font-heading font-black text-2xl sm:text-5xl lg:text-6xl tracking-tight leading-none text-[#050505] uppercase relative inline-block"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
         >
-          {currentContent.title}
+          <motion.span
+            className="relative"
+            animate={{
+              backgroundPosition: ["0%", "200%"]
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            style={{
+              background: "linear-gradient(90deg, #050505 0%, #050505 50%, #e5c47f 100%, #050505 50%, #050505 100%)",
+              backgroundSize: "200% auto",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent"
+            }}
+          >
+            {currentContent.title}
+          </motion.span>
         </motion.h1>
 
         {/* 3. PARAGRAPHE DESCRIPTIF */}
@@ -181,13 +273,27 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
           transition={{ duration: 0.6, delay: 0.5 }}
           className="pt-2 flex justify-center w-full sm:w-auto px-4 sm:px-0"
         >
-          <button
+          <motion.button
             onClick={handleMainCTA}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#050505] text-white font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent transition-all hover:ring-2 hover:ring-[#e5c47f] hover:ring-offset-4 active:scale-[0.98]"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#050505] text-white font-heading font-bold text-[10px] uppercase tracking-widest rounded-none border border-transparent relative overflow-hidden group"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <span>{currentContent.ctaText}</span>
-            <ArrowRight className="w-3 h-3" />
-          </button>
+            <motion.span
+              className="absolute inset-0 bg-gradient-to-r from-[#e5c47f] to-[#e5c47f] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              initial={{ x: "-100%" }}
+              whileHover={{ x: "0%" }}
+              transition={{ duration: 0.3 }}
+            />
+            <span className="relative z-10">{currentContent.ctaText}</span>
+            <motion.span
+              className="relative z-10"
+              animate={{ x: [0, 5, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <ArrowRight className="w-3 h-3" />
+            </motion.span>
+          </motion.button>
         </motion.div>
 
 

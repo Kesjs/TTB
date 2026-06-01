@@ -1,8 +1,13 @@
 'use client';
 
 import Image from 'next/image';
+import { motion, useInView } from 'framer-motion';
+import { useRef } from 'react';
 
 export default function EventDiscovery() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: false, amount: 0.2 });
+
   const pillars = [
     {
       id: 1,
@@ -34,28 +39,36 @@ export default function EventDiscovery() {
   ];
 
   return (
-    <section className="bg-white px-4 sm:px-6 py-20 sm:py-32 relative overflow-hidden border-b border-zinc-100">
+    <section ref={ref} className="bg-white px-4 sm:px-6 py-20 sm:py-32 relative overflow-hidden border-b border-zinc-100">
       {/* Subtle background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-zinc-100/50 blur-[150px] rounded-full pointer-events-none" />
 
       <div className="max-w-6xl mx-auto relative z-10">
-        
+
         {/* Section Header */}
-        <div className="mb-16 sm:mb-24 space-y-4 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.6 }}
+          className="mb-16 sm:mb-24 space-y-4 text-center"
+        >
           <h2 className="font-title text-3xl sm:text-5xl tracking-tighter text-zinc-950 uppercase leading-none">
   L'Art sous <span className="font-light text-zinc-400 block lowercase italic font-serif pt-2">toutes ses formes</span>
 </h2>
-          
+
           <p className="font-sans text-xs sm:text-sm text-zinc-500 leading-relaxed max-w-2xl mx-auto tracking-wide font-normal">
            Trois dimensions, une seule identité culturelle. Des profondeurs de nos rythmes sacrés jusqu'aux lignes de la haute couture contemporaine, découvrez les disciplines qui font vibrer le Bénin.
           </p>
-        </div>
+        </motion.div>
 
         {/* Pillars Grid */}
         <div className="space-y-16 sm:space-y-24">
-          {pillars.map((pillar) => (
-            <div
+          {pillars.map((pillar, index) => (
+            <motion.div
               key={pillar.id}
+              initial={{ opacity: 0, y: 50 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+              transition={{ duration: 0.6, delay: 0.2 + (index * 0.2) }}
               className={`grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center ${
                 pillar.reverse ? 'lg:flex-row-reverse' : ''
               }`}
@@ -100,7 +113,7 @@ export default function EventDiscovery() {
                 {/* Overlay gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

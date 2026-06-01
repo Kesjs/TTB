@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, LogOut } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { auth } from '@/lib/supabase/auth';
 import { db } from '@/lib/supabase';
 
@@ -116,17 +117,22 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
-              <Link
+              <motion.div
                 key={item.href}
-                href={item.href}
-                className={`font-sans text-xs uppercase tracking-[0.15em] transition-all duration-200 relative px-2 sm:px-3 py-1 ${
-                  isActive
-                    ? 'text-[#e5c47f] font-bold after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#e5c47f]'
-                    : 'text-[#050509]/80 hover:text-[#e5c47f]'
-                }`}
+                whileHover={{ y: -2 }}
+                transition={{ duration: 0.2 }}
               >
-                {item.name}
-              </Link>
+                <Link
+                  href={item.href}
+                  className={`font-sans text-xs uppercase tracking-[0.15em] transition-all duration-200 relative px-2 sm:px-3 py-1 ${
+                    isActive
+                      ? 'text-[#e5c47f] font-bold after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#e5c47f]'
+                      : 'text-[#050509]/80 hover:text-[#e5c47f]'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              </motion.div>
             );
           })}
         </div>
@@ -136,25 +142,28 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
           {loading ? (
             <div className="animate-pulse bg-zinc-100 border border-zinc-200 w-24 sm:w-32 h-9 rounded-none" />
           ) : isDashboard ? (
-            <button
+            <motion.button
               onClick={handleSignOut}
-              className="hidden lg:flex items-center gap-2 px-4 sm:px-5 py-2 bg-red-600 text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-red-500 transition-all duration-300 transform active:scale-95"
+              className="hidden lg:flex items-center gap-2 px-4 sm:px-5 py-2 bg-red-600 text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-red-500 transition-all duration-300"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <LogOut className="w-4 h-4" /> Déconnexion
-            </button>
+            </motion.button>
           ) : isPreselectionOpen ? (
-            <Link
-              href="/candidature"
-              className={`hidden lg:block px-4 sm:px-5 py-2 bg-[#050509] text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] transform active:scale-95 ${
-                showCta 
-                  ? 'opacity-100 translate-y-0 pointer-events-auto duration-300 ease-out transition-all' 
+            <motion.div
+              className={`hidden lg:block px-4 sm:px-5 py-2 bg-[#050509] text-white font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#e5c47f] transition-all duration-300 ${
+                showCta
+                  ? 'opacity-100 translate-y-0 pointer-events-auto duration-300 ease-out transition-all'
                   : 'opacity-0 translate-y-[-10px] pointer-events-none'
               }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              Postuler
-            </Link>
+              <Link href="/candidature">Postuler</Link>
+            </motion.div>
           ) : isArchived ? (
-            <button
+            <motion.button
               onClick={() => {
                 if (pathname === '/') {
                   document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -162,12 +171,14 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                   router.push('/?scroll=talents');
                 }
               }}
-              className="hidden lg:block px-4 sm:px-5 py-2 bg-[#e5c47f] text-zinc-950 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-zinc-900 hover:text-white transition-all duration-300 transform active:scale-95 shadow-lg shadow-[#e5c47f]/20"
+              className="hidden lg:block px-4 sm:px-5 py-2 bg-[#e5c47f] text-zinc-950 font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-zinc-900 hover:text-white transition-all duration-300 shadow-lg shadow-[#e5c47f]/20"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               Le Palmarès
-            </button>
+            </motion.button>
           ) : (
-            <button
+            <motion.button
               onClick={() => {
                 if (pathname === '/') {
                   document.getElementById('talents-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -175,10 +186,12 @@ export default function Navbar({ currentPhase: propPhase, isLoading: propLoading
                   router.push('/?scroll=talents');
                 }
               }}
-              className="hidden lg:block px-4 sm:px-5 py-2 bg-white border-2 border-[#050509] text-[#050509] font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#050509] hover:text-white transition-all duration-300 transform active:scale-95"
+              className="hidden lg:block px-4 sm:px-5 py-2 bg-white border-2 border-[#050509] text-[#050509] font-sans font-bold text-[10px] uppercase tracking-[0.2em] rounded-none hover:bg-[#050509] hover:text-white transition-all duration-300"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               Voir les Candidats
-            </button>
+            </motion.button>
           )}
           
           {/* Bouton Burger Mobile */}
