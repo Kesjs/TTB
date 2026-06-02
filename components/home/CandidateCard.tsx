@@ -2,8 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { Play, Star, Trophy, Radio, Eye, Heart, Flame, X, Info, Sparkles } from 'lucide-react';
-import Image from 'next/image';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import type { Candidate } from '@/lib/supabase';
 
 interface CandidateCardProps {
@@ -38,7 +37,7 @@ export default function CandidateCard({
   const isLive = liveCandidateId === candidate.id;
   const viewsCount = candidate.views_count || 0;
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showBio, setShowBio] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   // Parallax effect for image
   const ref = useRef<HTMLDivElement>(null);
@@ -78,11 +77,16 @@ export default function CandidateCard({
     onVote?.(candidate);
   };
 
+  const handleFlip = () => {
+    setIsFlipped(!isFlipped);
+  };
+
   return (
     <div
       className={`group relative bg-zinc-900 text-white rounded-xl overflow-hidden transition-all duration-300 border border-white/10 ${
         isLive ? 'ring-2 ring-[#e5c47f]/50' : 'hover:shadow-2xl hover:shadow-zinc-900/20'
       }`}
+      style={{ perspective: '1000px' }}
     >
       {/* Rank Badge */}
       {rank && (
@@ -93,8 +97,8 @@ export default function CandidateCard({
 
       {/* Qualified Badge */}
       {candidate.is_top_40 && (
-        <div className="absolute top-14 left-3 z-30 flex items-center gap-1.5 px-2.5 py-1.5 bg-[#e5c47f] text-zinc-950 rounded-lg shadow-xl animate-in fade-in zoom-in duration-500">
-          <Trophy className="w-3 h-3 fill-zinc-950" />
+        <div className="absolute top-14 left-3 z-30 flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-950/80 backdrop-blur-md text-[#e5c47f] rounded-lg border border-[#e5c47f]/30 shadow-xl animate-in fade-in zoom-in duration-500">
+          <Trophy className="w-3 h-3 fill-[#e5c47f]/20" />
           <span className="font-heading font-black text-[9px] uppercase tracking-wider">QUALIFIÉ TOP 40</span>
         </div>
       )}
@@ -118,8 +122,15 @@ export default function CandidateCard({
         </div>
       )}
 
-      {/* Main Image/Video Container */}
-      <div ref={ref} className="relative aspect-[3/4] bg-zinc-800 overflow-hidden">
+      {/* Card Flip Container */}
+      <motion.div
+        className="relative w-full h-full"
+        animate={{ rotateY: isFlipped ? 180 : 0 }}
+        transition={{ duration: 0.6, ease: "easeInOut" }}
+        style={{ transformStyle: 'preserve-3d' }}
+      >
+        {/* Front Face */}
+        <div ref={ref} className="relative aspect-[3/4] bg-zinc-800 overflow-hidden" style={{ backfaceVisibility: 'hidden' }}>
         {selectedVideo === candidate.id && isPlaying ? (
           <div className="relative w-full h-full">
             <video
@@ -144,12 +155,10 @@ export default function CandidateCard({
           <>
             {candidate.cover_image_url ? (
               <motion.div style={{ y }}>
-                <Image
+                <img
                   src={candidate.cover_image_url}
                   alt={candidate.stage_name}
-                  fill
-                  className="object-cover transition-all duration-500 ease-out group-hover:scale-105"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-105"
                 />
               </motion.div>
             ) : (
@@ -185,10 +194,10 @@ export default function CandidateCard({
                   <Trophy className={`w-4 h-4 ${isVotingOpen ? 'text-white' : 'text-white/50'}`} />
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); setShowBio(!showBio); }}
+                  onClick={(e) => { e.stopPropagation(); handleFlip(); }}
                   className={`p-2.5 rounded-full backdrop-blur-md border transition-all ${
-                    showBio 
-                      ? 'bg-[#e5c47f] border-[#e5c47f] text-zinc-950' 
+                    isFlipped
+                      ? 'bg-[#e5c47f] border-[#e5c47f] text-zinc-950'
                       : 'bg-zinc-950/60 border-white/20 text-white hover:bg-zinc-950'
                   }`}
                   title="Voir la biographie"
@@ -198,32 +207,15 @@ export default function CandidateCard({
               </div>
             )}
 
-            {/* Bio Banner Overlay */}
-            <div className={`absolute inset-x-0 top-0 z-10 p-5 pt-16 bg-gradient-to-b from-zinc-950 via-zinc-950/95 to-transparent transition-all duration-500 ease-in-out transform ${
-              showBio ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
-            }`}>
-              <div className="flex items-start gap-2 mb-2">
-                <Sparkles className="w-3.5 h-3.5 text-[#e5c47f]" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#e5c47f]">Parcours & Vision</span>
-              </div>
-              <p className="text-xs text-white/90 leading-relaxed font-body italic line-clamp-6">
-                {candidate.bio || "Ce talent n'a pas encore partagé son parcours, mais sa prestation parle pour lui !"}
-              </p>
-              <button 
-                onClick={(e) => { e.stopPropagation(); setShowBio(false); }}
-                className="mt-4 text-[8px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
+            {/* Play Button Overlay */}
+            <div className="absolute inset-0 z-50 flex items-center justify-center">
+              <button
+                onClick={handlePlayClick}
+                className="p-4 rounded-full bg-zinc-950/60 backdrop-blur-md border border-white/20 hover:bg-zinc-950 transition-all cursor-pointer"
               >
-                Fermer la bio ↑
+                <Play className="w-8 h-8 text-white drop-shadow-lg transition-transform group-hover:scale-110" />
               </button>
             </div>
-
-            {/* Play Button Overlay */}
-            <button
-              onClick={handlePlayClick}
-              className="absolute inset-0 z-50 flex items-center justify-center cursor-pointer"
-            >
-              <Play className="w-8 h-8 text-white drop-shadow-lg transition-transform group-hover:scale-110" />
-            </button>
 
             {/* Bottom Text Overlay */}
             <div className="absolute bottom-16 left-0 right-0 p-4 z-20">
@@ -279,6 +271,35 @@ export default function CandidateCard({
           </>
         )}
       </div>
+
+        {/* Back Face - Bio */}
+        <div className="absolute inset-0 aspect-[3/4] bg-zinc-900 p-6 flex flex-col" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#e5c47f]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#e5c47f]">Parcours & Vision</span>
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleFlip(); }}
+              className="p-2 bg-zinc-950/60 backdrop-blur-md rounded-full border border-white/20 hover:bg-zinc-950 transition-all"
+            >
+              <X className="w-4 h-4 text-white" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <p className="text-sm text-white/90 leading-relaxed font-body">
+              {candidate.bio || "Ce talent n'a pas encore partagé son parcours, mais sa prestation parle pour lui !"}
+            </p>
+          </div>
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-white/60">
+              <span>{candidate.discipline}</span>
+              <span className="text-white/20">•</span>
+              <span>{candidate.region}</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Admin Action Bar - Only for Admin Role */}
       {currentRole === 'Administrateur' && (
