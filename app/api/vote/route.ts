@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const amount_fcfa = vote_count * 100; // 1 vote = 100 FCFA
+    const amount_fcfa = vote_count * 500; // 1 vote = 500 FCFA
     const transactionRef = 'TTB-' + Math.random().toString(36).substr(2, 9).toUpperCase() + '-' + Date.now().toString().slice(-4);
 
     // Si la clé API FedaPay est configurée, faire l'appel réel

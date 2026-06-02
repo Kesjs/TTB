@@ -22,21 +22,44 @@ export async function POST(request: Request) {
     if (event.event === 'transaction.approved') {
       const transaction = event.data;
       const transactionRef = transaction.reference;
-      
-      // Rechercher les votes correspondants dans notre base de données locale ou distante
+
+      // Rechercher les votes correspondants dans notre base de données
       const allVotes = await db.getVotes();
       const pendingVote = allVotes.find(v => v.transaction_ref === transactionRef);
 
       if (pendingVote) {
-        // Mettre à jour le statut du vote à 'success'
-        // Si Supabase était connecté directement, nous ferions une requête UPDATE
-        // Dans notre client hybride, addVote ou saveVote gère cela.
-        // Simulons la validation du vote
-        console.log(`Paiement approuvé pour la transaction ${transactionRef}. Enregistrement officiel...`);
+        // Mettre à jour le statut du vote à 'success' dans Supabase
+        const { supabase } = await import('@/lib/supabase/client');
+        if (supabase) {
+          await supabase
+            .from('votes')
+            .update({ payment_status: 'success' })
+            .eq('transaction_ref', transactionRef);
+
+          // Incrémenter le compteur de votes du candidat
+          await supabase.rpc('increment_candidate_votes', {
+            candidate_uuid: pendingVote.candidate_id,
+            vote_increment: pendingVote.vote_count
+          });
+
+          console.log(`Paiement approuvé pour la transaction ${transactionRef}. Vote enregistré avec succès.`);
+        }
+      } else {
+        console.log(`Aucun vote trouvé pour la transaction ${transactionRef}`);
       }
     } else if (event.event === 'transaction.declined') {
       const transaction = event.data;
       const transactionRef = transaction.reference;
+
+      // Mettre à jour le statut du vote à 'failed'
+      const { supabase } = await import('@/lib/supabase/client');
+      if (supabase) {
+        await supabase
+          .from('votes')
+          .update({ payment_status: 'failed' })
+          .eq('transaction_ref', transactionRef);
+      }
+
       console.log(`Transaction FedaPay refusée : ${transactionRef}`);
     }
 

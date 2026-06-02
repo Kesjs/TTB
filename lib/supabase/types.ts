@@ -126,3 +126,11 @@ export interface Notification {
   is_read: boolean;
   created_at: string;
 }
+
+export interface CandidateView {
+  id: string;
+  candidate_id: string;
+  user_id: string | null;
+  session_id: string | null;
+  viewed_at: string;
+}

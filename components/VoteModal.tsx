@@ -8,9 +8,10 @@ interface VoteModalProps {
   candidate: Candidate;
   onClose: () => void;
   currentPhase: string;
+  onSuccess?: () => void;
 }
 
-export default function VoteModal({ candidate, onClose, currentPhase }: VoteModalProps) {
+export default function VoteModal({ candidate, onClose, currentPhase, onSuccess }: VoteModalProps) {
   const [voteCount, setVoteCount] = useState<number>(1);
   const [phone, setPhone] = useState<string>('');
   const [network, setNetwork] = useState<'MTN' | 'MOOV'>('MTN');
@@ -93,6 +94,8 @@ export default function VoteModal({ candidate, onClose, currentPhase }: VoteModa
         });
 
         setStep('success');
+        // Rafraîchir les données après un vote réussi
+        onSuccess?.();
       } catch (err) {
         console.error(err);
         setStep('failed');

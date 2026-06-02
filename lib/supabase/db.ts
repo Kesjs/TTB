@@ -2,6 +2,7 @@ import { isClient, supabase } from '@/lib/supabase/client';
 import { DEFAULT_CANDIDATES, DEFAULT_JURY_RATINGS, DEFAULT_PROFILES, DEFAULT_SYSTEM_CONTROL, DEFAULT_VOTES } from '@/lib/supabase/mock';
 import type { Candidate, JuryAverage, JuryRating, Profile, SystemControl, Vote, CandidateVoteCount } from '@/lib/supabase/types';
 import { toSqlPhase } from '@/lib/supabase/types';
+import { getSessionId } from '@/lib/utils/session';
 
 const initLocalStorage = () => {
   if (!isClient) return;
@@ -76,35 +77,56 @@ export const db = {
 
   getCandidates: async (options?: { status?: Candidate['status']; profileId?: string }): Promise<Candidate[]> => {
     if (supabase) {
-      let query = supabase.from('candidates').select('*');
-      if (options?.status) query = query.eq('status', options.status);
-      if (options?.profileId && options.profileId !== undefined && options.profileId !== null && options.profileId !== '') {
-        console.log('[DB] Filtering candidates by profile_id:', options.profileId);
-        query = query.eq('profile_id', options.profileId);
-      }
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('[DB] Error fetching candidates from Supabase:', error);
-        console.error('[DB] Query details:', {
+      try {
+        let query = supabase.from('candidates').select('*');
+        if (options?.status) query = query.eq('status', options.status);
+        if (options?.profileId && options.profileId !== undefined && options.profileId !== null && options.profileId !== '') {
+          console.log('[DB] Filtering candidates by profile_id:', options.profileId);
+          query = query.eq('profile_id', options.profileId);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('[DB] Error fetching candidates from Supabase:', error);
+          console.error('[DB] Query details:', {
+            status: options?.status,
+            profileId: options?.profileId,
+            errorMessage: error.message,
+            errorDetails: error.details
+          });
+
+          // Si l'erreur est liée à la colonne views_count manquante, utiliser localStorage
+          if (error.message && error.message.includes('views_count')) {
+            console.warn('[DB] Column views_count not found, falling back to localStorage');
+            throw new Error('views_count_column_missing');
+          }
+
+          // Don't fallback to local storage if there's a real database error
+          // to avoid showing empty results when the DB is just busy/restricted
+          throw error;
+        }
+
+        console.log('[DB] Candidates query success:', {
+          resultsCount: data?.length || 0,
           status: options?.status,
-          profileId: options?.profileId,
-          errorMessage: error.message,
-          errorDetails: error.details
+          profileId: options?.profileId
         });
-        // Don't fallback to local storage if there's a real database error 
-        // to avoid showing empty results when the DB is just busy/restricted
-        throw error;
+
+        if (data) return data;
+      } catch (err: any) {
+        // Si l'erreur est liée à views_count manquant, utiliser localStorage
+        if (err.message === 'views_count_column_missing') {
+          console.warn('[DB] Falling back to localStorage due to missing views_count column');
+          initLocalStorage();
+          const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
+          let filtered = candidates;
+          if (options?.status) filtered = filtered.filter((candidate) => candidate.status === options.status);
+          if (options?.profileId && options.profileId !== undefined && options.profileId !== null && options.profileId !== '') filtered = filtered.filter((candidate) => candidate.profile_id === options.profileId);
+          return filtered;
+        }
+        throw err;
       }
-      
-      console.log('[DB] Candidates query success:', {
-        resultsCount: data?.length || 0,
-        status: options?.status,
-        profileId: options?.profileId
-      });
-      
-      if (data) return data;
     }
 
     initLocalStorage();
@@ -579,24 +601,83 @@ export const db = {
 
   incrementCandidateViews: async (candidateId: string): Promise<boolean> => {
     if (supabase) {
-      const { data, error } = await supabase
-        .from('candidates')
-        .update({ views_count: (await supabase.from('candidates').select('views_count').eq('id', candidateId).single()).data?.views_count || 0 + 1 })
-        .eq('id', candidateId);
+      try {
+        // Get current user ID if authenticated
+        let userId = null;
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          userId = user?.id || null;
+        } catch (err) {
+          // User not authenticated, that's fine
+        }
 
-      if (!error) return true;
-      console.error('Error incrementing views:', error);
+        // Get session ID for anonymous visitors
+        const sessionId = getSessionId();
+
+        // Try to use the RPC function with tracking
+        const { data, error } = await supabase.rpc('increment_candidate_views_with_tracking', {
+          p_candidate_id: candidateId,
+          p_user_id: userId,
+          p_session_id: sessionId
+        });
+
+        if (!error && data === true) {
+          return true; // View was incremented
+        }
+
+        if (error) {
+          console.error('Error incrementing views with tracking:', error);
+          
+          // Fallback to simple increment if RPC doesn't exist yet
+          const { data: currentData, error: selectError } = await supabase
+            .from('candidates')
+            .select('views_count')
+            .eq('id', candidateId)
+            .single();
+
+          if (!selectError && currentData) {
+            const { error: updateError } = await supabase
+              .from('candidates')
+              .update({ views_count: (currentData?.views_count || 0) + 1 })
+              .eq('id', candidateId);
+
+            if (!updateError) return true;
+          }
+        }
+      } catch (err) {
+        console.error('Error in incrementCandidateViews:', err);
+      }
     }
 
-    // Fallback to localStorage
+    // Fallback to localStorage with session tracking
     initLocalStorage();
     const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
     const index = candidates.findIndex((candidate) => candidate.id === candidateId);
 
+    // Get session ID for localStorage tracking
+    const sessionId = getSessionId();
+    const viewedCandidatesKey = 'ttb_viewed_candidates';
+    const viewedCandidates = JSON.parse(localStorage.getItem(viewedCandidatesKey) || '[]');
+
     if (index !== -1) {
-      candidates[index].views_count = (candidates[index].views_count || 0) + 1;
-      localStorage.setItem('ttb_candidates', JSON.stringify(candidates));
-      return true;
+      // Check if this candidate was already viewed by this session
+      const alreadyViewed = viewedCandidates.some((v: { candidateId: string; sessionId: string }) => 
+        v.candidateId === candidateId && v.sessionId === sessionId
+      );
+
+      if (!alreadyViewed) {
+        candidates[index].views_count = (candidates[index].views_count || 0) + 1;
+        localStorage.setItem('ttb_candidates', JSON.stringify(candidates));
+        
+        // Track this view
+        viewedCandidates.push({ candidateId, sessionId, viewedAt: new Date().toISOString() });
+        localStorage.setItem(viewedCandidatesKey, JSON.stringify(viewedCandidates));
+        
+        return true;
+      }
+      
+      // Already viewed, don't increment
+      return false;
     }
 
     return false;

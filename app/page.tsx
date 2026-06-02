@@ -32,6 +32,8 @@ import EventDiscovery from '@/components/home/EventDiscovery';
 
 import ScrollToTop from '@/components/ScrollToTop';
 
+import VoteModal from '@/components/VoteModal';
+
 import { db } from '@/lib/supabase';
 
 import { supabase } from '@/lib/supabase/client';
@@ -83,6 +85,8 @@ function HomeContent() {
   const [currentRole, setCurrentRole] = useState<string>('Visiteur');
 
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+
+  const [selectedCandidateForVote, setSelectedCandidateForVote] = useState<Candidate | null>(null);
 
   const [loading, setLoading] = useState(true);
 
@@ -347,7 +351,18 @@ function HomeContent() {
 
   const handleViewIncrement = useCallback(async (candidateId: string) => {
     await db.incrementCandidateViews(candidateId);
+    // Recharger les données pour mettre à jour le compteur de vues immédiatement
+    void loadData();
+  }, [loadData]);
+
+  const handleVote = useCallback((candidate: Candidate) => {
+    setSelectedCandidateForVote(candidate);
   }, []);
+
+  const handleVoteSuccess = useCallback(() => {
+    // Rafraîchir les données après un vote réussi
+    loadData();
+  }, [loadData]);
 
 
 
@@ -472,6 +487,7 @@ function HomeContent() {
                 calculateHybridScore={calculateHybridScore}
                 getJuryScore={getJuryScore}
                 onSelectVideo={handleSelectVideo}
+                onVote={handleVote}
                 onViewIncrement={handleViewIncrement}
               />
 
@@ -514,6 +530,16 @@ function HomeContent() {
           <RoleSimulator currentRole={currentRole} setCurrentRole={setCurrentRole} />
 
           <ScrollToTop />
+
+          {/* Vote Modal */}
+          {selectedCandidateForVote && (
+            <VoteModal
+              candidate={selectedCandidateForVote}
+              onClose={() => setSelectedCandidateForVote(null)}
+              currentPhase={systemControl.current_phase}
+              onSuccess={handleVoteSuccess}
+            />
+          )}
 
         </>
 
