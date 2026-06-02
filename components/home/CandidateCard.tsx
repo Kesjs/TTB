@@ -14,6 +14,7 @@ interface CandidateCardProps {
   liveCandidateId?: string | null;
   isVotingOpen?: boolean;
   juryScore?: number;
+  hybridScore?: number;
   onSelectVideo?: (candidateId: string | null) => void;
   onVote?: (candidate: Candidate) => void;
   onViewIncrement?: (candidateId: string) => void;
@@ -29,6 +30,7 @@ export default function CandidateCard({
   liveCandidateId = null,
   isVotingOpen = false,
   juryScore,
+  hybridScore,
   onSelectVideo,
   onVote,
   onViewIncrement,
