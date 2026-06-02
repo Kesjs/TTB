@@ -576,4 +576,29 @@ export const db = {
 
     return Object.values(aggregated);
   },
+
+  incrementCandidateViews: async (candidateId: string): Promise<boolean> => {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('candidates')
+        .update({ views_count: (await supabase.from('candidates').select('views_count').eq('id', candidateId).single()).data?.views_count || 0 + 1 })
+        .eq('id', candidateId);
+
+      if (!error) return true;
+      console.error('Error incrementing views:', error);
+    }
+
+    // Fallback to localStorage
+    initLocalStorage();
+    const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
+    const index = candidates.findIndex((candidate) => candidate.id === candidateId);
+
+    if (index !== -1) {
+      candidates[index].views_count = (candidates[index].views_count || 0) + 1;
+      localStorage.setItem('ttb_candidates', JSON.stringify(candidates));
+      return true;
+    }
+
+    return false;
+  },
 };

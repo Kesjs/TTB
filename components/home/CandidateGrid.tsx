@@ -19,6 +19,7 @@ interface CandidateGridProps {
   getCandidateVoteCount?: (candidateId: string) => number;
   onSelectVideo?: (candidateId: string | null) => void;
   onVote?: (candidate: Candidate) => void;
+  onViewIncrement?: (candidateId: string) => void;
 }
 
 export default function CandidateGrid({
@@ -33,7 +34,8 @@ export default function CandidateGrid({
   getJuryScore,
   getCandidateVoteCount,
   onSelectVideo,
-  onVote
+  onVote,
+  onViewIncrement
 }: CandidateGridProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tous');
@@ -226,6 +228,7 @@ export default function CandidateGrid({
                 juryScore={getJuryScore?.(candidate.id)}
                 onSelectVideo={onSelectVideo}
                 onVote={onVote}
+                onViewIncrement={onViewIncrement}
               />
             ))}
           </div>

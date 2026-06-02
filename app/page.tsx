@@ -345,6 +345,10 @@ function HomeContent() {
 
   }, []);
 
+  const handleViewIncrement = useCallback(async (candidateId: string) => {
+    await db.incrementCandidateViews(candidateId);
+  }, []);
+
 
 
   const talentsSectionTitle = useMemo(() => {
@@ -468,6 +472,7 @@ function HomeContent() {
                 calculateHybridScore={calculateHybridScore}
                 getJuryScore={getJuryScore}
                 onSelectVideo={handleSelectVideo}
+                onViewIncrement={handleViewIncrement}
               />
 
             </main>
