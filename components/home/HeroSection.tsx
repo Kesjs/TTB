@@ -109,7 +109,10 @@ export default function HeroSection({ currentPhase = 'PRESELECTION', isVotingOpe
   };
 
   return (
-    <header className="relative flex items-center px-4 sm:px-6 lg:px-12 overflow-hidden bg-white min-h-[calc(100vh-120px)] border-b border-zinc-100 pt-8 sm:pt-16 lg:pt-20">
+    <header className="relative flex items-center px-4 sm:px-6 lg:px-12 overflow-hidden bg-white min-h-[calc(100vh-120px)] border-b border-zinc-200 pt-8 sm:pt-16 lg:pt-20">
+
+      {/* Liseré doré subtil */}
+      <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#e5c47f]/50 to-transparent" />
 
       {/* Conteneur Central */}
       <motion.div
