@@ -83,7 +83,7 @@ export default function CandidateCard({
 
   return (
     <div
-      className={`group relative bg-zinc-900 text-white rounded-xl overflow-hidden transition-all duration-300 border border-white/10 ${
+      className={`group relative bg-zinc-900 text-white rounded-xl overflow-hidden transition-all duration-300 border border-white/10 aspect-[3/4] ${
         isLive ? 'ring-2 ring-[#e5c47f]/50' : 'hover:shadow-2xl hover:shadow-zinc-900/20'
       }`}
       style={{ perspective: '1000px' }}
@@ -124,13 +124,13 @@ export default function CandidateCard({
 
       {/* Card Flip Container */}
       <motion.div
-        className="relative w-full h-full"
+        className="relative w-full aspect-[3/4]"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.6, ease: "easeInOut" }}
         style={{ transformStyle: 'preserve-3d' }}
       >
         {/* Front Face */}
-        <div ref={ref} className="relative aspect-[3/4] bg-zinc-800 overflow-hidden" style={{ backfaceVisibility: 'hidden' }}>
+        <div ref={ref} className="absolute inset-0 bg-zinc-800 overflow-hidden" style={{ backfaceVisibility: 'hidden' }}>
         {selectedVideo === candidate.id && isPlaying ? (
           <div className="relative w-full h-full">
             <video
@@ -208,10 +208,10 @@ export default function CandidateCard({
             )}
 
             {/* Play Button Overlay */}
-            <div className="absolute inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
               <button
                 onClick={handlePlayClick}
-                className="p-4 rounded-full bg-zinc-950/60 backdrop-blur-md border border-white/20 hover:bg-zinc-950 transition-all cursor-pointer"
+                className="p-4 rounded-full bg-zinc-950/60 backdrop-blur-md border border-white/20 hover:bg-zinc-950 transition-all cursor-pointer pointer-events-auto"
               >
                 <Play className="w-8 h-8 text-white drop-shadow-lg transition-transform group-hover:scale-110" />
               </button>
@@ -273,7 +273,7 @@ export default function CandidateCard({
       </div>
 
         {/* Back Face - Bio */}
-        <div className="absolute inset-0 aspect-[3/4] bg-zinc-900 p-6 flex flex-col" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+        <div className="absolute inset-0 bg-zinc-900 p-6 flex flex-col" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#e5c47f]" />
