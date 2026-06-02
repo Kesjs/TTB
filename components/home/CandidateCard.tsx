@@ -83,7 +83,7 @@ export default function CandidateCard({
 
   return (
     <div
-      className={`group relative bg-zinc-900 text-white rounded-xl overflow-hidden transition-all duration-300 border border-white/10 aspect-[3/4] ${
+      className={`group relative bg-white text-white rounded-xl overflow-hidden transition-all duration-300 border border-white/10 aspect-[3/4] ${
         isLive ? 'ring-2 ring-[#e5c47f]/50' : 'hover:shadow-2xl hover:shadow-zinc-900/20'
       }`}
       style={{ perspective: '1000px' }}
@@ -92,14 +92,6 @@ export default function CandidateCard({
       {rank && (
         <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-950/60 backdrop-blur-md rounded-lg border border-white/10">
           <span className="font-heading font-black text-xs text-[#e5c47f]">#{rank}</span>
-        </div>
-      )}
-
-      {/* Qualified Badge */}
-      {candidate.is_top_40 && (
-        <div className="absolute top-14 left-3 z-30 flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-950/80 backdrop-blur-md text-[#e5c47f] rounded-lg border border-[#e5c47f]/30 shadow-xl animate-in fade-in zoom-in duration-500">
-          <Trophy className="w-3 h-3 fill-[#e5c47f]/20" />
-          <span className="font-heading font-black text-[9px] uppercase tracking-wider">QUALIFIÉ TOP 40</span>
         </div>
       )}
 
@@ -130,7 +122,7 @@ export default function CandidateCard({
         style={{ transformStyle: 'preserve-3d' }}
       >
         {/* Front Face */}
-        <div ref={ref} className="absolute inset-0 bg-zinc-800 overflow-hidden" style={{ backfaceVisibility: 'hidden' }}>
+        <div ref={ref} className="absolute inset-0 overflow-hidden" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
         {selectedVideo === candidate.id && isPlaying ? (
           <div className="relative w-full h-full">
             <video
@@ -162,13 +154,11 @@ export default function CandidateCard({
                 />
               </motion.div>
             ) : (
-              <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                <span className="text-zinc-600 text-xs font-mono uppercase">No cover image</span>
+              <div className="w-full h-full bg-white flex items-center justify-center">
+                <span className="text-zinc-400 text-xs font-mono uppercase">No cover image</span>
               </div>
             )}
 
-            {/* Dark Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent pointer-events-none" />
 
             {/* Views Badge - Above Bottom Actions Bar */}
             <div className="absolute bottom-14 right-4 z-40 flex items-center gap-1.5 px-2 py-1 bg-zinc-950/60 backdrop-blur-md rounded-lg border border-white/10">
@@ -273,7 +263,7 @@ export default function CandidateCard({
       </div>
 
         {/* Back Face - Bio */}
-        <div className="absolute inset-0 bg-zinc-900 p-6 flex flex-col" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+        <div className="absolute inset-0 bg-white p-6 flex flex-col" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#e5c47f]" />
