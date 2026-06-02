@@ -22,6 +22,9 @@ export async function POST(request: Request) {
     const amount_fcfa = vote_count * 500; // 1 vote = 500 FCFA
     const transactionRef = 'TTB-' + Math.random().toString(36).substr(2, 9).toUpperCase() + '-' + Date.now().toString().slice(-4);
 
+    console.log('[Vote API] Clé FedaPay configurée:', !!FEDAPAY_SECRET_KEY);
+    console.log('[Vote API] Longueur de la clé:', FEDAPAY_SECRET_KEY?.length || 0);
+
     // Si la clé API FedaPay est configurée, faire l'appel réel
     if (FEDAPAY_SECRET_KEY) {
       try {
@@ -77,7 +80,9 @@ export async function POST(request: Request) {
     }
 
     // --- FALLBACK DE SIMULATION EN MODE DÉVELOPPEMENT ---
-    // Simuler le succès d'initialisation de transaction
+    // Simuler un délai réaliste avant le succès
+    await new Promise(resolve => setTimeout(resolve, 2000)); // 2 secondes de délai
+    
     return NextResponse.json({
       success: true,
       transaction_ref: transactionRef,

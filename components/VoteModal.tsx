@@ -187,7 +187,7 @@ export default function VoteModal({ candidate, onClose }: VoteModalProps) {
                     {[
                       { id: 'MTN' as const, img: '/mtn.png', name: 'MTN' },
                       { id: 'MOOV' as const, img: '/moov.png', name: 'MOOV' },
-                      { id: 'CELTIIS' as const, img: '/celtis.png', name: 'CELTIIS' }
+                      { id: 'CELTIIS' as const, img: '/celtis.jpg', name: 'CELTIIS' }
                     ].map((n) => (
                       <button
                         key={n.id}
@@ -289,7 +289,7 @@ export default function VoteModal({ candidate, onClose }: VoteModalProps) {
 
                 {/* Informations de sécurité */}
                 <p className="text-xs text-gray-500 text-center">
-                  Paiement sécurisé via {network}. 200 FCFA par vote.
+                  Paiement sécurisé via FedaPay. 200 FCFA par vote.
                 </p>
               </motion.div>
             )}

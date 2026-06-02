@@ -646,8 +646,8 @@ export default function AdminDashboard() {
       label = 'Top 20 Demi-Finale';
       updateField = 'is_semifinalist';
     } else if (targetPhase === 'FINAL') {
-      targetCount = 8;
-      label = 'Top 8 Finale';
+      targetCount = 12;
+      label = 'Top 12 Finale';
       updateField = 'is_finalist';
     }
 
@@ -1459,12 +1459,12 @@ export default function AdminDashboard() {
                   <div className={`p-5 rounded-xl border transition-all ${phase === 'SEMIFINAL' ? 'bg-[#e5c47f]/5 border-[#e5c47f]/30' : 'bg-zinc-900/50 border-zinc-800 opacity-60'}`}>
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-[10px] font-mono text-zinc-500 uppercase">Étape 03</span>
-                      <Trophy className={`w-4 h-4 ${finalists.length >= 8 ? 'text-emerald-400' : 'text-zinc-600'}`} />
+                      <Trophy className={`w-4 h-4 ${finalists.length >= 12 ? 'text-emerald-400' : 'text-zinc-600'}`} />
                     </div>
-                    <h4 className="text-xs font-black text-white uppercase mb-2">Top 8 Finale</h4>
-                    <p className="text-[10px] text-zinc-500 mb-4 leading-relaxed">L'ultime sélection. Verrouille les 8 finalistes qui s'affronteront lors de la Grande Finale.</p>
+                    <h4 className="text-xs font-black text-white uppercase mb-2">Top 12 Finale</h4>
+                    <p className="text-[10px] text-zinc-500 mb-4 leading-relaxed">L'ultime sélection. Verrouille les 12 finalistes qui s'affronteront lors de la Grande Finale.</p>
                     <div className="flex items-end justify-between mb-4">
-                      <span className="text-2xl font-black text-white">{finalists.length}<span className="text-[10px] text-zinc-600 ml-1">/ 8</span></span>
+                      <span className="text-2xl font-black text-white">{finalists.length}<span className="text-[10px] text-zinc-600 ml-1">/ 12</span></span>
                       <span className="text-[10px] font-mono text-zinc-500">Guerriers</span>
                     </div>
                     <button
@@ -1472,7 +1472,7 @@ export default function AdminDashboard() {
                       disabled={phase !== 'SEMIFINAL' || finalists.length === 0}
                       className="w-full py-2.5 bg-[#e5c47f] disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
-                      Verrouiller Top 8
+                      Verrouiller Top 12
                     </button>
                   </div>
                 </div>
