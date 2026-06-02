@@ -34,6 +34,8 @@ import ScrollToTop from '@/components/ScrollToTop';
 
 import VoteModal from '@/components/VoteModal';
 
+import CandidateBioModal from '@/components/CandidateBioModal';
+
 import { db } from '@/lib/supabase';
 
 import { supabase } from '@/lib/supabase/client';
@@ -87,6 +89,8 @@ function HomeContent() {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
   const [selectedCandidateForVote, setSelectedCandidateForVote] = useState<Candidate | null>(null);
+
+  const [selectedCandidateForBio, setSelectedCandidateForBio] = useState<Candidate | null>(null);
 
   const [loading, setLoading] = useState(true);
 
@@ -359,6 +363,10 @@ function HomeContent() {
     setSelectedCandidateForVote(candidate);
   }, []);
 
+  const handleShowBio = useCallback((candidate: Candidate) => {
+    setSelectedCandidateForBio(candidate);
+  }, []);
+
   const handleVoteSuccess = useCallback(() => {
     // Rafraîchir les données après un vote réussi
     loadData();
@@ -489,6 +497,7 @@ function HomeContent() {
                 onSelectVideo={handleSelectVideo}
                 onVote={handleVote}
                 onViewIncrement={handleViewIncrement}
+                onShowBio={handleShowBio}
               />
 
             </main>
@@ -538,6 +547,14 @@ function HomeContent() {
               onClose={() => setSelectedCandidateForVote(null)}
               currentPhase={systemControl.current_phase}
               onSuccess={handleVoteSuccess}
+            />
+          )}
+
+          {/* Bio Modal */}
+          {selectedCandidateForBio && (
+            <CandidateBioModal
+              candidate={selectedCandidateForBio}
+              onClose={() => setSelectedCandidateForBio(null)}
             />
           )}
 
