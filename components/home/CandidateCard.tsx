@@ -1,14 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { Play, X, Info, Radio } from 'lucide-react';
+import { Play, X, Info, Radio, Eye } from 'lucide-react';
 import type { Candidate } from '@/lib/supabase';
+
+// Fonction utilitaire pour formater les nombres (ex: 1250 -> 1.3K)
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
+};
 
 interface CandidateCardProps {
   candidate: Candidate;
   currentRole?: string;
   rank?: number;
   votesCount?: number;
+  viewsCount?: number;
   selectedVideo?: string | null;
   liveCandidateId?: string | null;
   isVotingOpen?: boolean;
@@ -23,6 +31,7 @@ export default function CandidateCard({
   currentRole = 'Visiteur',
   rank,
   votesCount = 0,
+  viewsCount = 0,
   selectedVideo,
   liveCandidateId = null,
   isVotingOpen = false,
@@ -40,7 +49,6 @@ export default function CandidateCard({
   const handleVoteClick = (e: React.MouseEvent) => { e.stopPropagation(); onVote?.(candidate); };
 
   return (
-    // Remplacement de aspect-[9/16] par aspect-[3/4] pour réduire la hauteur
     <div className="group relative bg-zinc-950 text-white rounded-2xl overflow-hidden aspect-[3/4] shadow-xl border border-white/5 transition-all duration-300">
       
       {/* Badges */}
@@ -61,20 +69,20 @@ export default function CandidateCard({
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10" />
           
-          {/* Bouton Play réduit pour laisser de l'espace au texte */}
           <button onClick={handlePlayClick} className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hover:scale-110 transition-transform">
             <Play className="w-10 h-10 sm:w-14 sm:h-14 text-white drop-shadow-2xl fill-white/20" />
           </button>
 
-          {/* Pied de carte optimisé : marges plus serrées pour mobile */}
           <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-5 z-20 space-y-1 sm:space-y-2">
-            <div>
-              <h4 className="font-heading font-black text-lg sm:text-xl text-white uppercase tracking-tight truncate">
-                {candidate.stage_name}
-              </h4>
-              <p className="text-[9px] sm:text-[11px] font-mono text-zinc-300 uppercase tracking-widest truncate">
-                {candidate.discipline} • {candidate.region}
-              </p>
+            <div className="flex justify-between items-end mb-1">
+              <div>
+                <h4 className="font-heading font-black text-lg sm:text-xl text-white uppercase tracking-tight truncate">{candidate.stage_name}</h4>
+                <p className="text-[9px] sm:text-[11px] font-mono text-zinc-300 uppercase tracking-widest">{candidate.discipline}</p>
+              </div>
+              <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-md border border-white/5 backdrop-blur-sm">
+                <Eye className="w-3 h-3 text-zinc-400" />
+                <span className="text-[10px] font-mono text-zinc-300">{formatNumber(viewsCount)}</span>
+              </div>
             </div>
 
             <div className="flex items-end justify-between border-t border-white/10 pt-2 sm:pt-3">

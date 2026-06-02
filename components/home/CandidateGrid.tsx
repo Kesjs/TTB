@@ -221,11 +221,10 @@ export default function CandidateGrid({
                 currentRole={currentRole}
                 rank={index + 1}
                 votesCount={getCandidateVoteCount?.(candidate.id) ?? 0}
+                viewsCount={candidate.views_count ?? 0}
                 selectedVideo={selectedVideo}
                 liveCandidateId={liveCandidateId}
                 isVotingOpen={isVotingOpen}
-                hybridScore={calculateHybridScore?.(candidate.id)}
-                juryScore={getJuryScore?.(candidate.id)}
                 onSelectVideo={onSelectVideo}
                 onVote={onVote}
                 onViewIncrement={onViewIncrement}
