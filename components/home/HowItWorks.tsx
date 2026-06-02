@@ -23,14 +23,14 @@ const steps = [
     number: '03',
     title: 'Demi-Finales',
     pool: 'Le Top 20',
-    description: 'Les compteurs sont remis à zéro. Sous la pression du vote public et de l\'expertise du jury, la sélection se resserre : seuls 8 artistes décrocheront leur ticket pour l\'ultime étape.',
+    description: 'Les compteurs sont remis à zéro. Sous la pression du vote public et de l\'expertise du jury, la sélection se resserre : seuls 12 artistes décrocheront leur ticket pour l\'ultime étape.',
     reward: 'Campagne de visibilité sur nos réseaux nationaux.',
   },
   {
     number: '04',
     title: 'Grande Finale',
-    pool: 'Le Top 8',
-    description: 'L\'apothéose. Les 8 grands finalistes s\'affrontent en direct devant la nation. Le vote du public déterminera le trio de tête qui se partagera les Dotations de Prestige, dont le titre d\'Icône 2026 pour le vainqueur.',
+    pool: 'Le Top 12',
+    description: 'L\'apothéose. Les 12 grands finalistes s\'affrontent en direct devant la nation. Le vote du public déterminera le trio de tête qui se partagera les Dotations de Prestige, dont le titre d\'Icône 2026 pour le vainqueur.',
     reward: 'Grand Prix (1.000.000 FCFA) & Accompagnement pro d\'un an.',
   },
 ];

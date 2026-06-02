@@ -71,10 +71,10 @@ export default function Reglement() {
                   </li>
                   <li>
                     <strong>Phase 03 - Demi-Finales (Le Top 20) :</strong> 
-                    Les compteurs de notation sont remis à zéro. Sous la double pression des votes du public et de l'expertise du jury, la sélection se resserre drastiquement pour retenir uniquement les <strong>8 grands finalistes</strong>.
+                    Les compteurs de notation sont remis à zéro. Sous la double pression des votes du public et de l'expertise du jury, la sélection se resserre drastiquement pour retenir uniquement les <strong>12 grands finalistes</strong>.
                   </li>
                   <li>
-                    <strong>Phase 04 - Grande Finale (Le Top 8) :</strong> 
+                    <strong>Phase 04 - Grande Finale (Le Top 12) :</strong> 
                     L'apothéose de la compétition. Les 8 artistes d'élite s'affrontent en direct. Le vote souverain détermine le trio de tête ainsi que le vainqueur ultime.
                   </li>
                 </ul>
@@ -106,7 +106,7 @@ export default function Reglement() {
                 <p>Des dotations de franchissement et des distinctions honorifiques sont octroyées selon les paliers atteints :</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li><strong>À l'issue des Quarts de Finale (Top 20) :</strong> Attribution d'une Certification Officielle de l'Édition 2026.</li>
-                  <li><strong>À l'issue des Demi-Finales (Top 8) :</strong> Octroi d'une campagne de visibilité majeure sur les réseaux nationaux de la plateforme.</li>
+                  <li><strong>À l'issue des Demi-Finales (Top 12) :</strong> Octroi d'une campagne de visibilité majeure sur les réseaux nationaux de la plateforme.</li>
                   <li><strong>Au vainqueur de la Grande Finale :</strong> Le titre prestigieux d'Icône 2026, accompagné du Grand Prix d'une valeur de <strong>1 000 000 FCFA</strong> et d'un accompagnement professionnel d'un an pour le développement de sa carrière.</li>
                 </ul>
               </div>

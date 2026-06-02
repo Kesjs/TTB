@@ -50,7 +50,7 @@ export default function VoteModal({ candidate, onClose, currentPhase, onSuccess 
                   {[
                     { id: 'MTN', src: '/mtn.png' },
                     { id: 'MOOV', src: '/moov.png' },
-                    { id: 'CELTIIS', src: '/celtiis.png' }
+                    { id: 'CELTIIS', src: '/celtis.jpg' }
                   ].map((n) => (
                     <button key={n.id} type="button" onClick={() => setNetwork(n.id as any)} 
                       className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${network === n.id ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 bg-slate-50 hover:border-slate-200'}`}>
