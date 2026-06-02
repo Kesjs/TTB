@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Play, Star, X, Info, Radio, Trophy } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Play, X, Info, Radio } from 'lucide-react';
 import type { Candidate } from '@/lib/supabase';
 
 interface CandidateCardProps {
@@ -18,7 +17,7 @@ interface CandidateCardProps {
   onSelectVideo?: (candidateId: string | null) => void;
   onVote?: (candidate: Candidate) => void;
   onViewIncrement?: (candidateId: string) => void;
-  onShowBio?: (candidate: Candidate) => void; // Nouvelle prop pour la modale
+  onShowBio?: (candidate: Candidate) => void;
 }
 
 export default function CandidateCard({
@@ -29,8 +28,6 @@ export default function CandidateCard({
   selectedVideo,
   liveCandidateId = null,
   isVotingOpen = false,
-  juryScore,
-  hybridScore,
   onSelectVideo,
   onVote,
   onViewIncrement,
@@ -68,27 +65,38 @@ export default function CandidateCard({
           
           {/* Action Centrale */}
           <button onClick={handlePlayClick} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hover:scale-110 transition-transform">
-            <Play className="w-16 h-16 text-white drop-shadow-2xl fill-white/20" />
+            <Play className="w-12 h-12 sm:w-16 sm:h-16 text-white drop-shadow-2xl fill-white/20" />
           </button>
 
-          {/* Info & Footer */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 z-20 space-y-4">
+          {/* Info & Footer Responsive */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 z-20 space-y-2 sm:space-y-4">
             <div>
-              <h4 className="font-heading font-black text-2xl text-white uppercase tracking-tight">{candidate.stage_name}</h4>
-              <p className="text-xs font-mono text-zinc-300 uppercase tracking-widest">{candidate.discipline} • {candidate.region}</p>
+              <h4 className="font-heading font-black text-xl sm:text-2xl text-white uppercase tracking-tight truncate">
+                {candidate.stage_name}
+              </h4>
+              <p className="text-[10px] sm:text-xs font-mono text-zinc-300 uppercase tracking-widest truncate">
+                {candidate.discipline} • {candidate.region}
+              </p>
             </div>
 
-            <div className="flex items-end justify-between border-t border-white/10 pt-4">
+            <div className="flex items-end justify-between border-t border-white/10 pt-3 sm:pt-4">
               <div className="flex flex-col">
-                <span className="text-2xl font-black text-[#e5c47f] font-mono">{votesCount.toLocaleString()}</span>
-                <span className="text-[10px] font-bold uppercase text-zinc-400">Votes</span>
+                <span className="text-xl sm:text-2xl font-black text-[#e5c47f] font-mono">{votesCount.toLocaleString()}</span>
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase text-zinc-400">Votes</span>
               </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => onShowBio?.(candidate)} className="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20 hover:bg-white/20">
-                  <Info className="w-4 h-4" />
+              
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <button onClick={() => onShowBio?.(candidate)} className="p-2.5 sm:p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20 hover:bg-white/20">
+                  <Info className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
                 {currentRole !== 'Administrateur' && (
-                  <button onClick={handleVoteClick} disabled={!isVotingOpen} className={`px-6 py-3 font-black text-[10px] uppercase rounded-full transition-all ${isVotingOpen ? 'bg-white text-zinc-950 hover:bg-[#e5c47f]' : 'bg-zinc-700 text-zinc-400'}`}>
+                  <button 
+                    onClick={handleVoteClick} 
+                    disabled={!isVotingOpen} 
+                    className={`px-4 sm:px-6 py-2.5 sm:py-3 font-black text-[9px] sm:text-[10px] uppercase rounded-full transition-all ${
+                      isVotingOpen ? 'bg-white text-zinc-950 hover:bg-[#e5c47f]' : 'bg-zinc-700 text-zinc-400'
+                    }`}
+                  >
                     Voter
                   </button>
                 )}
