@@ -416,9 +416,21 @@ function HomeContent() {
       {loading ? (
 
         <div className="flex-1 flex items-center justify-center bg-white">
-
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
-
+          <div className="flex flex-col items-center gap-6">
+            {/* Logo animé */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-amber-500/20 rounded-full animate-ping"></div>
+              <div className="relative w-20 h-20 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg">
+                <Database className="w-10 h-10 text-white animate-pulse" />
+              </div>
+            </div>
+            {/* Barre de progression */}
+            <div className="w-48 h-1 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: '60%' }}></div>
+            </div>
+            {/* Texte de chargement */}
+            <p className="text-sm font-medium text-gray-500 animate-pulse">Chargement en cours...</p>
+          </div>
         </div>
 
       ) : (
@@ -546,7 +558,6 @@ function HomeContent() {
               candidate={selectedCandidateForVote}
               onClose={() => setSelectedCandidateForVote(null)}
               currentPhase={systemControl.current_phase}
-              onSuccess={handleVoteSuccess}
             />
           )}
 
@@ -576,7 +587,18 @@ export default function Home() {
 
     <Suspense fallback={
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-amber-500/20 rounded-full animate-ping"></div>
+            <div className="relative w-20 h-20 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg">
+              <Database className="w-10 h-10 text-white animate-pulse" />
+            </div>
+          </div>
+          <div className="w-48 h-1 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: '60%' }}></div>
+          </div>
+          <p className="text-sm font-medium text-gray-500 animate-pulse">Chargement en cours...</p>
+        </div>
       </div>
     }>
 
