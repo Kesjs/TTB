@@ -478,7 +478,7 @@ export default function CandidateDashboard() {
                 <Trophy className="w-6 h-6 text-black" />
               </div>
               <h3 className="font-heading font-black text-lg uppercase tracking-tight mb-2">Objectif : Finale</h3>
-              <p className="text-zinc-400 text-xs leading-relaxed mb-6">Préparez-vous à briller. Les 8 finalistes s'affronteront en direct devant la nation pour le titre d'Icône 2026.</p>
+              <p className="text-zinc-400 text-xs leading-relaxed mb-6">Préparez-vous à briller. Les 12 finalistes s'affronteront en direct devant la nation pour le titre d'Icône 2026.</p>
               <button 
                 onClick={() => window.open('/reglement', '_blank')}
                 className="w-full py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2"

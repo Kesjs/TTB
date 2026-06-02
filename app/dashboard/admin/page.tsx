@@ -646,8 +646,8 @@ export default function AdminDashboard() {
       label = 'Top 20 Demi-Finale';
       updateField = 'is_semifinalist';
     } else if (targetPhase === 'FINAL') {
-      targetCount = 8;
-      label = 'Top 8 Finale';
+      targetCount = 12;
+      label = 'Top 12 Finale';
       updateField = 'is_finalist';
     }
 
