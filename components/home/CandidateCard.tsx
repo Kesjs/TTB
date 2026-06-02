@@ -197,15 +197,13 @@ export default function CandidateCard({
               </div>
             )}
 
-            {/* Play Button Overlay */}
-            <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
-              <button
-                onClick={handlePlayClick}
-                className="p-4 rounded-full bg-zinc-950/60 backdrop-blur-md border border-white/20 hover:bg-zinc-950 transition-all cursor-pointer pointer-events-auto"
-              >
-                <Play className="w-8 h-8 text-white drop-shadow-lg transition-transform group-hover:scale-110" />
-              </button>
-            </div>
+            {/* Play Button */}
+            <button
+              onClick={handlePlayClick}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 transition-transform cursor-pointer hover:scale-110"
+            >
+              <Play className="w-12 h-12 text-white drop-shadow-lg" />
+            </button>
 
             {/* Bottom Text Overlay */}
             <div className="absolute bottom-16 left-0 right-0 p-4 z-20">
@@ -260,7 +258,7 @@ export default function CandidateCard({
             </div>
           </>
         )}
-      </div>
+        </div>
 
         {/* Back Face - Bio */}
         <div className="absolute inset-0 bg-white p-6 flex flex-col" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
