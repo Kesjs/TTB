@@ -185,9 +185,9 @@ export default function VoteModal({ candidate, onClose }: VoteModalProps) {
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { id: 'MTN' as const, img: '/celtiis.png', name: 'MTN' },
-                      { id: 'MOOV' as const, img: '/celtiis.png', name: 'MOOV' },
-                      { id: 'CELTIIS' as const, img: '/celtiis.png', name: 'CELTIIS' }
+                      { id: 'MTN' as const, img: '/mtn.png', name: 'MTN' },
+                      { id: 'MOOV' as const, img: '/moov.png', name: 'MOOV' },
+                      { id: 'CELTIIS' as const, img: '/celtis.png', name: 'CELTIIS' }
                     ].map((n) => (
                       <button
                         key={n.id}

@@ -58,8 +58,15 @@ export async function POST(request: Request) {
           });
         } else {
           console.error('Erreur FedaPay API:', fedapayData);
+          // Erreur d'authentification FedaPay
+          if (fedapayResponse.status === 401 || fedapayResponse.status === 403) {
+            return NextResponse.json(
+              { success: false, message: 'Erreur d\'authentification FedaPay. Vérifiez la clé API.' },
+              { status: 502 }
+            );
+          }
           return NextResponse.json(
-            { success: false, message: fedapayData.message || 'Erreur d\'initialisation FedaPay' },
+            { success: false, message: fedapayData.message || fedapayData.error?.message || 'Erreur d\'initialisation FedaPay' },
             { status: 502 }
           );
         }
