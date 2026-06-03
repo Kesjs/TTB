@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { X, Loader2, CheckCircle2, Smartphone, AlertCircle } from 'lucide-react';
+import { X, Loader2, CheckCircle2, Smartphone, AlertCircle, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Candidate } from '@/lib/supabase';
 
@@ -188,6 +188,11 @@ export default function VoteModal({ candidate, onClose, currentPhase }: VoteModa
                   </div>
                 )}
 
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-500 bg-green-50 p-2 rounded-lg">
+                  <Shield size={14} className="text-green-600" />
+                  <span className="text-green-700 font-medium">Paiement sécurisé par FedaPay</span>
+                </div>
+
                 <button
                   onClick={() => setStep('confirm')}
                   disabled={loading || phone.length !== 8}
@@ -230,6 +235,11 @@ export default function VoteModal({ candidate, onClose, currentPhase }: VoteModa
                     </div>
                   </div>
                 </div>
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-500 bg-green-50 p-2 rounded-lg">
+                  <Shield size={14} className="text-green-600" />
+                  <span className="text-green-700 font-medium">Paiement sécurisé par FedaPay</span>
+                </div>
+
                 <button
                   onClick={handlePay}
                   disabled={loading}
@@ -253,10 +263,11 @@ export default function VoteModal({ candidate, onClose, currentPhase }: VoteModa
                 <Loader2 size={48} className="animate-spin mx-auto text-gray-900" />
                 <p className="font-medium">Validation du paiement en cours...</p>
                 <p className="text-sm text-gray-500">Veuillez valider la demande sur votre téléphone.</p>
-                <div className="flex flex-col items-center gap-2 text-xs text-gray-400 mt-4">
-                  <span>Paiement sécurisé par FedaPay</span>
-                  <p className="text-[10px] text-gray-400">Cryptage SSL • Conformité PCI • Protection des données</p>
+                <div className="flex items-center justify-center gap-2 text-xs bg-green-50 p-3 rounded-lg mt-4">
+                  <Shield size={16} className="text-green-600" />
+                  <span className="text-green-700 font-medium">Paiement sécurisé par FedaPay</span>
                 </div>
+                <p className="text-[10px] text-gray-400">Cryptage SSL • Conformité PCI • Protection des données</p>
               </motion.div>
             )}
 
@@ -268,10 +279,11 @@ export default function VoteModal({ candidate, onClose, currentPhase }: VoteModa
                 </div>
                 <h3 className="text-xl font-bold">Vote enregistré !</h3>
                 <button onClick={onClose} className="mt-4 w-full h-12 bg-gray-900 text-white rounded-xl">Fermer</button>
-                <div className="flex flex-col items-center gap-1 mt-3">
-                  <p className="text-xs text-gray-400">Paiement sécurisé par FedaPay</p>
-                  <p className="text-[10px] text-gray-400">Cryptage SSL • Conformité PCI • Protection des données</p>
+                <div className="flex items-center justify-center gap-2 text-xs bg-green-50 p-3 rounded-lg mt-4">
+                  <Shield size={16} className="text-green-600" />
+                  <span className="text-green-700 font-medium">Paiement sécurisé par FedaPay</span>
                 </div>
+                <p className="text-[10px] text-gray-400">Cryptage SSL • Conformité PCI • Protection des données</p>
               </motion.div>
             )}
 
