@@ -11,9 +11,9 @@ interface VoteModalProps {
   currentPhase: string;
 }
 
-type Step = 'input' | 'waiting' | 'success' | 'error';
+type Step = 'input' | 'confirm' | 'waiting' | 'success' | 'error';
 
-export default function VoteModal({ candidate, onClose }: VoteModalProps) {
+export default function VoteModal({ candidate, onClose, currentPhase }: VoteModalProps) {
   const [voteCount, setVoteCount] = useState<number>(1);
   const [phone, setPhone] = useState<string>(''); // Format brut pour la logique
   const [displayPhone, setDisplayPhone] = useState<string>(''); // Format visuel pour l'input
@@ -118,7 +118,15 @@ export default function VoteModal({ candidate, onClose }: VoteModalProps) {
         className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden"
       >
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-900">Soutenir {candidate.stage_name}</h3>
+          <div className="flex items-center gap-3">
+            {candidate.cover_image_url && (
+              <img src={candidate.cover_image_url} alt={candidate.stage_name} className="w-12 h-12 rounded-full object-cover" />
+            )}
+            <div>
+              <h3 className="font-semibold text-gray-900">Soutenir {candidate.stage_name}</h3>
+              <p className="text-xs text-gray-500">{currentPhase === 'finale' ? 'Finale' : 'Présélection'}</p>
+            </div>
+          </div>
           <button onClick={onClose} disabled={loading} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
             <X size={20} />
           </button>
@@ -133,13 +141,31 @@ export default function VoteModal({ candidate, onClose }: VoteModalProps) {
                 <div>
                   <label className="block text-sm font-medium mb-3 text-gray-700">Réseau mobile</label>
                   <div className="grid grid-cols-3 gap-3">
-                    {['MTN', 'MOOV', 'CELTIIS'].map((n) => (
-                      <button key={n} onClick={() => setNetwork(n as any)} 
-                        className={`p-3 border-2 rounded-xl text-xs font-semibold transition-all ${network === n ? 'border-gray-900 bg-gray-50' : 'border-gray-200'}`}>
-                        {n}
+                    {[
+                      { name: 'MTN', img: '/mtn.png' },
+                      { name: 'MOOV', img: '/moov.png' },
+                      { name: 'CELTIIS', img: '/celtis.jpg' }
+                    ].map((n) => (
+                      <button key={n.name} onClick={() => setNetwork(n.name as any)} 
+                        className={`p-3 border-2 rounded-xl transition-all flex flex-col items-center gap-2 ${network === n.name ? 'border-gray-900 bg-gray-50' : 'border-gray-200'}`}>
+                        <img src={n.img} alt={n.name} className="w-8 h-8 object-contain" />
+                        <span className="text-xs font-semibold">{n.name}</span>
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-3 text-gray-700">Nombre de votes</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[1, 5, 10, 20].map((count) => (
+                      <button key={count} onClick={() => setVoteCount(count)}
+                        className={`p-3 border-2 rounded-xl text-sm font-semibold transition-all ${voteCount === count ? 'border-gray-900 bg-gray-50' : 'border-gray-200'}`}>
+                        {count}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">200 FCFA par vote • Total: {totalAmount.toLocaleString()} FCFA</p>
                 </div>
 
                 <div>
@@ -163,11 +189,60 @@ export default function VoteModal({ candidate, onClose }: VoteModalProps) {
                 )}
 
                 <button
-                  onClick={handlePay}
+                  onClick={() => setStep('confirm')}
                   disabled={loading || phone.length !== 8}
                   className={`w-full h-14 rounded-xl font-semibold text-white transition-all ${loading || phone.length !== 8 ? 'bg-gray-300' : 'bg-gray-900 hover:bg-black'}`}
                 >
-                  {loading ? <Loader2 className="animate-spin mx-auto" /> : `Payer ${totalAmount.toLocaleString()} FCFA`}
+                  {loading ? <Loader2 className="animate-spin mx-auto" /> : 'Continuer'}
+                </button>
+              </motion.div>
+            )}
+
+            {/* ÉTAPE : CONFIRMATION */}
+            {step === 'confirm' && (
+              <motion.div key="confirm" exit={{ opacity: 0 }} className="space-y-4">
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    {candidate.cover_image_url && (
+                      <img src={candidate.cover_image_url} alt={candidate.stage_name} className="w-12 h-12 rounded-full object-cover" />
+                    )}
+                    <div>
+                      <p className="font-semibold text-gray-900">{candidate.stage_name}</p>
+                      <p className="text-xs text-gray-500">{voteCount} vote{voteCount > 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                  <div className="border-t border-gray-200 pt-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Réseau</span>
+                      <span className="font-medium">{network}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Téléphone</span>
+                      <span className="font-medium">{displayPhone}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Prix unitaire</span>
+                      <span className="font-medium">200 FCFA</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total</span>
+                      <span className="text-gray-900">{totalAmount.toLocaleString()} FCFA</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handlePay}
+                  disabled={loading}
+                  className={`w-full h-14 rounded-xl font-semibold text-white transition-all ${loading ? 'bg-gray-300' : 'bg-gray-900 hover:bg-black'}`}
+                >
+                  {loading ? <Loader2 className="animate-spin mx-auto" /> : `Confirmer et payer ${totalAmount.toLocaleString()} FCFA`}
+                </button>
+                <button
+                  onClick={() => setStep('input')}
+                  disabled={loading}
+                  className="w-full h-12 border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-all"
+                >
+                  Modifier
                 </button>
               </motion.div>
             )}
@@ -178,6 +253,10 @@ export default function VoteModal({ candidate, onClose }: VoteModalProps) {
                 <Loader2 size={48} className="animate-spin mx-auto text-gray-900" />
                 <p className="font-medium">Validation du paiement en cours...</p>
                 <p className="text-sm text-gray-500">Veuillez valider la demande sur votre téléphone.</p>
+                <div className="flex flex-col items-center gap-2 text-xs text-gray-400 mt-4">
+                  <span>Paiement sécurisé par FedaPay</span>
+                  <p className="text-[10px] text-gray-400">Cryptage SSL • Conformité PCI • Protection des données</p>
+                </div>
               </motion.div>
             )}
 
@@ -189,6 +268,10 @@ export default function VoteModal({ candidate, onClose }: VoteModalProps) {
                 </div>
                 <h3 className="text-xl font-bold">Vote enregistré !</h3>
                 <button onClick={onClose} className="mt-4 w-full h-12 bg-gray-900 text-white rounded-xl">Fermer</button>
+                <div className="flex flex-col items-center gap-1 mt-3">
+                  <p className="text-xs text-gray-400">Paiement sécurisé par FedaPay</p>
+                  <p className="text-[10px] text-gray-400">Cryptage SSL • Conformité PCI • Protection des données</p>
+                </div>
               </motion.div>
             )}
 
