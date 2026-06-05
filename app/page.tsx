@@ -10,6 +10,8 @@ import { useSearchParams } from 'next/navigation';
 
 import { Database } from 'lucide-react';
 
+import { PageLoader } from '@/components/ui/PageLoader';
+
 import Navbar from '@/components/Navbar';
 
 import CallForApplications from '@/components/home/CallForApplications';
@@ -413,27 +415,7 @@ function HomeContent() {
 
       <Navbar currentPhase={systemControl.current_phase} isLoading={loading} />
 
-      {loading ? (
-
-        <div className="flex-1 flex items-center justify-center bg-white">
-          <div className="flex flex-col items-center gap-6">
-            {/* Logo animé */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-amber-500/20 rounded-full animate-ping"></div>
-              <div className="relative w-20 h-20 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg">
-                <Database className="w-10 h-10 text-white animate-pulse" />
-              </div>
-            </div>
-            {/* Barre de progression */}
-            <div className="w-48 h-1 bg-gray-200 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: '60%' }}></div>
-            </div>
-            {/* Texte de chargement */}
-            <p className="text-sm font-medium text-gray-500 animate-pulse">Chargement en cours...</p>
-          </div>
-        </div>
-
-      ) : (
+      {loading ? <PageLoader /> : (
 
         <>
           {error && (

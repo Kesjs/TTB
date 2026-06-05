@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import type { Profile } from '@/lib/supabase/types';
-import { Shield, User, Loader2 } from 'lucide-react';
+import { Shield, User } from 'lucide-react';
+import { Spinner } from '@/components/ui/Spinner';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
 export default function JurySection() {
@@ -93,8 +94,7 @@ export default function JurySection() {
         {/* LOADING STATE */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-3">
-            <Loader2 className="w-5 h-5 text-[#e5c47f] animate-spin" />
-            <span className="font-mono text-[9px] text-zinc-400 uppercase tracking-widest">Initialisation du Board...</span>
+            <Spinner size="sm" text="Initialisation du Board..." />
           </div>
         ) : (
           /* GRILLE DU JURY EN MODE LIGHT */

@@ -3,12 +3,14 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Star, Award, UserCheck, Flame, Loader2, Sparkles, Check, Plus, Minus,
+import {
+  Star, Award, UserCheck, Flame, Sparkles, Check, Plus, Minus,
   LogOut, AlertCircle, ExternalLink, History, ClipboardList, BarChart3,
   User, Layout, ChevronRight, CheckCircle2, TrendingUp, Flag, Trophy,
   Eye, X, ChevronLeft
 } from 'lucide-react';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
+import { Spinner } from '@/components/ui/Spinner';
 import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile, toSqlPhase } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
@@ -1142,7 +1144,7 @@ export default function JuryDashboard() {
                               disabled={loading}
                               className="w-full sm:w-auto px-6 py-3.5 bg-[#e5c47f] text-black font-heading font-black text-xs uppercase rounded-xl tracking-wider hover:bg-[#d4b36f] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-[#e5c47f]/10"
                             >
-                              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Award className="w-4 h-4" />}
+                              {loading ? <ButtonLoader size="sm" /> : <Award className="w-4 h-4" />}
                               Enregistrer la Note
                             </button>
                           </div>

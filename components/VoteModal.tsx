@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { X, Loader2, CheckCircle2, Smartphone, AlertCircle, Shield } from 'lucide-react';
+import { X, CheckCircle2, Smartphone, AlertCircle, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Candidate } from '@/lib/supabase';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
+import { Spinner } from '@/components/ui/Spinner';
 
 interface VoteModalProps {
   candidate: Candidate;
@@ -198,7 +200,7 @@ export default function VoteModal({ candidate, onClose, currentPhase }: VoteModa
                   disabled={loading || phone.length !== 8}
                   className={`w-full h-14 rounded-xl font-semibold text-white transition-all ${loading || phone.length !== 8 ? 'bg-gray-300' : 'bg-gray-900 hover:bg-black'}`}
                 >
-                  {loading ? <Loader2 className="animate-spin mx-auto" /> : 'Continuer'}
+                  {loading ? <ButtonLoader /> : 'Continuer'}
                 </button>
               </motion.div>
             )}
@@ -245,7 +247,7 @@ export default function VoteModal({ candidate, onClose, currentPhase }: VoteModa
                   disabled={loading}
                   className={`w-full h-14 rounded-xl font-semibold text-white transition-all ${loading ? 'bg-gray-300' : 'bg-gray-900 hover:bg-black'}`}
                 >
-                  {loading ? <Loader2 className="animate-spin mx-auto" /> : `Confirmer et payer ${totalAmount.toLocaleString()} FCFA`}
+                  {loading ? <ButtonLoader /> : `Confirmer et payer ${totalAmount.toLocaleString()} FCFA`}
                 </button>
                 <button
                   onClick={() => setStep('input')}
@@ -260,7 +262,7 @@ export default function VoteModal({ candidate, onClose, currentPhase }: VoteModa
             {/* ÉTAPE : WAITING */}
             {step === 'waiting' && (
               <motion.div key="waiting" className="text-center py-10 space-y-4">
-                <Loader2 size={48} className="animate-spin mx-auto text-gray-900" />
+                <Spinner size="xl" />
                 <p className="font-medium">Validation du paiement en cours...</p>
                 <p className="text-sm text-gray-500">Veuillez valider la demande sur votre téléphone.</p>
                 <div className="flex items-center justify-center gap-2 text-xs bg-green-50 p-3 rounded-lg mt-4">

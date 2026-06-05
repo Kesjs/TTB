@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useFormState } from 'react-dom';
 import Cropper from 'react-easy-crop';
-import { Upload, Film, CheckCircle2, Clock, Share2, ArrowRight, User, MapPin, Award, Lock, Loader2, Users, Eye, EyeOff, Plus, Minus, Mic, Music, Clapperboard, MessageSquare, Video, Sparkles, Trophy, Palette, ChevronDown, X } from 'lucide-react';
+import { Upload, Film, CheckCircle2, Clock, Share2, ArrowRight, User, MapPin, Award, Lock, Users, Eye, EyeOff, Plus, Minus, Mic, Music, Clapperboard, MessageSquare, Video, Sparkles, Trophy, Palette, ChevronDown, X } from 'lucide-react';
 import { auth } from '@/lib/supabase/auth';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase';
 import { signIn } from '@/app/actions/auth';
 import CustomSelect from '@/components/ui/CustomSelect';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
+import { ProgressBar } from '@/components/ui/ProgressBar';
 
 // Memoized Video Preview Component to prevent flickering during upload
 const VideoPreview = ({ videoFile, onRemove }: { videoFile: File; onRemove: () => void }) => {
@@ -674,11 +676,8 @@ export default function CandidaturePage() {
     <div className="min-h-screen bg-white text-[#050505] pt-24 sm:pt-32 pb-12 sm:pb-16 selection:bg-[#e5c47f] selection:text-black">
       {/* Global Progress Bar - SaaS Style */}
       {isUploading && (
-        <div className="fixed bottom-0 left-0 w-full h-1 bg-neutral-800 z-50">
-          <div 
-            className="h-full bg-[#e5c47f] transition-all duration-300 ease-out"
-            style={{ width: `${uploadProgress}%` }}
-          />
+        <div className="fixed bottom-0 left-0 w-full z-50 px-4 py-2 bg-white border-t border-zinc-200">
+          <ProgressBar progress={uploadProgress} showPercentage size="sm" />
         </div>
       )}
       
@@ -948,7 +947,7 @@ export default function CandidaturePage() {
                             />
                             {stageNameStatus === 'checking' && (
                               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
+                                <ButtonLoader size="sm" />
                               </div>
                             )}
                           </div>
@@ -981,7 +980,7 @@ export default function CandidaturePage() {
                                 ))}
                                 {isGeneratingSuggestions && (
                                   <span className="text-[9px] text-zinc-400 italic flex items-center gap-1">
-                                    <Loader2 className="w-2 h-2 animate-spin" /> Génération...
+                                    <ButtonLoader size="sm" /> Génération...
                                   </span>
                                 )}
                               </div>
@@ -1121,7 +1120,7 @@ export default function CandidaturePage() {
                             />
                             {emailStatus === 'checking' && (
                               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
+                                <ButtonLoader size="sm" />
                               </div>
                             )}
                           </div>
@@ -1503,7 +1502,7 @@ export default function CandidaturePage() {
                   >
                     {isLoggingIn ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin text-[#e5c47f]" /> 
+                        <ButtonLoader size="sm" />
                         VÉRIFICATION DE L&apos;ACCÈS...
                       </>
                     ) : (

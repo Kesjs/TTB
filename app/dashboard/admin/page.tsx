@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import {
   Settings, ShieldCheck, Users, BarChart3, Lock, Unlock,
   CheckCircle2, Sliders, ShieldX, UserPlus, Trash2, Edit,
-  Loader2, AlertCircle, Phone, Mail, X as XIcon, Share2,
+  AlertCircle, Phone, Mail, X as XIcon, Share2,
   ExternalLink, LogOut, Database, Monitor, Eye, EyeOff, User, Trophy
 } from 'lucide-react';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
+import { Spinner } from '@/components/ui/Spinner';
+import { SkeletonCard } from '@/components/ui/SkeletonCard';
 import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile, CandidateVoteCount, toSqlPhase } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
@@ -965,7 +968,7 @@ export default function AdminDashboard() {
                       disabled={juryLoading}
                       className="flex-1 bg-[#e5c47f] hover:bg-[#d4b36f] text-zinc-950 text-xs font-bold uppercase tracking-wider py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                      {juryLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      {juryLoading ? <ButtonLoader size="sm" /> : <CheckCircle2 className="w-4 h-4" />}
                       {editingJury ? 'Mettre à jour' : 'Créer'}
                     </button>
                     {editingJury && (
@@ -1627,7 +1630,7 @@ export default function AdminDashboard() {
                     disabled={adminProfileLoading}
                     className="w-full bg-[#e5c47f] hover:bg-[#d4b36f] text-zinc-950 text-xs font-bold uppercase tracking-wider py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {adminProfileLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    {adminProfileLoading ? <ButtonLoader size="sm" /> : <CheckCircle2 className="w-4 h-4" />}
                     Mettre à jour mon profil
                   </button>
                 </form>
@@ -1748,7 +1751,7 @@ export default function AdminDashboard() {
                   />
                   {!siteUrl && (
                     <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center">
-                      <Loader2 className="w-8 h-8 animate-spin text-[#e5c47f]" />
+                      <Spinner size="lg" />
                     </div>
                   )}
                 </div>

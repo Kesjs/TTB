@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Lock, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { signIn } from '@/app/actions/auth';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -107,7 +108,7 @@ export default function LoginPage() {
               {isSubmitting ? (
                 <>
                   Connexion en cours...
-                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <ButtonLoader size="sm" />
                 </>
               ) : (
                 <>

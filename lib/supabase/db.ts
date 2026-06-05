@@ -4,13 +4,14 @@ import type { Candidate, JuryAverage, JuryRating, Profile, SystemControl, Vote, 
 import { toSqlPhase } from '@/lib/supabase/types';
 import { getSessionId } from '@/lib/utils/session';
 
-const initLocalStorage = () => {
-  if (!isClient) return;
+const initLocalStorage = (): boolean => {
+  if (!isClient) return false;
   if (!localStorage.getItem('ttb_system_control')) localStorage.setItem('ttb_system_control', JSON.stringify(DEFAULT_SYSTEM_CONTROL));
   if (!localStorage.getItem('ttb_profiles')) localStorage.setItem('ttb_profiles', JSON.stringify(DEFAULT_PROFILES));
   if (!localStorage.getItem('ttb_candidates')) localStorage.setItem('ttb_candidates', JSON.stringify(DEFAULT_CANDIDATES));
   if (!localStorage.getItem('ttb_votes')) localStorage.setItem('ttb_votes', JSON.stringify(DEFAULT_VOTES));
   if (!localStorage.getItem('ttb_jury_ratings')) localStorage.setItem('ttb_jury_ratings', JSON.stringify(DEFAULT_JURY_RATINGS));
+  return true;
 };
 
 export const db = {
@@ -27,7 +28,7 @@ export const db = {
       }
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return DEFAULT_SYSTEM_CONTROL;
     const systemControl = localStorage.getItem('ttb_system_control');
     return systemControl ? JSON.parse(systemControl) : DEFAULT_SYSTEM_CONTROL;
   },
@@ -65,7 +66,7 @@ export const db = {
       }
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return { ...DEFAULT_SYSTEM_CONTROL, ...updates };
     const current = JSON.parse(localStorage.getItem('ttb_system_control') || '{}');
     const updated = { ...current, ...updates };
     localStorage.setItem('ttb_system_control', JSON.stringify(updated));
@@ -118,7 +119,7 @@ export const db = {
         // Si l'erreur est liée à views_count manquant, utiliser localStorage
         if (err.message === 'views_count_column_missing') {
           console.warn('[DB] Falling back to localStorage due to missing views_count column');
-          initLocalStorage();
+          if (!initLocalStorage()) return [];
           const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
           let filtered = candidates;
           if (options?.status) filtered = filtered.filter((candidate) => candidate.status === options.status);
@@ -129,7 +130,7 @@ export const db = {
       }
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return [];
     const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
     let filtered = candidates;
     if (options?.status) filtered = filtered.filter((candidate) => candidate.status === options.status);
@@ -143,7 +144,7 @@ export const db = {
       if (!error && data) return data;
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return null;
     const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
     return candidates.find((candidate) => candidate.id === id) || null;
   },
@@ -162,7 +163,7 @@ export const db = {
       if (error) console.error('[DB] Supabase error creating candidate:', error);
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return { ...newCandidate, id: tempId };
     const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
     const finalCandidate = { ...newCandidate, id: tempId };
     candidates.push(finalCandidate);
@@ -198,7 +199,7 @@ export const db = {
       }
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return null;
     const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
     const index = candidates.findIndex((candidate) => candidate.id === id);
 
@@ -239,7 +240,7 @@ export const db = {
       }
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return null;
     const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
     const index = candidates.findIndex((candidate) => candidate.id === id);
 
@@ -268,7 +269,7 @@ export const db = {
       return false;
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return true;
     const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
     const filtered = candidates.filter((c) => c.id !== id);
     localStorage.setItem('ttb_candidates', JSON.stringify(filtered));
@@ -292,7 +293,7 @@ export const db = {
       return data;
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return null;
     const candidates: Candidate[] = JSON.parse(localStorage.getItem('ttb_candidates') || '[]');
     const index = candidates.findIndex((candidate) => candidate.id === id);
 
@@ -311,7 +312,7 @@ export const db = {
       if (!error && data) return data;
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return [];
     return JSON.parse(localStorage.getItem('ttb_votes') || '[]');
   },
 
@@ -329,7 +330,7 @@ export const db = {
       if (error) console.error('[DB] Supabase error adding vote:', error);
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return { ...newVote, id: tempId };
     const votes: Vote[] = JSON.parse(localStorage.getItem('ttb_votes') || '[]');
     const finalVote = { ...newVote, id: tempId };
     votes.push(finalVote);
@@ -346,7 +347,7 @@ export const db = {
       if (!error && data) return data;
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return [];
     return JSON.parse(localStorage.getItem('ttb_jury_ratings') || '[]');
   },
 
@@ -380,7 +381,7 @@ export const db = {
     }
 
     console.log('[DB] Falling back to LocalStorage save...');
-    initLocalStorage();
+    if (!initLocalStorage()) return { ...ratingToSave, id: tempId };
     const ratings: JuryRating[] = JSON.parse(localStorage.getItem('ttb_jury_ratings') || '[]');
     const index = ratings.findIndex((existingRating) => existingRating.jury_id === rating.jury_id && existingRating.candidate_id === rating.candidate_id && existingRating.phase === rating.phase);
 
@@ -404,7 +405,7 @@ export const db = {
       if (!error && data) return data;
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return [];
     return JSON.parse(localStorage.getItem('ttb_profiles') || '[]');
   },
 
@@ -425,7 +426,7 @@ export const db = {
       if (!error && data) return data;
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return null;
     const profiles: Profile[] = JSON.parse(localStorage.getItem('ttb_profiles') || '[]');
     const index = profiles.findIndex((profile) => profile.id === id);
 
@@ -439,7 +440,7 @@ export const db = {
   },
 
   getJuryAverages: async (phase: string): Promise<Record<string, JuryAverage>> => {
-    initLocalStorage();
+    if (!initLocalStorage()) return {};
     const ratings: JuryRating[] = JSON.parse(localStorage.getItem('ttb_jury_ratings') || '[]');
     const phaseRatings = ratings.filter((rating) => rating.phase === phase);
     const aggregates: Record<string, { tech: number[]; orig: number[]; pres: number[] }> = {};
@@ -513,7 +514,7 @@ export const db = {
       if (!error && data) return data;
     }
 
-    initLocalStorage();
+    if (!initLocalStorage()) return [];
     const profiles: Profile[] = JSON.parse(localStorage.getItem('ttb_profiles') || '[]');
     return profiles.filter((p) => p.role === 'jury');
   },
@@ -579,7 +580,7 @@ export const db = {
     }
 
     // Fallback to client-side aggregation for mock mode
-    initLocalStorage();
+    if (!initLocalStorage()) return [];
     const votes: Vote[] = JSON.parse(localStorage.getItem('ttb_votes') || '[]');
     const successfulVotes = votes.filter(v => v.payment_status === 'success');
     const aggregated: Record<string, CandidateVoteCount> = {};
