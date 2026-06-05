@@ -200,8 +200,11 @@ function HomeContent() {
 
         .subscribe((status) => {
 
-          console.log('Subscription status:', status);
-
+          if (status === 'SUBSCRIBED') {
+            console.log('System control realtime subscription active');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.warn('System control realtime subscription failed, using polling fallback');
+          }
         });
 
 
@@ -215,7 +218,11 @@ function HomeContent() {
           void loadData();
         })
         .subscribe((status) => {
-          console.log('Candidates subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('Candidates realtime subscription active');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.warn('Candidates realtime subscription failed, using polling fallback');
+          }
         });
 
       // Supabase Realtime subscription for jury ratings (to update scores in real-time)
@@ -226,7 +233,11 @@ function HomeContent() {
           void loadData();
         })
         .subscribe((status) => {
-          console.log('Ratings subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('Jury ratings realtime subscription active');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.warn('Jury ratings realtime subscription failed, using polling fallback');
+          }
         });
 
       return () => {
