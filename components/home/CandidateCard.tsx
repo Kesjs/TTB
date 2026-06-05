@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
+import Image from 'next/image';
 import { Play, X, Info, Radio, Eye } from 'lucide-react';
 import type { Candidate } from '@/lib/supabase';
 
@@ -26,7 +27,7 @@ interface CandidateCardProps {
   onShowBio?: (candidate: Candidate) => void;
 }
 
-export default function CandidateCard({
+function CandidateCard({
   candidate,
   currentRole = 'Visiteur',
   rank,
@@ -65,7 +66,19 @@ export default function CandidateCard({
       ) : (
         <>
           <div className="absolute inset-0">
-            <img src={candidate.cover_image_url} alt={candidate.stage_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            {candidate.cover_image_url ? (
+              <Image
+                src={candidate.cover_image_url}
+                alt={candidate.stage_name}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-700"
+                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              />
+            ) : (
+              <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                <span className="text-zinc-400 font-heading font-black text-3xl">{candidate.stage_name.charAt(0)}</span>
+              </div>
+            )}
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10" />
           
@@ -114,3 +127,5 @@ export default function CandidateCard({
     </div>
   );
 }
+
+export default memo(CandidateCard);

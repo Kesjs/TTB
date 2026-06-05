@@ -36,7 +36,6 @@ export async function POST(request: Request) {
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      console.error('Unauthorized: No valid session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -48,22 +47,17 @@ export async function POST(request: Request) {
       .single();
 
     if (profileError || !profile || profile.role !== 'admin') {
-      console.error('Forbidden: User is not an admin');
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { email, password, fullName, phone, avatarUrl } = await request.json();
 
     if (!email || !password || !fullName) {
-      console.error('Missing required fields');
       return NextResponse.json({ error: 'Email, password, and fullName are required' }, { status: 400 });
     }
 
-    console.log('Attempting to create jury user:', email);
-
     // Check if service role key is available
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('SUPABASE_SERVICE_ROLE_KEY is not configured');
       return NextResponse.json({ error: 'Service role key not configured' }, { status: 500 });
     }
 
@@ -91,11 +85,8 @@ export async function POST(request: Request) {
     });
 
     if (authError || !authData.user) {
-      console.error('Error creating auth user:', authError);
       return NextResponse.json({ error: 'Failed to create auth user: ' + (authError?.message || 'Unknown error') }, { status: 500 });
     }
-
-    console.log('Auth user created successfully:', authData.user.id);
 
     // Create profile
     const { error: upsertError } = await adminSupabase
@@ -109,11 +100,8 @@ export async function POST(request: Request) {
       });
 
     if (upsertError) {
-      console.error('Error creating profile:', upsertError);
       return NextResponse.json({ error: 'Failed to create profile: ' + upsertError.message }, { status: 500 });
     }
-
-    console.log('Profile created successfully');
 
     return NextResponse.json({
       success: true,
@@ -123,7 +111,6 @@ export async function POST(request: Request) {
       }
     });
   } catch (error) {
-    console.error('Error in create-user API:', error);
     return NextResponse.json({ error: 'Internal server error: ' + (error as Error).message }, { status: 500 });
   }
 }

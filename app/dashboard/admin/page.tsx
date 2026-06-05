@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
   Settings, ShieldCheck, Users, BarChart3, Lock, Unlock,
   CheckCircle2, Sliders, ShieldX, UserPlus, Trash2, Edit,
@@ -11,14 +12,23 @@ import {
 import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { Spinner } from '@/components/ui/Spinner';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile, CandidateVoteCount, toSqlPhase } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
 import { signOut } from '@/app/actions/auth';
 import { updateCandidateStatus, confirmCandidateByAdmin, preApproveCandidate, rejectCandidate, submitToJury, confirmAndPublishCandidates } from '@/app/actions/admin';
-import CustomSelectDark from '@/components/ui/CustomSelectDark';
-import { Skeleton } from '@/components/ui/Skeleton';
-import NotificationBadge from '@/components/ui/NotificationBadge';
+
+// Dynamic imports pour les composants UI lourds
+const CustomSelectDark = dynamic(() => import('@/components/ui/CustomSelectDark'), {
+  loading: () => <Spinner size="sm" />,
+  ssr: false
+});
+
+const NotificationBadge = dynamic(() => import('@/components/ui/NotificationBadge'), {
+  loading: () => <Spinner size="sm" />,
+  ssr: false
+});
 
 type TabType = 'jury' | 'moderation' | 'phases' | 'settings' | 'preview';
 type CandidateStatusFilter = 'pending' | 'pre_approved' | 'jury_selected' | 'approved' | 'rejected';

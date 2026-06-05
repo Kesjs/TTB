@@ -36,7 +36,6 @@ export async function POST(request: Request) {
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      console.error('Unauthorized: No valid session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -48,22 +47,17 @@ export async function POST(request: Request) {
       .single();
 
     if (profileError || !profile || profile.role !== 'admin') {
-      console.error('Forbidden: User is not an admin');
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { userId, email, password, fullName, phone, avatarUrl } = await request.json();
 
     if (!userId) {
-      console.error('User ID missing in request');
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    console.log('Attempting to update user:', userId);
-
     // Check if service role key is available
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('SUPABASE_SERVICE_ROLE_KEY is not configured');
       return NextResponse.json({ error: 'Service role key not configured' }, { status: 500 });
     }
 
@@ -90,11 +84,8 @@ export async function POST(request: Request) {
       .eq('id', userId);
 
     if (updateError) {
-      console.error('Error updating profile:', updateError);
       return NextResponse.json({ error: 'Failed to update profile: ' + updateError.message }, { status: 500 });
     }
-
-    console.log('Profile updated successfully');
 
     // Update auth user if password or email provided
     if (password || email) {
@@ -103,27 +94,18 @@ export async function POST(request: Request) {
         if (email) updateData.email = email;
         if (password) updateData.password = password;
 
-        console.log('Attempting to update auth user with data:', { hasEmail: !!email, hasPassword: !!password });
-
         const { error: authError } = await adminSupabase.auth.admin.updateUserById(userId, updateData);
 
         if (authError) {
-          console.error('Error updating auth user:', authError);
           // Don't fail - profile is already updated
-          console.warn('Auth user update failed, but profile was updated. Error:', authError.message);
-        } else {
-          console.log('Auth user updated successfully');
         }
       } catch (authError) {
-        console.error('Exception during auth user update:', authError);
         // Don't fail - profile is already updated
-        console.warn('Auth user update threw exception, but profile was updated.');
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error in update-user API:', error);
     return NextResponse.json({ error: 'Internal server error: ' + (error as Error).message }, { status: 500 });
   }
 }

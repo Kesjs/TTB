@@ -46,8 +46,6 @@ import type { Candidate, SystemControl } from '@/lib/supabase';
 
 import { JuryAverage, CandidateVoteCount } from '@/lib/supabase/types';
 
-
-
 // In-memory fallback configuration (SSR-safe, no localStorage dependency)
 
 const FALLBACK_SYSTEM: SystemControl = {

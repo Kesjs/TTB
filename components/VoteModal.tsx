@@ -129,7 +129,7 @@ export default function VoteModal({ candidate, onClose, currentPhase }: VoteModa
               <p className="text-xs text-gray-500">{currentPhase === 'finale' ? 'Finale' : 'Présélection'}</p>
             </div>
           </div>
-          <button onClick={onClose} disabled={loading} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <button onClick={onClose} disabled={loading} className="p-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="Fermer la modal">
             <X size={20} />
           </button>
         </div>

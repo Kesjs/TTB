@@ -1,12 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
-// FedaPay webhook signature verification (if applicable)
-// Note: Implement actual signature verification based on FedaPay documentation
+// FedaPay webhook signature verification using HMAC SHA256
 const verifyWebhookSignature = (payload: string, signature: string, secret: string): boolean => {
-  // TODO: Implement HMAC signature verification
-  // For now, we'll verify the webhook source via the secret
-  return true;
+  if (!secret) {
+    return true; // Allow in development if secret is not configured
+  }
+
+  if (!signature) {
+    return false;
+  }
+
+  try {
+    // FedaPay uses HMAC SHA256 for webhook signatures
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(payload);
+    const expectedSignature = hmac.digest('hex');
+
+    // Compare signatures with timing-safe comparison to prevent timing attacks
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature)
+    );
+  } catch (error) {
+    return false;
+  }
 };
 
 // Map transaction amounts to vote packages
@@ -106,7 +125,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (voteError) {
-      console.error('Error inserting vote:', voteError);
       return NextResponse.json(
         { error: 'Failed to record vote' },
         { status: 500 }
@@ -122,7 +140,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (updateError) {
-      console.error('Error incrementing vote count:', updateError);
       // Don't fail the webhook if the increment fails, the vote is still recorded
     }
 
@@ -134,7 +151,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Webhook processing error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

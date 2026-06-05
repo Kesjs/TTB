@@ -55,6 +55,9 @@ export default function CustomSelectDark({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
+        aria-label={selectedOption ? selectedOption.label : placeholder}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
         className={`w-full bg-zinc-950 border p-3 py-2 text-sm font-heading tracking-wide focus:outline-none transition-all flex items-center justify-between rounded-lg ${
           disabled
             ? 'border-zinc-800 text-zinc-600 cursor-not-allowed'

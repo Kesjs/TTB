@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Star, Award, UserCheck, Flame, Sparkles, Check, Plus, Minus,
@@ -11,13 +12,18 @@ import {
 } from 'lucide-react';
 import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { Spinner } from '@/components/ui/Spinner';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { Candidate, SystemControl, db } from '@/lib/supabase';
 import { Profile, toSqlPhase } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
 import { signOut } from '@/app/actions/auth';
 import { toggleJurySelection, submitJurySelection, getJurySelectionCount } from '@/app/actions/jury';
-import { Skeleton } from '@/components/ui/Skeleton';
-import NotificationBadge from '@/components/ui/NotificationBadge';
+
+// Dynamic imports pour les composants UI lourds
+const NotificationBadge = dynamic(() => import('@/components/ui/NotificationBadge'), {
+  loading: () => <Spinner size="sm" />,
+  ssr: false
+});
 
 type TabType = 'selection' | 'evaluation' | 'history' | 'stats';
 

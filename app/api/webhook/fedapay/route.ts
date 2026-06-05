@@ -9,8 +9,6 @@ export async function POST(request: Request) {
     const rawBody = await request.text();
     const event = JSON.parse(rawBody);
 
-    console.log('Webhook FedaPay Reçu:', event);
-
     // En production, il conviendrait de vérifier la signature de FedaPay pour des raisons de sécurité
     // Exemple de vérification de signature :
     // const signature = request.headers.get('X-Feedapay-Signature');
@@ -41,11 +39,7 @@ export async function POST(request: Request) {
             candidate_uuid: pendingVote.candidate_id,
             vote_increment: pendingVote.vote_count
           });
-
-          console.log(`Paiement approuvé pour la transaction ${transactionRef}. Vote enregistré avec succès.`);
         }
-      } else {
-        console.log(`Aucun vote trouvé pour la transaction ${transactionRef}`);
       }
     } else if (event.event === 'transaction.declined') {
       const transaction = event.data;
@@ -59,14 +53,11 @@ export async function POST(request: Request) {
           .update({ payment_status: 'failed' })
           .eq('transaction_ref', transactionRef);
       }
-
-      console.log(`Transaction FedaPay refusée : ${transactionRef}`);
     }
 
     return NextResponse.json({ success: true, message: 'Webhook FedaPay traité avec succès.' });
 
   } catch (error) {
-    console.error('Erreur Webhook FedaPay Parser:', error);
     return NextResponse.json(
       { success: false, message: 'Erreur lors du traitement du Webhook.' },
       { status: 500 }

@@ -80,3 +80,44 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
+
+/* Focus visible styles améliorés pour l'accessibilité */
+*:focus-visible {
+  outline: 2px solid #e5c47f;
+  outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Focus spécifique pour les boutons */
+button:focus-visible {
+  outline: 2px solid #e5c47f;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(229, 196, 127, 0.2);
+}
+
+/* Focus spécifique pour les inputs */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #e5c47f;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(229, 196, 127, 0.2);
+}
+
+/* Focus spécifique pour les liens */
+a:focus-visible {
+  outline: 2px solid #e5c47f;
+  outline-offset: 2px;
+  text-decoration: underline;
+}
+
+/* Focus pour les éléments interactifs avec dark background */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline-color: #e5c47f;
+}

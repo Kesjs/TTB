@@ -1374,7 +1374,7 @@ export default function CandidaturePage() {
                               <div className="w-24 h-24 mx-auto overflow-hidden rounded-full border-2 border-white shadow-md bg-zinc-100">
                                 <img 
                                   src={URL.createObjectURL(coverImagePreview)} 
-                                  alt="Cover Profile Preview" 
+                                  alt="Aperçu de la photo de profil du candidat" 
                                   className="w-full h-full object-cover"
                                 />
                               </div>

@@ -101,10 +101,9 @@ export default function JurySection() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {displayJury.map((member, idx) => {
               const isPlaceholder = member.full_name === 'Siège Réservé';
-              
+
               // Vérification de la présence d'une photo de profil
-              // @ts-ignore
-              const photoUrl = member.avatar_url || member.image_url;
+              const photoUrl = member.avatar_url;
               const hasPhoto = !!photoUrl;
 
               return (

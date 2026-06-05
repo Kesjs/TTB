@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Users, MapPin, Music, Award } from 'lucide-react';
 
 interface StatsCardsProps {
@@ -10,7 +10,7 @@ interface StatsCardsProps {
   edition?: string;
 }
 
-export default function StatsCards({ totalInscrits, departements = 12, disciplines = "Toutes", edition = "2026" }: StatsCardsProps) {
+function StatsCards({ totalInscrits, departements = 12, disciplines = "Toutes", edition = "2026" }: StatsCardsProps) {
   const [counts, setCounts] = useState({ inscrits: 0, departements: 0 });
 
   useEffect(() => {
@@ -100,3 +100,5 @@ export default function StatsCards({ totalInscrits, departements = 12, disciplin
     </div>
   );
 }
+
+export default memo(StatsCards);

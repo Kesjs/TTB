@@ -55,6 +55,9 @@ export default function CustomSelect({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
+        aria-label={selectedOption ? selectedOption.label : placeholder}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
         className={`w-full bg-white border p-3 sm:p-4 pr-10 text-sm font-heading tracking-wide focus:outline-none transition-all flex items-center justify-between rounded-none ${
           disabled
             ? 'border-zinc-200 text-zinc-400 cursor-not-allowed bg-zinc-50'
